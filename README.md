@@ -1,6 +1,8 @@
+# X4C
+
 This repository houses the smart contracts for the Cambridge Centre for Carbon Credits.
 
-# Structure 
+## Structure 
 There are three primary contracts, which are:
 * `x4c-project.mligo`
 * `x4c-oracle.mligo`
