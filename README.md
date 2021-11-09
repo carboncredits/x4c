@@ -4,20 +4,21 @@ This repository houses the smart contracts for the Cambridge Centre for Carbon C
 
 ## Structure 
 There are three primary contracts, which are:
-* `x4c-project.mligo`
 * `x4c-oracle.mligo`
+* `x4c-project.mligo`
 * `x4c-market.mligo`
-
-## Project Contract
-The project contract allows anyone to create a project. The oracle contract will then verify the project is valid and allow it to mint tokens. As a project grows, project owners can add "zones" to their project, which represent a new token attached to their project. As before, these need to be approved by the oracle to be minted and traded on the marketplace.
-
-The project contract is a standard FA2 contract with all the the standard entrypoints. Users and token holders can manage their tokens, i.e. with the `%transfer` or `%balance_of` entrypoints. This makes these carbon tokens composable with other on-chain applications.
 
 ## Oracle Contract
 The oracle contract:
-* Keeps a registry of valid coins, keeping the marketplace informed on which coins are allowed to be traded
+* Allows anyone to create a project through the `%createProject` entrypoint
 * Gives the amount of valid coins a project owner can mint
+* Keeps a registry of valid coins, keeping the marketplace informed on which coins are allowed to be traded
 * Gives the "bury" address and sends coins to be "buried"
+
+## Project Contract
+Anyone can create a project using the oracle contract. The oracle contract will then verify the project is valid and allow it to mint tokens. As a project grows, project owners can add "zones" to their project, which represent a new token attached to their project. As before, these need to be approved by the oracle to be minted and traded on the marketplace.
+
+The project contract is a standard FA2 contract with all the the standard entrypoints. Users and token holders can manage their tokens, e.g. with the `%transfer` or `%balance_of` entrypoints. This makes these carbon tokens composable with other on-chain applications.
 
 ## Marketplace 
 The market contract is a dynamic marketplace that allows users to buy/sell carbon tokens in a variety of ways. Users can:

@@ -37,7 +37,7 @@ type storage = {
     // keeps track of the number of outstanding "mintable" tokens
     minting_permissions : (token, nat) big_map ; 
     // the address of the marketplace contract
-    c4x_address : address ;
+    market_address : address ;
 }
 
 (* =============================================================================
@@ -49,7 +49,7 @@ type entrypoint =
 | MintTokens of mint_tokens
 | BuryCarbon of bury_carbon 
 | ApproveTokens of approve_tokens 
-| UpdateC4XAddress of address
+| UpdateMarketAddress of address
 
 type result = (operation list) * storage
 
@@ -111,7 +111,7 @@ let create_project (param : create_project) (storage : storage) : result =
         token_metadata in 
     // initiate an FA2 contract w/permissions given to project contract
     let fa2_init_storage = {
-        carbon_contract = Tezos.self_address ;
+        oracle_contract = Tezos.self_address ;
         owner = owner ; 
         ledger = ledger ;
         operators = operators ;
@@ -171,10 +171,10 @@ let bury_carbon (param : bury_carbon) (storage : storage) : result =
 let approve_tokens (param : approve_tokens) (storage : storage) : result = 
     // check permissions
     if Tezos.sender <> storage.admin then (failwith error_PERMISSIONS_DENIED : result) else
-    // update the c4x approveTokens (could be redundant for now)
+    // update the market approveTokens (could be redundant for now)
     let txndata_approveTokens = List.map (fun (t : approve_token) -> (t.token, (Some ())) ) param in
     let entrypoint_approveTokens =
-        match (Tezos.get_entrypoint_opt "%approveTokens" storage.c4x_address : (token * (unit option)) list contract option) with
+        match (Tezos.get_entrypoint_opt "%approveTokens" storage.market_address : (token * (unit option)) list contract option) with
         | None -> (failwith error_COULD_NOT_GET_ENTRYPOINT : (token * (unit option)) list contract)
         | Some e -> e in 
     let op_approveTokens = Tezos.transaction txndata_approveTokens 0tez entrypoint_approveTokens in
@@ -194,15 +194,15 @@ let approve_tokens (param : approve_tokens) (storage : storage) : result =
     [op_approveTokens;], storage
 
 // This is a function for bootstrapping these contracts onto the chain, since both
-// the carbon contract and the c4x contract need to know each other's addresses
-let update_c4x_address (c4x_address : address) (storage : storage) : result = 
+// the oracle contract and the market contract need to know each other's addresses
+let update_market_address (market_address : address) (storage : storage) : result = 
     // check permissions
     if Tezos.sender <> storage.admin then (failwith error_PERMISSIONS_DENIED : result) else
     // this address can only change once
     let null_address = ("tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU" : address) in 
-    if storage.c4x_address <> null_address 
+    if storage.market_address <> null_address 
     then ([] : operation list), storage
-    else ([] : operation list), { storage with c4x_address = c4x_address ; }
+    else ([] : operation list), { storage with market_address = market_address ; }
 
 
 (* =============================================================================
@@ -224,9 +224,9 @@ let main (entrypoint, storage : entrypoint * storage) : result =
     // "bury" (burn) carbon tokens and take them permanently off the market
     | BuryCarbon param ->
         bury_carbon param storage
-    // give permissions to mint tokens and exchange them on the c4x marketplace
+    // give permissions to mint tokens and exchange them on the market
     | ApproveTokens param -> 
         approve_tokens param storage
     // for bootstrapping: this only works once
-    | UpdateC4XAddress param ->
-        update_c4x_address param storage
+    | UpdateMarketAddress param ->
+        update_market_address param storage

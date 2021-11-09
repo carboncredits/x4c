@@ -20,7 +20,7 @@ type contract_metadata = (string, bytes) big_map
 type storage = {
     // address of the main carbon contract and project owner
     owner : address ; 
-    carbon_contract : address ; 
+    oracle_contract : address ; 
 
     // the ledger keeps track of who owns what token
     ledger : (fa2_owner * fa2_token_id , fa2_amt) big_map ; 
@@ -241,7 +241,7 @@ let rec mint_tokens (param, storage : mintburn * storage) : result =
         let token_id = hd.token_id in 
         let qty = hd.qty in 
         // check operator
-        if Tezos.sender <> storage.carbon_contract then (failwith error_PERMISSIONS_DENIED : result) else 
+        if Tezos.sender <> storage.oracle_contract then (failwith error_PERMISSIONS_DENIED : result) else 
         // update owner balance
         let owner_balance = 
             match Big_map.find_opt (owner, token_id) storage.ledger with
@@ -255,7 +255,7 @@ let rec mint_tokens (param, storage : mintburn * storage) : result =
 // Like minting, this entrypoint can only be called by the carbon contract
 let burn_tokens (param : mintburn) (storage : storage) : transfer = 
     // check permissions
-    if Tezos.sender <> storage.carbon_contract then (failwith error_PERMISSIONS_DENIED : transfer) else 
+    if Tezos.sender <> storage.oracle_contract then (failwith error_PERMISSIONS_DENIED : transfer) else 
     let burn_addr = ("tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU" : address) in 
     let from = Tezos.source in 
     // transfer the tokens to the burn address

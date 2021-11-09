@@ -115,7 +115,7 @@ let deploy_carbon_fa2 (delegate : key_hash option) (amnt : tez) (init_storage : 
                     let token_id = hd.token_id in 
                     let qty = hd.qty in 
                     // check operator
-                    if Tezos.sender <> storage.carbon_contract then (failwith error_PERMISSIONS_DENIED : result) else 
+                    if Tezos.sender <> storage.oracle_contract then (failwith error_PERMISSIONS_DENIED : result) else 
                     // update owner balance
                     let owner_balance = 
                         match Big_map.find_opt (owner, token_id) storage.ledger with
@@ -126,7 +126,7 @@ let deploy_carbon_fa2 (delegate : key_hash option) (amnt : tez) (init_storage : 
                     main (Mint(tl), storage))
             | Burn param -> (
                 // check permissions
-                if Tezos.sender <> storage.carbon_contract then (failwith error_PERMISSIONS_DENIED : result) else 
+                if Tezos.sender <> storage.oracle_contract then (failwith error_PERMISSIONS_DENIED : result) else 
                 let burn_addr = ("tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU" : address) in 
                 let from = Tezos.source in 
                 // transfer the tokens to the burn address

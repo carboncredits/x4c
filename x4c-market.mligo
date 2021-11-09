@@ -73,7 +73,7 @@ type storage = {
     bids_on_blind_auction : (address * token_for_sale, chest) big_map ;
     redeem : (address, redeemable list) big_map ;
     // metadata and minting oracle
-    carbon_contract : address ;
+    oracle_contract : address ;
     // the tokens that are allowed to be traded on this marketplace
     approved_tokens : (token, unit) big_map ; 
     // for bootstrapping
@@ -685,7 +685,7 @@ let redeem (_ : unit) (storage : storage) : result =
  ApproveTokens Entrypoint Functions 
  *** **)
 let rec approve_tokens (param, storage : approve_tokens * storage) : result = 
-    if Tezos.sender <> storage.carbon_contract then (failwith error_PERMISSIONS_DENIED : result) else 
+    if Tezos.sender <> storage.oracle_contract then (failwith error_PERMISSIONS_DENIED : result) else 
     match param with 
     | [] -> (([] : operation list), storage)
     | hd :: tl ->

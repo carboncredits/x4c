@@ -11,7 +11,7 @@ type contract_metadata = (string, bytes) big_map
 type storage = {
     // address of the main carbon contract and project owner
     owner : address ; 
-    carbon_contract : address ; 
+    oracle_contract : address ; 
 
     // the ledger keeps track of who owns what token
     ledger : (fa2_owner * fa2_token_id , fa2_amt) big_map ; 
