@@ -85,7 +85,7 @@ type storage = {
  * ============================================================================= *)
 
 type buy_for_sale = { buyer : address ; token : token ; owner : address ; amt : nat ; }
-type approve_tokens = (token * (unit option)) list
+type oracle_approve_tokens = (token * (unit option)) list
 
 type for_sale = 
 | PostForSale   of token_for_sale * sale_data
@@ -120,7 +120,7 @@ type entrypoint =
 | BlindAuction of blind_auction // a seller auctions off their tokens in a sealed-bid auction
 | Offer of offer // a buyer makes an offer for tokens
 | Redeem of unit // redeem tokens and xtz for the sender
-| ApproveTokens of approve_tokens // updated by the carbon contract
+| OracleApproveTokens of oracle_approve_tokens // updated by the oracle contract
 
 type result = operation list * storage
 
@@ -682,9 +682,9 @@ let redeem (_ : unit) (storage : storage) : result =
 
 
 (*** ** 
- ApproveTokens Entrypoint Functions 
+ OracleApproveTokens Entrypoint Functions 
  *** **)
-let rec approve_tokens (param, storage : approve_tokens * storage) : result = 
+let rec oracle_approve_tokens (param, storage : oracle_approve_tokens * storage) : result = 
     if Tezos.sender <> storage.oracle_contract then (failwith error_PERMISSIONS_DENIED : result) else 
     match param with 
     | [] -> (([] : operation list), storage)
@@ -692,7 +692,7 @@ let rec approve_tokens (param, storage : approve_tokens * storage) : result =
         let (token, add_or_remove) = hd in 
         let approved_tokens : (token, unit) big_map = 
             Big_map.update token add_or_remove storage.approved_tokens in
-        approve_tokens (tl, {storage with approved_tokens = approved_tokens ;})
+        oracle_approve_tokens (tl, {storage with approved_tokens = approved_tokens ;})
 
 
 (* =============================================================================
@@ -717,5 +717,5 @@ let main (entrypoint, storage : entrypoint * storage) =
     | Redeem param -> 
         redeem param storage
     // update which tokens are allowed to trade on this marketplace
-    | ApproveTokens param -> 
-        approve_tokens (param, storage)
+    | OracleApproveTokens param -> 
+        oracle_approve_tokens (param, storage)
