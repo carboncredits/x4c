@@ -174,7 +174,7 @@ let approve_tokens (param : approve_tokens) (storage : storage) : result =
     // update the market approveTokens (could be redundant for now)
     let txndata_approveTokens = List.map (fun (t : approve_token) -> (t.token, (Some ())) ) param in
     let entrypoint_approveTokens =
-        match (Tezos.get_entrypoint_opt "%approveTokens" storage.market_address : (token * (unit option)) list contract option) with
+        match (Tezos.get_entrypoint_opt "%oracleApproveTokens" storage.market_address : (token * (unit option)) list contract option) with
         | None -> (failwith error_COULD_NOT_GET_ENTRYPOINT : (token * (unit option)) list contract)
         | Some e -> e in 
     let op_approveTokens = Tezos.transaction txndata_approveTokens 0tez entrypoint_approveTokens in
