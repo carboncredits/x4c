@@ -21,16 +21,13 @@ type storage = {
     // address of the main carbon contract and project owner
     owner : address ; 
     oracle_contract : address ; 
-
     // the ledger keeps track of who owns what token
     ledger : (fa2_owner * fa2_token_id , fa2_amt) big_map ; 
-    
     // an operator can trade tokens on behalf of the fa2_owner
     // if the key (owner, operator, token_id) returns some k : nat, this denotes that the operator has (one-time?) permissions to operate k tokens
     // if there is no entry, the operator has no permissions
     // such permissions need to granted, e.g. for the burn entrypoint in the carbon contract
-    operators : (fa2_owner * fa2_operator * fa2_token_id, nat) big_map;
-    
+    operators : (fa2_owner * fa2_operator * fa2_token_id, nat) big_map;   
     // token metadata for each token type supported by this contract
     token_metadata : (fa2_token_id, token_metadata) big_map;
     // contract metadata 
@@ -141,10 +138,11 @@ let rec transfer_txn (param , storage : transfer * storage) : storage =
             match Big_map.find_opt (owner, operator, token_id) storage.operators with 
             | None -> 0n
             | Some allowed_qty -> allowed_qty in 
-        if ((Tezos.source <> from) && (operator_permissions < qty)) then (failwith error_FA2_NOT_OPERATOR : storage) else 
+        if ((Tezos.source <> from) && (Tezos.sender <> from) && (operator_permissions < qty)) 
+            then (failwith error_FA2_NOT_OPERATOR : storage) else 
         // update operator permissions to reflect this transfer
         let operators = 
-            if Tezos.source <> from // thus this is an operator
+            if (Tezos.source <> from) && (Tezos.sender <> from) // thus this is an operator
             then Big_map.update (owner, operator, token_id) (Some (abs (operator_permissions - qty))) storage.operators
             else storage.operators in
         // check balance

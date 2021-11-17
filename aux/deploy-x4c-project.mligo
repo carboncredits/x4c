@@ -24,10 +24,11 @@ let deploy_carbon_fa2 (delegate : key_hash option) (amnt : tez) (init_storage : 
                             match Big_map.find_opt (owner, operator, token_id) storage.operators with 
                             | None -> 0n
                             | Some allowed_qty -> allowed_qty in 
-                        if ((Tezos.source <> from) && (operator_permissions < qty)) then (failwith error_FA2_NOT_OPERATOR : storage) else 
+                        if ((Tezos.source <> from) && (Tezos.sender <> from) && (operator_permissions < qty)) 
+                            then (failwith error_FA2_NOT_OPERATOR : storage) else 
                         // update operator permissions to reflect this transfer
                         let operators = 
-                            if Tezos.source <> from // thus this is an operator
+                            if (Tezos.source <> from) && (Tezos.sender <> from) // thus this is an operator
                             then Big_map.update (owner, operator, token_id) (Some (abs (operator_permissions - qty))) storage.operators
                             else storage.operators in
                         // check balance
