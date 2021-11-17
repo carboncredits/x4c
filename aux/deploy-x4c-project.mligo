@@ -24,10 +24,10 @@ let deploy_carbon_fa2 (delegate : key_hash option) (amnt : tez) (init_storage : 
                             match Big_map.find_opt (owner, operator, token_id) storage.operators with 
                             | None -> 0n
                             | Some allowed_qty -> allowed_qty in 
-                        if ((Tezos.sender <> from) && (operator_permissions < qty)) then (failwith error_FA2_NOT_OPERATOR : storage) else 
+                        if ((Tezos.source <> from) && (operator_permissions < qty)) then (failwith error_FA2_NOT_OPERATOR : storage) else 
                         // update operator permissions to reflect this transfer
                         let operators = 
-                            if Tezos.sender <> from // thus this is an operator
+                            if Tezos.source <> from // thus this is an operator
                             then Big_map.update (owner, operator, token_id) (Some (abs (operator_permissions - qty))) storage.operators
                             else storage.operators in
                         // check balance
@@ -59,7 +59,7 @@ let deploy_carbon_fa2 (delegate : key_hash option) (amnt : tez) (init_storage : 
             | Balance_of param -> (
                 let (request_list, callback) = (param.requests, param.callback) in 
                 let accumulator = ([] : callback_data list) in
-                let rec owner_and_id_to_balance (param : (callback_data list) * (requests list) * ((fa2_owner * fa2_token_id , fa2_amt) big_map)) : callback_data list =
+                let rec owner_and_id_to_balance (param : (callback_data list) * (request list) * ((fa2_owner * fa2_token_id , fa2_amt) big_map)) : callback_data list =
                     let (accumulator, request_list, ledger) = param in
                     match request_list with
                     | [] -> accumulator 

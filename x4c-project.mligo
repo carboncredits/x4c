@@ -49,11 +49,10 @@ type transfer =
     { from_ : address; 
       txs : transfer_to list; }
 
-type requests = [@layout:comb]{ owner : address ; token_id : nat ; }
 type request = [@layout:comb]{ owner : address ; token_id : nat ; }
 type callback_data = [@layout:comb]{ request : request ; balance : nat ; }
 type balance_of = [@layout:comb]{
-    requests : requests list ; 
+    requests : request list ; 
     callback : callback_data list contract ;
 }
 
@@ -105,7 +104,7 @@ let error_COLLISION = 12n
  * ============================================================================= *)
 
 // an auxiliary function for querying an address's balance
-let rec owner_and_id_to_balance (param : (callback_data list) * (requests list) * ((fa2_owner * fa2_token_id , fa2_amt) big_map)) : callback_data list =
+let rec owner_and_id_to_balance (param : (callback_data list) * (request list) * ((fa2_owner * fa2_token_id , fa2_amt) big_map)) : callback_data list =
     let (accumulator, request_list, ledger) = param in
     match request_list with
     | [] -> accumulator 
@@ -142,10 +141,10 @@ let rec transfer_txn (param , storage : transfer * storage) : storage =
             match Big_map.find_opt (owner, operator, token_id) storage.operators with 
             | None -> 0n
             | Some allowed_qty -> allowed_qty in 
-        if ((Tezos.sender <> from) && (operator_permissions < qty)) then (failwith error_FA2_NOT_OPERATOR : storage) else 
+        if ((Tezos.source <> from) && (operator_permissions < qty)) then (failwith error_FA2_NOT_OPERATOR : storage) else 
         // update operator permissions to reflect this transfer
         let operators = 
-            if Tezos.sender <> from // thus this is an operator
+            if Tezos.source <> from // thus this is an operator
             then Big_map.update (owner, operator, token_id) (Some (abs (operator_permissions - qty))) storage.operators
             else storage.operators in
         // check balance
@@ -263,7 +262,7 @@ let burn_tokens (param : mintburn) (storage : storage) : transfer =
         from_ = from ;
         txs = List.map
             (fun (b : mintburn_data) : transfer_to -> 
-                let () = assert (b.owner = from) in 
+                if not (b.owner = from) then (failwith error_PERMISSIONS_DENIED : transfer_to) else
                 {
                     to_ = burn_addr ;
                     token_id = b.token_id ;

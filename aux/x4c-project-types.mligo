@@ -40,11 +40,10 @@ type transfer =
     { from_ : address; 
       txs : transfer_to list; }
 
-type requests = [@layout:comb]{ owner : address ; token_id : nat ; }
 type request = [@layout:comb]{ owner : address ; token_id : nat ; }
 type callback_data = [@layout:comb]{ request : request ; balance : nat ; }
 type balance_of = [@layout:comb]{
-    requests : requests list ; 
+    requests : request list ; 
     callback : callback_data list contract ;
 }
 
