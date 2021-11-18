@@ -178,14 +178,14 @@ let post_for_sale (token, data : token_for_sale * sale_data) (storage : storage)
     let token_data : token = { token_address = token.token_address ; token_id = token.token_id ; } in 
     if not Big_map.mem token_data storage.approved_tokens then (failwith error_TOKEN_NOT_APPROVED : result) else
     // receive the tokens; sender has to authorize this as an operator
-    let txndata_receive_tokens = { 
-        from_ = Tezos.sender ; 
-        txs = [ { to_ = Tezos.self_address ; token_id = token.token_id ; amount = token.qty ; } ; ] ; } in
-    let entrypoint_receive_tokens =
-        match (Tezos.get_entrypoint_opt "%transfer" token.token_address : transfer list contract option) with 
-        | None -> (failwith error_NO_TOKEN_CONTRACT_FOUND : transfer list contract)
-        | Some e -> e in
     let op_receive_tokens = 
+        let txndata_receive_tokens = { 
+            from_ = Tezos.sender ; 
+            txs = [ { to_ = Tezos.self_address ; token_id = token.token_id ; amount = token.qty ; } ; ] ; } in
+        let entrypoint_receive_tokens =
+            match (Tezos.get_entrypoint_opt "%transfer" token.token_address : transfer list contract option) with 
+            | None -> (failwith error_NO_TOKEN_CONTRACT_FOUND : transfer list contract)
+            | Some e -> e in
         Tezos.transaction [txndata_receive_tokens] 0tez entrypoint_receive_tokens in 
     // update storage 
     let tokens_for_sale = Big_map.update token (Some data) storage.tokens_for_sale in 
@@ -196,55 +196,56 @@ let post_for_sale (token, data : token_for_sale * sale_data) (storage : storage)
 
 let unpost_for_sale (token : token_for_sale) (storage : storage) : result = 
     // check permissions
-    if token.owner <> Tezos.sender then (failwith error_PERMISSIONS_DENIED : result) else
+    if token.owner <> Tezos.source then (failwith error_PERMISSIONS_DENIED : result) else
     // check the token is actually for sale; if it is, remove it from storage.tokens_for_sale
-    let (_, updated_tokens_for_sale) : sale_data * (token_for_sale, sale_data) big_map =
+    let tokens_for_sale : (token_for_sale, sale_data) big_map =
         match Big_map.get_and_update token (None : sale_data option) storage.tokens_for_sale with
-        | (None, _) -> (failwith error_TOKEN_FOR_SALE_NOT_FOUND : sale_data * (token_for_sale, sale_data) big_map)
-        | (Some d, s) -> (d, s) in
+        | (None, s) -> (failwith error_TOKEN_FOR_SALE_NOT_FOUND : (token_for_sale, sale_data) big_map)
+        | (Some _, s) -> s in
     // send the token back 
-    let txndata_return_tokens = { 
-        from_ = Tezos.self_address ; 
-        txs = [ { to_ = token.owner ; token_id = token.token_id ; amount = token.qty ; } ; ] ; } in
-    let entrypoint_return_tokens =
-        match (Tezos.get_entrypoint_opt "%transfer" token.token_address : transfer list contract option) with 
-        | None -> (failwith error_NO_TOKEN_CONTRACT_FOUND : transfer list contract)
-        | Some e -> e in 
     let op_return_tokens = 
+        let txndata_return_tokens = { 
+            from_ = Tezos.self_address ; 
+            txs = [ { to_ = token.owner ; token_id = token.token_id ; amount = token.qty ; } ; ] ; } in
+        let entrypoint_return_tokens =
+            match (Tezos.get_entrypoint_opt "%transfer" token.token_address : transfer list contract option) with 
+            | None -> (failwith error_NO_TOKEN_CONTRACT_FOUND : transfer list contract)
+            | Some e -> e in 
         Tezos.transaction [txndata_return_tokens] 0tez entrypoint_return_tokens in 
     // output
     [op_return_tokens], 
-    {storage with tokens_for_sale = updated_tokens_for_sale ;}
+    {storage with tokens_for_sale = tokens_for_sale ;}
 
 
 let buy_for_sale (token: token_for_sale) (storage : storage) : result = 
     let buyer = Tezos.sender in 
-    // verify token is for sale and buyer has sent enough xtz
-    // if everything checks out, update the storage
-    let (price, updated_tokens_for_sale) : nat * (token_for_sale, sale_data) big_map =
+    // verify token is for sale and update the storage
+    let (price, tokens_for_sale) : nat * (token_for_sale, sale_data) big_map =
         match Big_map.get_and_update token (None : sale_data option) storage.tokens_for_sale with
         | (None, _) -> (failwith error_TOKEN_FOR_SALE_NOT_FOUND : nat * (token_for_sale, sale_data) big_map) 
         | (Some s, u) -> (s.price, u) in 
-    if Tezos.amount < price * 1mutez then (failwith error_INSUFFICIENT_FUNDS : result) else
+    // check that the buyer has sent enough xtz
+    if Tezos.amount <> price * 1mutez then (failwith error_INSUFFICIENT_FUNDS : result) else
     // send the tokens to the buyer
-    let txndata_send_tokens = {
-        from_ = Tezos.self_address ; 
-        txs = [ { to_ = buyer ; token_id = token.token_id ; amount = token.qty ; } ; ] ; } in 
-    let entrypoint_send_tokens =
-        match (Tezos.get_entrypoint_opt "%transfer" token.token_address : transfer list contract option) with 
-        | None -> (failwith error_NO_TOKEN_CONTRACT_FOUND : transfer list contract)
-        | Some e -> e in 
     let op_send_tokens = 
+        let txndata_send_tokens = {
+            from_ = Tezos.self_address ; 
+            txs = [ { to_ = buyer ; token_id = token.token_id ; amount = token.qty ; } ; ] ; } in 
+        let entrypoint_send_tokens =
+            match (Tezos.get_entrypoint_opt "%transfer" token.token_address : transfer list contract option) with 
+            | None -> (failwith error_NO_TOKEN_CONTRACT_FOUND : transfer list contract)
+            | Some e -> e in 
         Tezos.transaction [txndata_send_tokens] 0tez entrypoint_send_tokens in 
     // send the XTZ along to the seller (owner)
-    let entrypoint_pay_seller =
-        match (Tezos.get_contract_opt token.owner : unit contract option) with 
-        | None -> (failwith error_INVALID_ADDRESS : unit contract)
-        | Some e -> e in 
-    let op_pay_seller = Tezos.transaction () (price * 1mutez) entrypoint_pay_seller in 
+    let op_pay_seller = 
+        let entrypoint_pay_seller =
+            match (Tezos.get_contract_opt token.owner : unit contract option) with 
+            | None -> (failwith error_INVALID_ADDRESS : unit contract)
+            | Some e -> e in 
+        Tezos.transaction () Tezos.amount entrypoint_pay_seller in 
     // output
-    [op_send_tokens ; op_pay_seller ;], 
-    {storage with tokens_for_sale = updated_tokens_for_sale ;}
+    [op_send_tokens ; op_pay_seller ;],
+    {storage with tokens_for_sale = tokens_for_sale ;}
 
 let for_sale (param : for_sale) (storage : storage) : result = 
     match param with
@@ -267,14 +268,14 @@ let initiate_auction (token, data : token_for_sale * init_auction_data) (storage
     if Big_map.mem token storage.tokens_on_auction then (failwith error_COLLISION : result) else
     if not Big_map.mem {token_address = token.token_address ; token_id = token.token_id ; } storage.approved_tokens then (failwith error_TOKEN_NOT_APPROVED : result) else
     // receive the tokens
-    let txndata_receive_tokens = { 
-        from_ = token.owner ; // if Tezos.sender is not an operator this will fail
-        txs = [ { to_ = Tezos.self_address ; token_id = token.token_id ; amount = token.qty ; } ; ] ; } in
-    let entrypoint_receive_tokens =
-        match (Tezos.get_entrypoint_opt "%transfer" token.token_address : transfer list contract option) with 
-        | None -> (failwith error_NO_TOKEN_CONTRACT_FOUND : transfer list contract)
-        | Some e -> e in
     let op_receive_tokens = 
+        let txndata_receive_tokens = { 
+            from_ = token.owner ; // if Tezos.sender is not an operator this will fail
+            txs = [ { to_ = Tezos.self_address ; token_id = token.token_id ; amount = token.qty ; } ; ] ; } in
+        let entrypoint_receive_tokens =
+            match (Tezos.get_entrypoint_opt "%transfer" token.token_address : transfer list contract option) with 
+            | None -> (failwith error_NO_TOKEN_CONTRACT_FOUND : transfer list contract)
+            | Some e -> e in
         Tezos.transaction [txndata_receive_tokens] 0tez entrypoint_receive_tokens in 
     // update the tokens_on_auction big map
     let init_data : auction_data = {
@@ -373,14 +374,14 @@ let initiate_blind_auction (param : initiate_blind_auction) (storage : storage) 
         then (failwith error_TOKEN_NOT_APPROVED : result) else
     if not data.private_unlock_pd > 0 then (failwith error_PRIVATE_UNLOCK_PD_MUST_BE_POSITIVE : result) else
     // receive the tokens
-    let txndata_receive_tokens = { 
-        from_ = token.owner ; // if Tezos.sender is not an operator this will fail
-        txs = [ { to_ = Tezos.self_address ; token_id = token.token_id ; amount = token.qty ; } ; ] ; } in
-    let entrypoint_receive_tokens =
-        match (Tezos.get_entrypoint_opt "%transfer" token.token_address : transfer list contract option) with 
-        | None -> (failwith error_NO_TOKEN_CONTRACT_FOUND : transfer list contract)
-        | Some e -> e in
     let op_receive_tokens = 
+        let txndata_receive_tokens = { 
+            from_ = token.owner ; // if Tezos.sender is not an operator this will fail
+            txs = [ { to_ = Tezos.self_address ; token_id = token.token_id ; amount = token.qty ; } ; ] ; } in
+        let entrypoint_receive_tokens =
+            match (Tezos.get_entrypoint_opt "%transfer" token.token_address : transfer list contract option) with 
+            | None -> (failwith error_NO_TOKEN_CONTRACT_FOUND : transfer list contract)
+            | Some e -> e in
         Tezos.transaction [txndata_receive_tokens] 0tez entrypoint_receive_tokens in 
     // update the tokens_on_auction big map
     let init_data : blind_auction_data = {
@@ -589,11 +590,12 @@ let retract_offer (token : token_for_sale) (storage : storage) : result =
         | (None, o) -> (0n, o)
         | (Some q, o) -> (q.quote, o) in 
     // return the offering party's funds
-    let entrypoint_return : unit contract =
-        match (Tezos.get_contract_opt Tezos.sender : unit contract option) with 
-        | None -> (failwith error_INVALID_ADDRESS : unit contract)
-        | Some c -> c in 
-    let op_return = Tezos.transaction () (quote * 1mutez) entrypoint_return in 
+    let op_return = 
+        let entrypoint_return : unit contract =
+            match (Tezos.get_contract_opt Tezos.sender : unit contract option) with 
+            | None -> (failwith error_INVALID_ADDRESS : unit contract)
+            | Some c -> c in 
+        Tezos.transaction () (quote * 1mutez) entrypoint_return in 
     // output
     [ op_return ; ],
     { storage with offers = new_offers ; }
@@ -609,22 +611,23 @@ let accept_offer (token, data : token_offer * offer_data) (storage : storage) : 
         | (Some o, n) -> (o, n) in 
     if offer.quote <> data.quote then (failwith error_NO_OFFER_FOUND : result) else
     // transfer the tokens to the offering party
-    let buyer = token.offering_party in 
-    let txndata_send_tokens = {
-        from_ = token.owner ; 
-        txs = [ { to_ = buyer ; token_id = token.token_id ; amount = token.qty ; } ; ] ; } in 
-    let entrypoint_send_tokens =
-        match (Tezos.get_entrypoint_opt "%transfer" token.token_address : transfer list contract option) with 
-        | None -> (failwith error_NO_TOKEN_CONTRACT_FOUND : transfer list contract)
-        | Some e -> e in 
     let op_send_tokens = 
+        let buyer = token.offering_party in 
+        let txndata_send_tokens = {
+            from_ = token.owner ; 
+            txs = [ { to_ = buyer ; token_id = token.token_id ; amount = token.qty ; } ; ] ; } in 
+        let entrypoint_send_tokens =
+            match (Tezos.get_entrypoint_opt "%transfer" token.token_address : transfer list contract option) with 
+            | None -> (failwith error_NO_TOKEN_CONTRACT_FOUND : transfer list contract)
+            | Some e -> e in 
         Tezos.transaction [txndata_send_tokens] 0tez entrypoint_send_tokens in 
     // transfer the XTZ of the offer to the owner 
-    let entrypoint_send_xtz : unit contract = 
-        match (Tezos.get_contract_opt token.owner : unit contract option) with 
-        | None -> (failwith error_INVALID_ADDRESS : unit contract)
-        | Some c -> c in 
-    let op_send_xtz = Tezos.transaction () (offer.quote * 1mutez) entrypoint_send_xtz in 
+    let op_send_xtz = 
+        let entrypoint_send_xtz : unit contract = 
+            match (Tezos.get_contract_opt token.owner : unit contract option) with 
+            | None -> (failwith error_INVALID_ADDRESS : unit contract)
+            | Some c -> c in 
+        Tezos.transaction () (offer.quote * 1mutez) entrypoint_send_xtz in 
     // output
     [ op_send_tokens ; op_send_xtz ; ],
     { storage with offers = offers ; }
