@@ -4,29 +4,21 @@ This repository houses the smart contracts for the Cambridge Centre for Carbon C
 
 ## Structure 
 There are three primary contracts, which are:
+* `x4c-directory.mligo`
+* `x4c-governance.mligo`
 * `x4c-oracle.mligo`
-* `x4c-project.mligo`
-* `x4c-market.mligo`
+
+## Directory Contract
+The directory contract is the permanent contract that will manage all future 4C smart contracts as they undergo upgrades. It functions as a proxy contract manager, managing upgrades by switching pointers and activating/deactivating proxy contracts. In this first version, the only proxy contracts are the governance and oracle contracts, but that could change in the future. The entrypoints of the directory contract can only be called by the governance contract, meaning that it is governed (and thus all upgrades are governed) entirely by governance.
+
+## Governance Contract
+The governance contract allows for members of governance to propose upgrades, including changes in how it governs/is governed. Members of governance can submit a proposal which is voted on and then executed. Upgrades happen automatically on-chain, are not centralized, and do not require users to do anything (such as move from one contract to another).
 
 ## Oracle Contract
 The oracle contract:
 * Allows anyone to create a project through the `%createProject` entrypoint
 * Gives the amount of valid coins a project owner can mint
 * Keeps a registry of valid coins, keeping the marketplace informed on which coins are allowed to be traded
-* Gives the "bury" address and sends coins to be "buried"
+* Can retire carbon tokens, keeping a record of which wallets have retired what tokens, in what quantity, and when.
 
-## Project Contract
-Anyone can create a project using the oracle contract. The oracle contract will then verify the project is valid and allow it to mint tokens. As a project grows, project owners can add "zones" to their project, which represent a new token attached to their project. As before, these need to be approved by the oracle to be minted and traded on the marketplace.
-
-The project contract is a standard FA2 contract with all the the standard entrypoints. Users and token holders can manage their tokens, e.g. with the `%transfer` or `%balance_of` entrypoints. This makes these carbon tokens composable with other on-chain applications.
-
-## Marketplace 
-The market contract is a dynamic marketplace that allows users to buy/sell carbon tokens in a variety of ways. Users can:
-* Post tokens for sale at a fixed price 
-* Sell tokens via an English auction 
-* Sell tokens via a blind auction 
-* Make a token owner an offer for their tokens 
-
-For the auctions, the transaction can't be done automatically so there is a `%redeem` entrypoint that allows users to redeem the result of the auction, whether it be tokens they purchased or the payment for tokens sold.
-
-The marketplace contract is custodial.
+This is the core contract of 4C, which keeps a record of all active projects and tokens, manages minting/retiring, and keeps track of agents that have retired tokens. It also exposes those records to anyone through contract views. In doing so, it makes available the essential data for marketplaces and other applications that can build off of 4C.
