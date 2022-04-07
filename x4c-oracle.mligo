@@ -282,6 +282,9 @@ let proxy_update_ledger (param : proxy_update_ledger) (storage : storage) : resu
 [@view] let view_minting_permissions (token, storage : token * storage) : nat option = 
     Big_map.find_opt token storage.minting_permissions
 
+[@view] let view_retired_tokens (address, storage : token * storage) : retired_tokens option = 
+    Big_map.find_opt token storage.retired_tokens
+
 [@view] let view_admin (_, storage : unit * storage) : address = storage.admin
 
 (* =============================================================================
