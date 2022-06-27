@@ -1,0 +1,59 @@
+# Initial storage values 
+{fa2 ledger ; operators ; metadata}
+// we'll get addresses from the deploy of `tezos-client` stuff. Token id starts off as 0.
+// fa2_ledger = (fa2_owner : address, fa2_token_id : nat) -> (fa2_amt : nat)
+// of the addresses we get initialized, we can get fa2_owner from those addresses, we can give them all balances, and 
+
+fa2_ledger : 
+Big_map.literal [ ((("add_1" : address), 0n), 100n) ; (("add_2" : address), 0n), 100n) ; (("add_3" : address), 0n), 100n) ; (("add_4" : address), 0n), 100n) ; (("add_5" : address), 0n), 100n) ]
+{Elt (add_1, 0) 100 ; Elt (add_2, 0) 100 ; Elt (add_3, 0) 100 ; Elt (add_4, 0) 100 ; Elt (add_5, 0) 100}
+Big_map.literal [ (((\"tz1ZgiPeuLfHbidqoPYz4xyKamyMS2876fau\" : address), 0), 100)]
+
+
+// operators
+Big_map.literal [((\"tz1ZgiPeuLfHbidqoPYz4xyKamyMS2876fau\" : address), 0n)]
+
+// initially, leave metadata blank; you don't even know what that is ... 
+metadata : 
+Big_map.literal [(0n, (Map.literal [("", (Bytes.pack ""))]))]
+Big_map.literal [(0n, (Map.literal [(\"\", (Bytes.pack \"\"))]))]
+
+
+STORAGE:
+LIGO:
+{fa2_ledger=(Big_map.literal [ (((\"tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx\" : address), 0n), 100n) ; (((\"tz1gjaF81ZRRvdzjobyfVNsAeSC6PScjfQwN\" : address), 0n), 100n)]
+) ; operators=(Big_map.literal [((\"tz1ddb9NMYHZi5UzPdzTZMYQQZoMub195zgv\" : address), 0n)]) ; metadata= (Big_map.literal [(0n, (Map.literal [(\"\", (Bytes.pack \"\"))]))])}
+MICHELSON:
+(Pair (Pair { Elt (Pair \"tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx\" 0) 100 ; Elt (Pair \"tz1gjaF81ZRRvdzjobyfVNsAeSC6PScjfQwN\" 0) 100 } { Elt 0 { Elt \"\" 0x050100000000 } }) { Elt \"tz1ddb9NMYHZi5UzPdzTZMYQQZoMub195zgv\" 0 })
+(Pair (Pair { Elt (Pair "tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx" 0) 100 ; Elt (Pair "tz1gjaF81ZRRvdzjobyfVNsAeSC6PScjfQwN" 0) 100 } { Elt 0 { Elt "" 0x050100000000 } }) { Elt "tz1ddb9NMYHZi5UzPdzTZMYQQZoMub195zgv" 0 })
+
+
+
+tz1T1buQd895VYtg34W3swFaVpT6A4XpW5i7
+((\"tz1T1buQd895VYtg34W3swFaVpT6A4XpW5i7\" : address), (\"tz1ZgiPeuLfHbidqoPYz4xyKamyMS2876fau\"), 0)
+(Left (Pair (Pair "tz1T1buQd895VYtg34W3swFaVpT6A4XpW5i7" "tz1ZgiPeuLfHbidqoPYz4xyKamyMS2876fau") 0))
+
+
+
+Result of `ligo compile-storage carbon-token-fa2.mligo main (expression above)`:
+(Pair (Pair { Elt (Pair "tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx" 0) 100 ; Elt (Pair "tz1gjaF81ZRRvdzjobyfVNsAeSC6PScjfQwN" 0) 100 } { Elt 0 { Elt "" 0x050100000000 } }){ Elt "tz1ddb9NMYHZi5UzPdzTZMYQQZoMub195zgv" 0 })
+
+(Pair (Pair { Elt (Pair \"tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx\" 0) 100 ; \
+              Elt (Pair \"tz1gjaF81ZRRvdzjobyfVNsAeSC6PScjfQwN\" 0) 100 } \
+            { Elt 0 { Elt "" 0x050100000000 } }) \
+      { Elt \"tz1ddb9NMYHZi5UzPdzTZMYQQZoMub195zgv\" 0 })
+
+
+fa2_from * ((fa2_to * fa2_token_id * fa2_amt) list)
+((\"tz1gjaF81ZRRvdzjobyfVNsAeSC6PScjfQwN\" : address) ,[((\"tz1faswCTDciRzE4oJ9jn2Vm2dvjeyA9fUzU\" : address), 0n, 50n)])
+compiles to:
+(Right (Left (Pair \"tz1gjaF81ZRRvdzjobyfVNsAeSC6PScjfQwN\" { Pair (Pair \"tz1faswCTDciRzE4oJ9jn2Vm2dvjeyA9fUzU\" 0) 50 })))
+
+
+((\"tz1gjaF81ZRRvdzjobyfVNsAeSC6PScjfQwN\" : address), 0n, 100n)
+
+
+((fa2_owner * fa2_token_id) list) * ((fa2_owner * fa2_token_id * fa2_amt) list contract)
+
+([ ((( \"tz1gjaF81ZRRvdzjobyfVNsAeSC6PScjfQwN\") : ((fa2_owner * fa2_token_id * fa2_amt) list contract)), 0) ], (\"KT1W7zsxSVPhCdmc4R393GrKVsnQmNfZhyGM\" : address))
+(Pair { Pair \"tz1gjaF81ZRRvdzjobyfVNsAeSC6PScjfQwN\" 0 } \"KT1W7zsxSVPhCdmc4R393GrKVsnQmNfZhyGM\")
