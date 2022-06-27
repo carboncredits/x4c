@@ -2,12 +2,6 @@
  * Import Contracts
  * ============================================================================ *)
 
-#include "baker.mligo"
-let  main_baker = main
-type storage_baker = storage 
-type entrypoint_baker = entrypoint 
-type result_baker = result
-
 #include "fa2.mligo"
 let  main_fa2 = main
 type storage_fa2 = storage 
@@ -60,22 +54,10 @@ let init_contracts () =
         Test.originate_from_file "fa2.mligo" "main" [ "view_balance_of" ; "view_get_metadata" ; ] (Test.compile_value init_fa2_storage) 0tez in 
     let typed_addr_fa2 = (Test.cast_address addr_fa2 : (entrypoint_fa2, storage_fa2) typed_address) in 
 
-    // initiate the baker contract
-    let init_baker_storage = {
-        admin = addr_admin ;
-        baker_balances = (Big_map.empty : (address, nat) big_map) ;
-        outstanding_blocks = (Big_map.empty : (address, nat) big_map) ;
-        metadata = (Big_map.empty : (string, bytes) big_map) ;
-    } in 
-    let (addr_baker, _pgm_baker, _size_baker) = 
-        Test.originate_from_file "baker.mligo" "main" ["view_baker_balance" ; "view_outstanding_blocks" ; ] (Test.compile_value init_baker_storage) 0tez in 
-    let typed_addr_baker = (Test.cast_address addr_baker : (entrypoint_baker, storage_baker) typed_address) in 
-
     // return all addresses 
     (addr_alice, addr_bob, addr_operator, addr_admin, addr_dummy,
      typed_addr_custodian, addr_custodian, 
-     typed_addr_fa2, addr_fa2, 
-     typed_addr_baker, addr_baker)
+     typed_addr_fa2, addr_fa2)
 
 
 (* ============================================================================
@@ -85,7 +67,7 @@ let init_contracts () =
 let test = 
     // initiate contracts 
     let (addr_alice, addr_bob, addr_operator, addr_admin, addr_dummy,
-     typed_addr_custodian, addr_custodian, typed_addr_fa2, addr_fa2, typed_addr_baker, addr_baker) = init_contracts () in 
+     typed_addr_custodian, addr_custodian, typed_addr_fa2, addr_fa2) = init_contracts () in 
 
     // mint tokens for the custodian 
     let txn_mint_tokens = 
@@ -206,61 +188,3 @@ let test =
     ()
     //(addr_alice, addr_custodian, (Bytes.pack "self"), (Test.get_storage typed_addr_fa2),
     //(Test.get_storage typed_addr_custodian))
-
-
-let test_baker = 
-    // initiate contracts 
-    let (addr_alice, addr_bob, addr_operator, addr_admin, addr_bakery,
-     typed_addr_custodian, addr_custodian, typed_addr_fa2, addr_fa2, typed_addr_baker, addr_baker) = init_contracts () in 
-
-    // mint tokens for the admin
-    let txn_mint_tokens = 
-        let _ = Test.set_source addr_admin in 
-        let txndata_mint_tokens : mint = [ 
-            { owner = addr_baker ; token_id = 0n ; qty = 1_000_000n ; } 
-        ] in 
-        let entrypoint_mint_tokens : mint contract = 
-            Test.to_entrypoint "mint" typed_addr_fa2 in  
-        Test.transfer_to_contract_exn entrypoint_mint_tokens txndata_mint_tokens 0tez in 
-
-    // alice tops up balance for a baker 
-    let txn_top_up = 
-        let _ = Test.set_source addr_alice in 
-        let txndata_top_up : top_up_balance = { baker = addr_bakery ; } in 
-        let entrypoint_top_up : top_up_balance contract = 
-            Test.to_entrypoint "top_up_balance" typed_addr_baker in 
-        Test.transfer_to_contract_exn entrypoint_top_up txndata_top_up 100tez in 
-
-    // admin updates outstanding blocks 
-    let txn_outstanding_blocks =
-        let _ = Test.set_source addr_admin in 
-        let txndata_outstanding : update_outstanding_blocks list = 
-            [ { baker = addr_bakery ; qty = 10n ; } ; ] in 
-        let entrypoint_outstanding : update_outstanding_blocks list contract = 
-            Test.to_entrypoint "update_outstanding_blocks" typed_addr_baker in 
-        Test.transfer_to_contract_exn entrypoint_outstanding txndata_outstanding 0tez in 
-
-    // admin retires tokens for the baker 
-    let txn_retire = 
-        let _ = Test.set_source addr_admin in 
-        let txndata_retire : baker_retire list = 
-            let retire_txndata : retire = [ {
-                retiring_party = addr_baker ;
-                token_id = 0n ;
-                amount = 1_000_000n ;
-                retiring_data = (Bytes.pack "some data") ;
-            } ; ] in 
-            [ {
-                baker = addr_bakery ; 
-                blocks_offset = 10n ;
-                balance_diff = 100_000_000n ;
-                token_contract = addr_fa2 ;
-                retire_metadata = (Bytes.pack "some metadata") ;
-                retire_txndata  = retire_txndata ;
-            } ; ] in 
-        let entrypoint_retire : baker_retire list contract = 
-            Test.to_entrypoint "baker_retire" typed_addr_baker in 
-        Test.transfer_to_contract_exn entrypoint_retire txndata_retire 0tez in 
-
-    ()
-    //(Test.get_balance addr_baker, Test.get_storage typed_addr_baker, Test.get_storage typed_addr_fa2)
