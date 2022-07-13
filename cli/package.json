@@ -1,0 +1,22 @@
+{
+  "name": "climetest",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@taquito/signer": "^13.0.1",
+    "@taquito/taquito": "^13.0.1",
+    "clime": "^0.5.14"
+  },
+  "bin": {
+    "x4c": "./dist/bin/x4c.js"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.3"
+  }
+}
