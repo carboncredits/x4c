@@ -18,6 +18,7 @@
     "x4c": "./dist/bin/x4c.js"
   },
   "devDependencies": {
-    "@types/node": "^18.0.3"
+    "@types/node": "^18.0.3",
+    "@types/node-fetch": "^2.6.2"
   }
 }
