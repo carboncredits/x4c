@@ -1,11 +1,13 @@
-* Summary
+Summary
+=======
 
 This directory contains a command line tool that just wraps the contract access so that you can avoid having to write michelson types at the command line.
 
 Also, `src/x4c` acts as a typescript library that in future we can use on the 4C website for interacting with the contracts.
 
 
-** Building
+Building
+========
 
 To build the tools you will need node and typescript installed. Once you have node, ensure that typescript is globally installed:
 
@@ -33,7 +35,8 @@ $ x4c
 The rest of the document assumes the later form.
 
 
-** Usage
+Usage
+=====
 
 This tool assumes that tezos-client has been used to set up the keys and contracts. You can see what, if any, keys and contracts you have available by running:
 
