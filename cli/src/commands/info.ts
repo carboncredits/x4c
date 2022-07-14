@@ -7,8 +7,6 @@ import {loadClientState, keys, contracts} from "../x4c"
 export default class extends Command {
     @metadata
     async execute() {
-        await loadClientState();
-
         console.log("Keys:")
         for (const key in keys) {
             const signer = keys[key];
