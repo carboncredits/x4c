@@ -2,6 +2,7 @@ import {Command, command, param} from 'clime';
 import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
 
 import {contractForArg, signerForArg} from '../../x4c';
+import {FA2Contract} from '../../x4c/fa2';
 
 @command({
   description: 'Define a new token',
@@ -44,25 +45,11 @@ export default class extends Command {
         return 'Contract name not recognised';
     }
 
-    // I can't see how to set the provider once you have the contract, so we
-    // have to refetch it
-    const tezos = new TezosToolkit('https://rpc.jakartanet.teztnets.xyz');
-    tezos.setProvider({signer: signer});
-    tezos.contract.at(contract.address).then((contract) => {
-        return contract.methods.add_token_id([{
-            token_id: token_id,
-            token_info:  MichelsonMap.fromLiteral({
-                "title": Uint8Array.from(title.split('').map(letter => letter.charCodeAt(0))),
-                "url": Uint8Array.from(url.split('').map(letter => letter.charCodeAt(0)))
-            })
-        }]).send();
-    })
-    .then((op) => {
-        console.log(`Awaiting for ${op.hash} to be confirmed...`);
-        return op.confirmation().then(() => op.hash);
-    })
-    .then((hash) => console.log(`Operation injected: https://ithaca.tzstats.com/${hash}`))
-    .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
+    const fa2 = new FA2Contract(contract)
+    fa2.add_token_id(signer, token_id, {
+        "title": Uint8Array.from(title.split('').map(letter => letter.charCodeAt(0))),
+        "url": Uint8Array.from(url.split('').map(letter => letter.charCodeAt(0)))
+    });
 
     return `Adding token...`;
   }

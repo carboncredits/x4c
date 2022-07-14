@@ -7,10 +7,10 @@ import { InMemorySigner } from '@taquito/signer';
 import { TezosToolkit } from '@taquito/taquito';
 
 
-
 // The Taquito ContractAbstract generic can't be used for type specification (at
 // least with my typescript knowledge), but I dislike have 'any' everywhere,
-// so I make my own type for now until I git gud
+// so I make my own type for now until I git gud. The docs say the return type for
+// a contract should be ContractProvider, but tsc doesn't agree with that.
 type Contract = any
 
 let contracts: Record<string, Contract> = {}
