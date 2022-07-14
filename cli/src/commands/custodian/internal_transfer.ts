@@ -2,18 +2,23 @@ import {Command, command, param} from 'clime';
 import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
 
 import {contractForArg, signerForArg, hashForArg} from '../../x4c';
-import {FA2Contract} from '../../x4c/fa2';
+import {CustodianContract} from '../../x4c/custodian';
 
 @command({
-  description: 'Mint new tokens',
+  description: 'Assign tokens to off chain entities.',
 })
 export default class extends Command {
   async execute(
     @param({
-      description: 'FA2 Oracle Key',
+      description: 'Custodian Oracle Key',
       required: true,
     })
     oracle_str: string,
+    @param({
+      description: 'Custodian Contract key',
+      required: true,
+    })
+    contract_str: string,
     @param({
       description: 'Owner of tokens key',
       required: true,
@@ -25,15 +30,20 @@ export default class extends Command {
     })
     token_id: number,
     @param({
-      description: 'Amount to mint',
+      description: 'Amount to transfer',
       required: true,
     })
     amount: number,
     @param({
-      description: 'FA2 Contract key (not needed if only one shows in info)',
+      description: 'source name',
       required: false,
     })
-    contract_str: string,
+    source_name: string,
+    @param({
+      description: 'target name',
+      required: false,
+    })
+    target_name: string,
   ) {
 
     const signer = await signerForArg(oracle_str);
@@ -46,9 +56,9 @@ export default class extends Command {
     }
     const owner = await hashForArg(owner_str);
 
-    const fa2 = new FA2Contract(contract, signer)
-    fa2.mint(owner, token_id, amount);
+    const custodian = new CustodianContract(contract, signer)
+    custodian.internal_transfer(owner, token_id, amount, source_name, target_name);
 
-    return `Minting tokens...`;
+    return `Syncing tokens...`;
   }
 }
