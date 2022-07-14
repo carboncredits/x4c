@@ -20,10 +20,10 @@ export default class extends Command {
     })
     contract_str: string,
     @param({
-      description: 'Owner of tokens key',
+      description: 'FA2 contract key',
       required: true,
     })
-    owner_str: string,
+    fa2_str: string,
     @param({
       description: 'Token ID',
       required: true,
@@ -54,10 +54,10 @@ export default class extends Command {
     if (contract === null) {
         return 'Contract name not recognised';
     }
-    const owner = await hashForArg(owner_str);
+    const fa2 = await hashForArg(fa2_str);
 
     const custodian = new CustodianContract(contract, signer)
-    custodian.internal_transfer(owner, token_id, amount, source_name, target_name);
+    custodian.internal_transfer(fa2, token_id, amount, source_name, target_name);
 
     return `Syncing tokens...`;
   }

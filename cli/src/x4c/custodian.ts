@@ -56,6 +56,30 @@ class  CustodianContract {
         .then((hash) => console.log(`Operation injected: https://ithaca.tzstats.com/${hash}`))
         .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
     }
+
+    retire(fa2_contract: string, token_id: number, amount: number, source_name: string, reason: string) {
+        if (source_name === undefined) {
+            source_name = "self";
+        }
+
+        this.tezos.contract.at(this.contract.address).then((contract) => {
+            return contract.methods.retire([{
+                token_address: fa2_contract,
+                txs: [{
+                    retiring_party_kyc: stringToMichelsonBytes(source_name),
+                    token_id: token_id,
+                    amount: amount,
+                    retiring_data: Uint8Array.from(reason.split('').map(letter => letter.charCodeAt(0)))
+                }]
+            }]).send();
+        })
+        .then((op) => {
+            console.log(`Awaiting for ${op.hash} to be confirmed...`);
+            return op.confirmation().then(() => op.hash);
+        })
+        .then((hash) => console.log(`Operation injected: https://ithaca.tzstats.com/${hash}`))
+        .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
+    }
 }
 
 
