@@ -1,7 +1,7 @@
 import {Command, command, param} from 'clime';
 import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
 
-import {contractForArg, signerForArg} from '../../x4c';
+import {contractForArg, signerForArg, hashForArg} from '../../x4c';
 import {FA2Contract} from '../../x4c/fa2';
 
 @command({
@@ -44,9 +44,10 @@ export default class extends Command {
     if (contract === null) {
         return 'Contract name not recognised';
     }
+    const owner = await hashForArg(owner_str);
 
     const fa2 = new FA2Contract(contract, signer)
-    fa2.mint(owner_str, token_id, amount);
+    fa2.mint(owner, token_id, amount);
 
     return `Minting tokens...`;
   }

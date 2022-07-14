@@ -62,6 +62,20 @@ async function loadClientState() {
     }
 }
 
+async function hashForArg(arg: string): Promise<string> {
+    for (const name in keys) {
+        if (name === arg) {
+            return await keys[name].publicKeyHash();
+        }
+    }
+    for (const name in contracts) {
+        if (name === arg) {
+            return contracts[name].address;
+        }
+    }
+    return arg;
+}
+
 async function signerForArg(arg: string): Promise<InMemorySigner | null> {
     for (const name in keys) {
         const key = keys[name]
@@ -95,6 +109,7 @@ export {
     loadClientState,
     contractForArg,
     signerForArg,
+    hashForArg,
     keys,
     contracts
 };
