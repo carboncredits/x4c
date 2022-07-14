@@ -68,6 +68,24 @@ class  FA2Contract {
         .then((hash) => console.log(`Operation injected: https://ithaca.tzstats.com/${hash}`))
         .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
     }
+
+    async retire(token_id: number, amount: number, reason: string) {
+        const from = await this.signer.publicKeyHash()
+        this.tezos.contract.at(this.contract.address).then((contract) => {
+            return contract.methods.retire([{
+                retiring_party: from,
+                token_id: token_id,
+                amount: amount,
+                retiring_data: Uint8Array.from(reason.split('').map(letter => letter.charCodeAt(0)))
+            }]).send();
+        })
+        .then((op) => {
+            console.log(`Awaiting for ${op.hash} to be confirmed...`);
+            return op.confirmation().then(() => op.hash);
+        })
+        .then((hash) => console.log(`Operation injected: https://ithaca.tzstats.com/${hash}`))
+        .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
+    }
 }
 
 export {
