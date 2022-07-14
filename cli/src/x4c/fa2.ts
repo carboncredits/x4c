@@ -5,13 +5,15 @@ import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
 class  FA2Contract {
 
     readonly contract: any;
+    readonly signer: InMemorySigner;
     readonly tezos: TezosToolkit
 
-    constructor(contract: any, oracle: InMemorySigner) {
+    constructor(contract: any, signer: InMemorySigner) {
         this.contract = contract;
+        this.signer = signer
 
         this.tezos = new TezosToolkit('https://rpc.jakartanet.teztnets.xyz');
-        this.tezos.setProvider({signer: oracle});
+        this.tezos.setProvider({signer: signer});
     }
 
     add_token_id(token_id: number, metadata: Record<string, Uint8Array>) {
@@ -37,6 +39,26 @@ class  FA2Contract {
                 owner: owner,
                 token_id: token_id,
                 qty: amount
+            }]).send();
+        })
+        .then((op) => {
+            console.log(`Awaiting for ${op.hash} to be confirmed...`);
+            return op.confirmation().then(() => op.hash);
+        })
+        .then((hash) => console.log(`Operation injected: https://ithaca.tzstats.com/${hash}`))
+        .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
+    }
+
+    async transfer(receiver: string, token_id: number, amount: number) {
+        const from = await this.signer.publicKeyHash()
+        this.tezos.contract.at(this.contract.address).then((contract) => {
+            return contract.methods.transfer([{
+                from_: from,
+                txs: [{
+                    to_: receiver,
+                    token_id: token_id,
+                    amount: amount
+                }]
             }]).send();
         })
         .then((op) => {
