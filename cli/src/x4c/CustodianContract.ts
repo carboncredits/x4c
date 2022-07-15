@@ -3,7 +3,7 @@ import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
 
 import { stringToMichelsonBytes } from "./util"
 
-class  CustodianContract {
+export default class  CustodianContract {
 
     readonly contract: any;
     readonly tezos: TezosToolkit
@@ -80,9 +80,4 @@ class  CustodianContract {
         .then((hash) => console.log(`Operation injected: https://ithaca.tzstats.com/${hash}`))
         .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
     }
-}
-
-
-export {
-    CustodianContract
 }

@@ -2,7 +2,7 @@ import {Command, command, param} from 'clime';
 import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
 
 import {contractForArg, signerForArg, hashForArg} from '../../x4c';
-import {CustodianContract} from '../../x4c/custodian';
+import CustodianContract from '../../x4c/CustodianContract';
 
 @command({
   description: 'Synchronise token status for custodian with main FA2 contract.',

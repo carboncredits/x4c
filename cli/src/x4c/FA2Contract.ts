@@ -2,7 +2,7 @@
 import { InMemorySigner } from '@taquito/signer';
 import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
 
-class  FA2Contract {
+export default class FA2Contract {
 
     readonly contract: any;
     readonly signer: InMemorySigner;
@@ -86,8 +86,4 @@ class  FA2Contract {
         .then((hash) => console.log(`Operation injected: https://ithaca.tzstats.com/${hash}`))
         .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
     }
-}
-
-export {
-    FA2Contract
 }

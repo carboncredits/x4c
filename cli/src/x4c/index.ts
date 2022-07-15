@@ -20,7 +20,6 @@ let default_fa2_contract: Contract | null = null;
 
 type TCPublicInfo = {name: string; value: string;}
 
-
 async function loadClientState() {
     const tezos = new TezosToolkit('https://rpc.jakartanet.teztnets.xyz');
 

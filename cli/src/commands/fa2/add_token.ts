@@ -2,7 +2,7 @@ import {Command, command, param} from 'clime';
 import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
 
 import {contractForArg, signerForArg} from '../../x4c';
-import {FA2Contract} from '../../x4c/fa2';
+import FA2Contract from '../../x4c/FA2Contract';
 
 @command({
   description: 'Define a new token ID',
