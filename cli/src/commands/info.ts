@@ -1,5 +1,5 @@
 import {Command, command, metadata} from 'clime';
-import {loadClientState, keys, contracts} from "../x4c"
+import X4CClient from '../x4c';
 
 @command({
     description: 'List keys and contracts saved by tezos-client',
@@ -7,14 +7,16 @@ import {loadClientState, keys, contracts} from "../x4c"
 export default class extends Command {
     @metadata
     async execute() {
+        const client = X4CClient.getInstance()
+        
         console.log("Keys:")
-        for (const key in keys) {
-            const signer = keys[key];
+        for (const key in client.keys) {
+            const signer = client.keys[key];
             console.log("\t" + key + ": " + await signer.publicKeyHash());
         }
         console.log("Contracts:")
-        for (const key in contracts) {
-            const contract = contracts[key];
+        for (const key in client.contracts) {
+            const contract = client.contracts[key];
             let info = "";
             if (contract.methods.mint !== undefined) {
                 info = " (FA2)"
@@ -24,7 +26,5 @@ export default class extends Command {
             }
             console.log("\t" + key + info + ": " + contract.address)
         }
-
-
     }
 }

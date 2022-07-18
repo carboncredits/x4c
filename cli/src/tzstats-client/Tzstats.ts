@@ -14,10 +14,10 @@ function withPromise<T>(fn: (v: void) => Promise<T>): Promise<T> {
 }
 
 export default class Tzstats {
-    private BASE_URL: string;
+    private readonly BASE_URL: string;
 
-    constructor () {
-        this.BASE_URL = "https://api.tzstats.com/";
+    constructor (base_url: string = "https://api.tzstats.com/") {
+        this.BASE_URL = base_url;
     }
 
     private buildEndpoint(endpoint: string, params?: URLSearchParams): string {
