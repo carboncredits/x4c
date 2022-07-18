@@ -72,6 +72,16 @@ export default class Tzstats {
             return json as ContractCalls;
         })
     }
+    
+    public getBigMapValues(bigmapID: number, prim?: boolean): Promise<any> {
+        return withPromise(async () => {
+            const params = prim ? new URLSearchParams({ prim: "1" }) : undefined
+            const request = this.buildEndpoint(`/explorer/bigmap/${bigmapID}/values`, params);
+            const response = await fetch(request);
+            const json = await response.json();
+            return json;
+        })
+    }
 
     public getAccount(accountHash: string): Promise<Account> {
         return withPromise(async () => {

@@ -33,7 +33,7 @@ export default class X4CClient {
     // global instance
     static getInstance(
         node_base_url: string = "https://rpc.jakartanet.teztnets.xyz",
-        indexer_base_url: string = "https://api.tzstats.com/"
+        indexer_base_url: string = "https://api.jakarta.tzstats.com"
     ) {
         return this._instance || (
             this._instance = new X4CClient(node_base_url, indexer_base_url)
@@ -103,15 +103,12 @@ export default class X4CClient {
         }
     }
     
-    async getFA2Contact(contract_str: string, signer_str: string): Promise<FA2Contract> {
-        const signer = await this.signerForArg(signer_str);
-        if (signer === null) {
-            throw new Error('Signer name not recognised.');
-        }
+    async getFA2Contact(contract_str: string, signer_str: string | undefined = undefined): Promise<FA2Contract> {
         const contract = this.contractForArg(contract_str);
         if (contract === null) {
             throw new Error('Contract name not recognised');
         }
+        const signer = signer_str ? await this.signerForArg(signer_str) : null;
         return new FA2Contract(this.node_base_url, this.indexer_base_url, contract, signer);
     }
     

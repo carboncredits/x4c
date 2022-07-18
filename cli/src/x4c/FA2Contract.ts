@@ -2,19 +2,23 @@
 import { InMemorySigner } from '@taquito/signer';
 import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
 
+import Tzstats from '../tzstats-client/Tzstats'
+import {ContractStorage} from '../tzstats-client/types'
+import FA2Storage from './FA2Storage'
+
 export default class FA2Contract {
     private readonly node_base_url: string;
     private readonly indexer_base_url: string;    
 
     readonly contract: any;
-    readonly signer: InMemorySigner;
+    readonly signer: InMemorySigner | null;
     readonly tezos: TezosToolkit
 
     constructor(
         node_base_url: string,
         index_base_url: string,
         contract: any, 
-        signer: InMemorySigner
+        signer: InMemorySigner | null = null
     ) {
         this.node_base_url = node_base_url
         this.indexer_base_url = index_base_url
@@ -23,7 +27,9 @@ export default class FA2Contract {
         this.signer = signer
 
         this.tezos = new TezosToolkit(node_base_url);
-        this.tezos.setProvider({signer: signer});
+        if (signer) {
+            this.tezos.setProvider({signer: signer});
+        }
     }
 
     add_token_id(token_id: number, metadata: Record<string, Uint8Array>) {
@@ -60,6 +66,9 @@ export default class FA2Contract {
     }
 
     async transfer(receiver: string, token_id: number, amount: number) {
+        if (this.signer === null) {
+            throw new Error('Signer for FA2 not provided')
+        } 
         const from = await this.signer.publicKeyHash()
         this.tezos.contract.at(this.contract.address).then((contract) => {
             return contract.methods.transfer([{
@@ -80,6 +89,9 @@ export default class FA2Contract {
     }
 
     async retire(token_id: number, amount: number, reason: string) {
+        if (this.signer === null) {
+            throw new Error('Signer for FA2 not provided')
+        } 
         const from = await this.signer.publicKeyHash()
         this.tezos.contract.at(this.contract.address).then((contract) => {
             return contract.methods.retire([{
@@ -95,5 +107,10 @@ export default class FA2Contract {
         })
         .then((hash) => console.log(`Operation injected: ${this.node_base_url}/${hash}`))
         .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
+    }
+    
+    getStorage(): FA2Storage {
+        const client = new Tzstats(this.indexer_base_url);
+        return new FA2Storage(client, this.contract.address);
     }
 }

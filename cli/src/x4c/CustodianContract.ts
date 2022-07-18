@@ -36,7 +36,7 @@ export default class  CustodianContract {
             console.log(`Awaiting for ${op.hash} to be confirmed...`);
             return op.confirmation().then(() => op.hash);
         })
-        .then((hash) => console.log(`Operation injected: https://ithaca.tzstats.com/${hash}`))
+        .then((hash) => console.log(`Operation injected: ${this.node_base_url}/${hash}`))
         .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
     }
 
@@ -63,7 +63,7 @@ export default class  CustodianContract {
             console.log(`Awaiting for ${op.hash} to be confirmed...`);
             return op.confirmation().then(() => op.hash);
         })
-        .then((hash) => console.log(`Operation injected: https://ithaca.tzstats.com/${hash}`))
+        .then((hash) => console.log(`Operation injected: ${this.node_base_url}/${hash}`))
         .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
     }
 
@@ -87,7 +87,7 @@ export default class  CustodianContract {
             console.log(`Awaiting for ${op.hash} to be confirmed...`);
             return op.confirmation().then(() => op.hash);
         })
-        .then((hash) => console.log(`Operation injected: https://ithaca.tzstats.com/${hash}`))
+        .then((hash) => console.log(`Operation injected: ${this.node_base_url}/${hash}`))
         .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
     }
 }
