@@ -3,16 +3,26 @@ import { InMemorySigner } from '@taquito/signer';
 import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
 
 export default class FA2Contract {
+    private readonly node_base_url: string;
+    private readonly indexer_base_url: string;    
 
     readonly contract: any;
     readonly signer: InMemorySigner;
     readonly tezos: TezosToolkit
 
-    constructor(contract: any, signer: InMemorySigner) {
+    constructor(
+        node_base_url: string,
+        index_base_url: string,
+        contract: any, 
+        signer: InMemorySigner
+    ) {
+        this.node_base_url = node_base_url
+        this.indexer_base_url = index_base_url
+        
         this.contract = contract;
         this.signer = signer
 
-        this.tezos = new TezosToolkit('https://rpc.jakartanet.teztnets.xyz');
+        this.tezos = new TezosToolkit(node_base_url);
         this.tezos.setProvider({signer: signer});
     }
 
@@ -29,7 +39,7 @@ export default class FA2Contract {
             console.log(`Awaiting for ${op.hash} to be confirmed...`);
             return op.confirmation().then(() => op.hash);
         })
-        .then((hash) => console.log(`Operation injected: https://ithaca.tzstats.com/${hash}`))
+        .then((hash) => console.log(`Operation injected: ${this.node_base_url}/${hash}`))
         .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
     }
 
@@ -45,7 +55,7 @@ export default class FA2Contract {
             console.log(`Awaiting for ${op.hash} to be confirmed...`);
             return op.confirmation().then(() => op.hash);
         })
-        .then((hash) => console.log(`Operation injected: https://ithaca.tzstats.com/${hash}`))
+        .then((hash) => console.log(`Operation injected: ${this.node_base_url}/${hash}`))
         .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
     }
 
@@ -65,7 +75,7 @@ export default class FA2Contract {
             console.log(`Awaiting for ${op.hash} to be confirmed...`);
             return op.confirmation().then(() => op.hash);
         })
-        .then((hash) => console.log(`Operation injected: https://ithaca.tzstats.com/${hash}`))
+        .then((hash) => console.log(`Operation injected: ${this.node_base_url}/${hash}`))
         .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
     }
 
@@ -83,7 +93,7 @@ export default class FA2Contract {
             console.log(`Awaiting for ${op.hash} to be confirmed...`);
             return op.confirmation().then(() => op.hash);
         })
-        .then((hash) => console.log(`Operation injected: https://ithaca.tzstats.com/${hash}`))
+        .then((hash) => console.log(`Operation injected: ${this.node_base_url}/${hash}`))
         .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
     }
 }

@@ -4,11 +4,21 @@ import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
 import { stringToMichelsonBytes } from "./util"
 
 export default class  CustodianContract {
+    private readonly node_base_url: string;
+    private readonly indexer_base_url: string;    
 
     readonly contract: any;
     readonly tezos: TezosToolkit
 
-    constructor(contract: any, oracle: InMemorySigner) {
+    constructor(
+        node_base_url: string,
+        index_base_url: string,
+        contract: any, 
+        oracle: InMemorySigner
+    ) {
+        this.node_base_url = node_base_url
+        this.indexer_base_url = index_base_url
+        
         this.contract = contract;
 
         this.tezos = new TezosToolkit('https://rpc.jakartanet.teztnets.xyz');

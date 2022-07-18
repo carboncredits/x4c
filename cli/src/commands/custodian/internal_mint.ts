@@ -2,7 +2,6 @@ import {Command, command, param} from 'clime';
 import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
 
 import X4CClient from '../../x4c';
-import CustodianContract from '../../x4c/CustodianContract';
 
 @command({
 description: 'Synchronise token status for custodian with main FA2 contract.',
@@ -31,18 +30,9 @@ export default class extends Command {
         token_id: number,
     ) {
         const client = X4CClient.getInstance()
-        
-        const signer = await client.signerForArg(oracle_str);
-        if (signer === null) {
-            return 'Oracle name not recognised.';
-        }
-        const contract = client.contractForArg(contract_str);
-        if (contract === null) {
-            return 'Contract name not recognised';
-        }
+        const custodian = await client.getCustodianContract(contract_str, oracle_str)        
         const owner = await client.hashForArg(owner_str);
-        
-        const custodian = new CustodianContract(contract, signer)
+
         custodian.internal_mint(owner, token_id);
         
         return `Syncing tokens...`;

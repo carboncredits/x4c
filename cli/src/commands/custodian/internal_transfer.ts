@@ -2,7 +2,6 @@ import {Command, command, param} from 'clime';
 import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
 
 import X4CClient from '../../x4c';
-import CustodianContract from '../../x4c/CustodianContract';
 
 @command({
 description: 'Assign tokens to off chain entities.',
@@ -46,18 +45,9 @@ export default class extends Command {
         target_name: string,
     ) {
         const client = X4CClient.getInstance()
-        
-        const signer = await client.signerForArg(oracle_str);
-        if (signer === null) {
-            return 'Oracle name not recognised.';
-        }
-        const contract = client.contractForArg(contract_str);
-        if (contract === null) {
-            return 'Contract name not recognised';
-        }
+        const custodian = await client.getCustodianContract(contract_str, oracle_str);        
         const fa2 = await client.hashForArg(fa2_str);
         
-        const custodian = new CustodianContract(contract, signer)
         custodian.internal_transfer(fa2, token_id, amount, source_name, target_name);
         
         return `Syncing tokens...`;

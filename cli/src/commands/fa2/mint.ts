@@ -2,7 +2,6 @@ import {Command, command, param} from 'clime';
 import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
 
 import X4CClient from '../../x4c';
-import FA2Contract from '../../x4c/FA2Contract';
 
 @command({
 description: 'Mint new tokens',
@@ -36,18 +35,9 @@ export default class extends Command {
         contract_str: string,
     ) {
         const client = X4CClient.getInstance()
-        
-        const signer = await client.signerForArg(oracle_str);
-        if (signer === null) {
-            return 'Oracle name not recognised.';
-        }
-        const contract = client.contractForArg(contract_str);
-        if (contract === null) {
-            return 'Contract name not recognised';
-        }
+        const fa2 = await client.getFA2Contact(contract_str, oracle_str)
         const owner = await client.hashForArg(owner_str);
         
-        const fa2 = new FA2Contract(contract, signer)
         fa2.mint(owner, token_id, amount);
         
         return `Minting tokens...`;

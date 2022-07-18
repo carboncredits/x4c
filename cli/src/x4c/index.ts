@@ -6,6 +6,9 @@ import * as Path from 'path';
 import { InMemorySigner } from '@taquito/signer';
 import { TezosToolkit } from '@taquito/taquito';
 
+import FA2Contract from './FA2Contract';
+import CustodianContract from './CustodianContract';
+
 // The Taquito ContractAbstract generic can't be used for type specification (at
 // least with my typescript knowledge), but I dislike have 'any' everywhere,
 // so I make my own type for now until I git gud. The docs say the return type for
@@ -98,6 +101,30 @@ export default class X4CClient {
                 this.keys[name] = signer;
             }
         }
+    }
+    
+    async getFA2Contact(contract_str: string, signer_str: string): Promise<FA2Contract> {
+        const signer = await this.signerForArg(signer_str);
+        if (signer === null) {
+            throw new Error('Signer name not recognised.');
+        }
+        const contract = this.contractForArg(contract_str);
+        if (contract === null) {
+            throw new Error('Contract name not recognised');
+        }
+        return new FA2Contract(this.node_base_url, this.indexer_base_url, contract, signer);
+    }
+    
+    async getCustodianContract(contract_str: string, signer_str: string): Promise<CustodianContract> {        
+        const signer = await this.signerForArg(signer_str);
+        if (signer === null) {
+            throw new Error('Signer name not recognised.');
+        }
+        const contract = this.contractForArg(contract_str);
+        if (contract === null) {
+            throw new Error('Contract name not recognised');
+        }
+        return new CustodianContract(this.node_base_url, this.indexer_base_url, contract, signer);
     }
     
     async hashForArg(arg: string): Promise<string> {
