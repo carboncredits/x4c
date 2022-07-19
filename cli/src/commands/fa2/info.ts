@@ -4,7 +4,7 @@ import Table from 'cli-table3';
 import X4CClient from '../../x4c';
 
 @command({
-description: 'Fetch FA2 contract storage',
+	description: 'Fetch FA2 contract storage',
 })
 export default class extends Command {
 	async execute(

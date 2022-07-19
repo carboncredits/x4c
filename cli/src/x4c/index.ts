@@ -105,7 +105,7 @@ export default class X4CClient {
     
     async getFA2Contact(contract_str: string, signer_str?: string): Promise<FA2Contract> {
         const contract = this.contractForArg(contract_str);
-        if (contract === null) {
+        if (contract === undefined) {
             throw new Error('Contract name not recognised');
         }
         const signer = signer_str ? await this.signerForArg(signer_str) : undefined;
@@ -114,7 +114,7 @@ export default class X4CClient {
     
     async getCustodianContract(contract_str: string, signer_str?: string): Promise<CustodianContract> {
         const contract = this.contractForArg(contract_str);
-        if (contract === null) {
+        if (contract === undefined) {
             throw new Error('Contract name not recognised');
         }
         const signer = signer_str ? await this.signerForArg(signer_str) : undefined;
