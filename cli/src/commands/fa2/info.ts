@@ -1,5 +1,4 @@
 import {Command, command, param} from 'clime';
-import {TezosToolkit, MichelsonMap} from '@taquito/taquito';
 import Table from 'cli-table3';
 
 import X4CClient from '../../x4c';
@@ -25,10 +24,10 @@ export default class extends Command {
 		console.log('Ledger:')
 		const table = new Table({
 			head: ['ID', 'Owner', 'Tokens'],
-		  	chars: { 'top': '' , 'top-mid': '' , 'top-left': '' , 'top-right': ''
-				 , 'bottom': '' , 'bottom-mid': '' , 'bottom-left': '' , 'bottom-right': ''
-				 , 'left': '' , 'left-mid': '' , 'mid': '' , 'mid-mid': ''
-				 , 'right': '' , 'right-mid': '' , 'middle': ' ' }
+			chars: { 'top': '' , 'top-mid': '' , 'top-left': '' , 'top-right': '', 'bottom': '' , 	'bottom-mid': '' , 'bottom-left': '' , 'bottom-right': '', 
+				'left': '' , 'left-mid': '' , 'mid': '' , 'mid-mid': '', 
+				'right': '' , 'right-mid': '' , 'middle': ' '
+			}
 		});
 		for (const item of ledger) {
 			const key = item.key;

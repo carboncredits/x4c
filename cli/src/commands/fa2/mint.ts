@@ -1,5 +1,4 @@
 import {Command, command, param} from 'clime';
-import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
 
 import X4CClient from '../../x4c';
 

@@ -32,8 +32,8 @@ export default class X4CClient {
     // possible to pass objects around, so this is the quickest way to get a
     // global instance
     static getInstance(
-        node_base_url: string = "https://rpc.jakartanet.teztnets.xyz",
-        indexer_base_url: string = "https://api.jakarta.tzstats.com"
+        node_base_url = "https://rpc.jakartanet.teztnets.xyz",
+        indexer_base_url = "https://api.jakarta.tzstats.com"
     ) {
         return this._instance || (
             this._instance = new X4CClient(node_base_url, indexer_base_url)
@@ -41,8 +41,8 @@ export default class X4CClient {
     }
     
     private constructor (
-        node_base_url: string = "https://rpc.jakartanet.teztnets.xyz",
-        indexer_base_url: string = "https://api.tzstats.com/"
+        node_base_url = "https://rpc.jakartanet.teztnets.xyz",
+        indexer_base_url = "https://api.tzstats.com/"
     ) {
         this.node_base_url = node_base_url;
         this.indexer_base_url = indexer_base_url;
@@ -67,7 +67,7 @@ export default class X4CClient {
         const tezos = new TezosToolkit(this.node_base_url);
         
         // if there's one and only one FA2 contract, note it as a default
-        let fa2s: Contract[] = []
+        const fa2s: Contract[] = []
         
         const contract_data = await readFile(Path.join(this.tezos_client_file_location, 'contracts'), 'utf8')
         if (contract_data !== undefined) {

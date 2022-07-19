@@ -1,5 +1,5 @@
 import { InMemorySigner } from '@taquito/signer';
-import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
+import { TezosToolkit } from '@taquito/taquito';
 
 import { stringToMichelsonBytes } from "./util"
 import Tzstats from '../tzstats-client/Tzstats'
