@@ -1,11 +1,20 @@
 import Tzstats from '../tzstats-client/Tzstats'
 import {ContractStorage} from '../tzstats-client/types'
 
-type custodian = {
+import { michelsonBytesToString } from './util'
+
+type tzcustodian = {
 	custodian: string;
 	ledger: number;
 	external_ledger: number;
 	metadata: number;
+}
+
+type CustodianLedgerEntry = {
+	kyc: any;
+	minter: string;
+	token_id: number;
+	amount : number;
 }
 
 export default class CustodianStorage {
@@ -22,11 +31,11 @@ export default class CustodianStorage {
 		this.contract_hash = contact_hash
 	}
 	
-	private async get_info(): Promise<custodian> {
+	private async get_info(): Promise<tzcustodian> {
 		if (this._info === null) {
 			this._info = await this.client.getContractStorage(this.contract_hash)
 		}
-		return <custodian>this._info.value;
+		return <tzcustodian>this._info.value;
 	}
 	
 	async custodian_address(): Promise<string> {
@@ -34,12 +43,20 @@ export default class CustodianStorage {
 		return info.custodian;
 	}
 	
-	async ledger(): Promise<any> {
+	async ledger(): Promise<CustodianLedgerEntry[]> {
 		if (this._ledger === null) {
 			const info = await this.get_info();
 			this._ledger = await this.client.getBigMapValues(info.ledger, false);
 		}
-		return this._ledger;
+		return this._ledger.map((item: any) => {
+			const key = item.key;
+			const amount = item.value;
+			return {
+				kyc: michelsonBytesToString(key[0]),
+				minter: key[1],
+				token_id: parseInt(key[2]),
+				amount: parseInt(amount)
+			}
+		});
 	}
-	
 }

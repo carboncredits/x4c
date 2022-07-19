@@ -23,16 +23,14 @@ export default class extends Command {
 		const ledger = await storage.ledger()
 		console.log('Ledger:')
 		const table = new Table({
-			head: ['KYC', 'Minter', 'Tokens'],
+			head: ['KYC', 'Minter', 'ID', 'Amount'],
 			chars: { 'top': '' , 'top-mid': '' , 'top-left': '' , 'top-right': '', 'bottom': '' , 	'bottom-mid': '' , 'bottom-left': '' , 'bottom-right': '', 
 				'left': '' , 'left-mid': '' , 'mid': '' , 'mid-mid': '', 
 				'right': '' , 'right-mid': '' , 'middle': ' '
 			}
 		});
 		for (const item of ledger) {
-			const key = item.key;
-			const value = item.value;
-			table.push([key[0], key[1], value]);
+			table.push([item.kyc, item.minter, item.token_id, item.amount])
 		}
 		console.log(table.toString());
 		

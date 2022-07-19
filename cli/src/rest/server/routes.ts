@@ -10,7 +10,7 @@ const router = express.Router();
 // <><><> GET <><><> 
 
 // Sources of credits
-router.get('/credit/sources', controller.getCreditSources);
+router.get('/credit/sources/:custodianID', controller.getCreditSources);
 
 // <><><> POST <><><>
 

@@ -1,4 +1,4 @@
-import { char2Bytes } from '@taquito/utils';
+import { char2Bytes, bytes2Char } from '@taquito/utils';
 
 function stringToMichelsonBytes(arg: string): string {
     const bytes = char2Bytes(arg);
@@ -6,6 +6,15 @@ function stringToMichelsonBytes(arg: string): string {
     return payloadBytes
 }
 
+function michelsonBytesToString(arg: string): string {
+    if (!arg.startsWith('0501')) {
+        return arg
+    }
+    let hex = arg.slice(12);
+    return bytes2Char(hex);
+}
+
 export {
-    stringToMichelsonBytes
+    stringToMichelsonBytes,
+    michelsonBytesToString
 }
