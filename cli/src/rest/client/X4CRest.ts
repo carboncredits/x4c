@@ -1,5 +1,5 @@
 import fetch from 'node-fetch'
-import { CreditSource } from "../common";
+import { CreditSource, CreditRetireRequest, CreditRetireResponse } from "../common";
 
 function withPromise<T>(fn: (v: void) => Promise<T>): Promise<T> {
     return new Promise(async (resolve, reject) => {
@@ -33,13 +33,31 @@ export default class X4CRest {
         })
     }
 
-    public retireCredit(creditId: number) {
+    public retireCredit(
+        contractPublichHash: string,
+        tokenId: number,
+        minter: string,
+        kyc: string,
+        amount: number,
+        reason: string
+    ) {
+        const body: CreditRetireRequest = {
+            tokenId: tokenId,
+            minter: minter,
+            reason: reason,
+            amount: amount,
+            kyc: kyc
+        }
+        
         return withPromise(async () => {
-            const request = this.buildEndpoint(`retire/${creditId}`);
-            const response = await fetch(request, { method: "POST" });
+            const request = this.buildEndpoint(`retire/${contractPublichHash}`);
+            const response = await fetch(request, { 
+                method: "POST",
+                body: JSON.stringify(body),
+                headers: { "Content-Type": "application/json" } 
+            });
             const json = await response.json();
-
-            return json.message as string;
+            return json.data as CreditRetireResponse;
         })
     }
 }

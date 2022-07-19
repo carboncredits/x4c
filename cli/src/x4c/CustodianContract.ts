@@ -77,7 +77,7 @@ export default class  CustodianContract {
         .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
     }
 
-    retire(fa2_contract: string, token_id: number, amount: number, source_name: string, reason: string) {
+    async retire(fa2_contract: string, token_id: number, amount: number, source_name: string, reason: string): Promise<string> {
         if (this.tezos.signer === undefined) {
             throw new Error('Oracle for custodian not provided')
         } 
@@ -85,7 +85,7 @@ export default class  CustodianContract {
             source_name = "self";
         }
 
-        this.tezos.contract.at(this.contract.address).then((contract) => {
+        return this.tezos.contract.at(this.contract.address).then((contract) => {
             return contract.methods.retire([{
                 token_address: fa2_contract,
                 txs: [{
@@ -100,8 +100,6 @@ export default class  CustodianContract {
             console.log(`Awaiting for ${op.hash} to be confirmed...`);
             return op.confirmation().then(() => op.hash);
         })
-        .then((hash) => console.log(`Operation injected: ${this.node_base_url}/${hash}`))
-        .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
     }
     
     getStorage(): CustodianStorage {

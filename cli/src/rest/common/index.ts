@@ -1,5 +1,7 @@
-import { CreditSource } from './types'
+import { CreditSource, CreditRetireRequest, CreditRetireResponse } from './types'
 
 export {
-    CreditSource
+    CreditSource,
+    CreditRetireRequest,
+    CreditRetireResponse
 }
