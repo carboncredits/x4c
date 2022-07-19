@@ -2,6 +2,8 @@ import { InMemorySigner } from '@taquito/signer';
 import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
 
 import { stringToMichelsonBytes } from "./util"
+import Tzstats from '../tzstats-client/Tzstats'
+import CustodianStorage from './CustodianStorage'
 
 export default class  CustodianContract {
     private readonly node_base_url: string;
@@ -14,7 +16,7 @@ export default class  CustodianContract {
         node_base_url: string,
         index_base_url: string,
         contract: any, 
-        oracle: InMemorySigner
+        oracle?: InMemorySigner
     ) {
         this.node_base_url = node_base_url
         this.indexer_base_url = index_base_url
@@ -22,10 +24,15 @@ export default class  CustodianContract {
         this.contract = contract;
 
         this.tezos = new TezosToolkit('https://rpc.jakartanet.teztnets.xyz');
-        this.tezos.setProvider({signer: oracle});
+        if (oracle) {
+            this.tezos.setProvider({signer: oracle});
+        }
     }
 
     internal_mint(fa2_contract: string, token_id: number) {
+        if (this.tezos.signer === undefined) {
+            throw new Error('Oracle for custodian not provided')
+        } 
         this.tezos.contract.at(this.contract.address).then((contract) => {
             return contract.methods.internal_mint([{
                 token_id: token_id,
@@ -41,6 +48,9 @@ export default class  CustodianContract {
     }
 
     internal_transfer(fa2_contract: string, token_id: number, amount: number, source_name: string, target_name: string) {
+        if (this.tezos.signer === undefined) {
+            throw new Error('Oracle for custodian not provided')
+        } 
         if (source_name === undefined) {
             source_name = "self";
         }
@@ -68,6 +78,9 @@ export default class  CustodianContract {
     }
 
     retire(fa2_contract: string, token_id: number, amount: number, source_name: string, reason: string) {
+        if (this.tezos.signer === undefined) {
+            throw new Error('Oracle for custodian not provided')
+        } 
         if (source_name === undefined) {
             source_name = "self";
         }
@@ -89,5 +102,10 @@ export default class  CustodianContract {
         })
         .then((hash) => console.log(`Operation injected: ${this.node_base_url}/${hash}`))
         .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
+    }
+    
+    getStorage(): CustodianStorage {
+        const client = new Tzstats(this.indexer_base_url);
+        return new CustodianStorage(client, this.contract.address);
     }
 }

@@ -3,7 +3,6 @@ import { InMemorySigner } from '@taquito/signer';
 import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
 
 import Tzstats from '../tzstats-client/Tzstats'
-import {ContractStorage} from '../tzstats-client/types'
 import FA2Storage from './FA2Storage'
 
 export default class FA2Contract {
@@ -11,14 +10,14 @@ export default class FA2Contract {
     private readonly indexer_base_url: string;    
 
     readonly contract: any;
-    readonly signer: InMemorySigner | null;
+    readonly signer?: InMemorySigner;
     readonly tezos: TezosToolkit
 
     constructor(
         node_base_url: string,
         index_base_url: string,
         contract: any, 
-        signer: InMemorySigner | null = null
+        signer?: InMemorySigner
     ) {
         this.node_base_url = node_base_url
         this.indexer_base_url = index_base_url
@@ -33,6 +32,9 @@ export default class FA2Contract {
     }
 
     add_token_id(token_id: number, metadata: Record<string, Uint8Array>) {
+        if (this.signer === undefined) {
+            throw new Error('Signer for FA2 not provided')
+        } 
         // I can't see how to set the provider once you have the contract, so we
         // have to refetch it
         this.tezos.contract.at(this.contract.address).then((contract) => {
@@ -50,6 +52,9 @@ export default class FA2Contract {
     }
 
     mint(owner: string, token_id: number, amount: number) {
+        if (this.signer === undefined) {
+            throw new Error('Signer for FA2 not provided')
+        } 
         this.tezos.contract.at(this.contract.address).then((contract) => {
             return contract.methods.mint([{
                 owner: owner,
@@ -66,7 +71,7 @@ export default class FA2Contract {
     }
 
     async transfer(receiver: string, token_id: number, amount: number) {
-        if (this.signer === null) {
+        if (this.signer === undefined) {
             throw new Error('Signer for FA2 not provided')
         } 
         const from = await this.signer.publicKeyHash()
@@ -89,7 +94,7 @@ export default class FA2Contract {
     }
 
     async retire(token_id: number, amount: number, reason: string) {
-        if (this.signer === null) {
+        if (this.signer === undefined) {
             throw new Error('Signer for FA2 not provided')
         } 
         const from = await this.signer.publicKeyHash()

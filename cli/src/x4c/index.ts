@@ -103,24 +103,21 @@ export default class X4CClient {
         }
     }
     
-    async getFA2Contact(contract_str: string, signer_str: string | undefined = undefined): Promise<FA2Contract> {
+    async getFA2Contact(contract_str: string, signer_str?: string): Promise<FA2Contract> {
         const contract = this.contractForArg(contract_str);
         if (contract === null) {
             throw new Error('Contract name not recognised');
         }
-        const signer = signer_str ? await this.signerForArg(signer_str) : null;
+        const signer = signer_str ? await this.signerForArg(signer_str) : undefined;
         return new FA2Contract(this.node_base_url, this.indexer_base_url, contract, signer);
     }
     
-    async getCustodianContract(contract_str: string, signer_str: string): Promise<CustodianContract> {        
-        const signer = await this.signerForArg(signer_str);
-        if (signer === null) {
-            throw new Error('Signer name not recognised.');
-        }
+    async getCustodianContract(contract_str: string, signer_str?: string): Promise<CustodianContract> {
         const contract = this.contractForArg(contract_str);
         if (contract === null) {
             throw new Error('Contract name not recognised');
         }
+        const signer = signer_str ? await this.signerForArg(signer_str) : undefined;
         return new CustodianContract(this.node_base_url, this.indexer_base_url, contract, signer);
     }
     
@@ -138,7 +135,7 @@ export default class X4CClient {
         return arg;
     }
     
-    async signerForArg(arg: string): Promise<InMemorySigner | null> {
+    async signerForArg(arg: string): Promise<InMemorySigner | undefined> {
         for (const name in this.keys) {
             const key = this.keys[name]
             if (name === arg) {
@@ -148,10 +145,10 @@ export default class X4CClient {
                 return key;
             }
         }
-        return null;
+        return undefined;
     }
     
-    contractForArg(arg: string): Contract | null {
+    contractForArg(arg: string): Contract | undefined {
         if (arg === undefined) {
             return this.default_fa2_contract;
         }
@@ -164,7 +161,7 @@ export default class X4CClient {
                 return contract;
             }
         }
-        return null;
+        return undefined;
     }
 }
 

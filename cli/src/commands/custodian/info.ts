@@ -4,13 +4,13 @@ import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
 import X4CClient from '../../x4c';
 
 @command({
-description: 'Fetch FA2 contract storage',
+description: 'Fetch custodian contract storage',
 })
 export default class extends Command {
 	async execute(
 		@param({
-			description: 'FA2 contract key (not needed if only one shows in info)',
-			required: false,
+			description: 'Custodian contract key',
+			required: true,
 		})
 		contract_str: string,
 	) {
@@ -25,19 +25,6 @@ export default class extends Command {
 			const key = item.key;
 			const value = item.value;
 			console.log(`\t${key[0]}:#${key[1]} \t${value} tokens`);
-		}
-		const token_metadata = await storage.token_metadata()
-		console.log('Token info:')
-		for (const item of token_metadata) {
-			const key = item.key;
-			const value = item.value;
-			console.log(`\t#${key}:`)
-			console.log(value[1]);
-			if (value[1] != {}) {
-				for (const info of value[1]) {
-					console.log(`\t\t${info}`)
-				}
-			}
 		}
 		
 		return '';
