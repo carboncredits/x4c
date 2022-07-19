@@ -2,7 +2,7 @@ import Tzstats from '../tzstats-client/Tzstats'
 import {ContractStorage} from '../tzstats-client/types'
 
 type custodian = {
-	oracle: string;
+	custodian: string;
 	ledger: number;
 	external_ledger: number;
 	metadata: number;
@@ -29,9 +29,9 @@ export default class CustodianStorage {
 		return <custodian>this._info.value;
 	}
 	
-	async oracle_address(): Promise<string> {
+	async custodian_address(): Promise<string> {
 		const info = await this.get_info();
-		return info.oracle;
+		return info.custodian;
 	}
 	
 	async ledger(): Promise<any> {
