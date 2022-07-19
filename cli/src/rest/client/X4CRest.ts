@@ -24,17 +24,16 @@ export default class X4CRest {
         return params ? `${url}?${params.toString()}` : url;
     }
 
-    public getCreditSources() {
+    public getCreditSources(contractPublichHash: string) {
         return withPromise(async () => {
-            const request = this.buildEndpoint("credit/sources");
+            const request = this.buildEndpoint("credit/sources/" + contractPublichHash);
             const response = await fetch(request);
             const json = await response.json();
-
             return json.data as CreditSource[];
         })
     }
 
-    public retireCredit(creditId: string) {
+    public retireCredit(creditId: number) {
         return withPromise(async () => {
             const request = this.buildEndpoint(`retire/${creditId}`);
             const response = await fetch(request, { method: "POST" });

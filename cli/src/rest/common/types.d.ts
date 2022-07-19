@@ -1,5 +1,6 @@
 export interface CreditSource {
-  uid: string
-  name: string
-  credits: number
+  minter: string
+  kyc: string
+  token_id: number
+  amount: number
 }
