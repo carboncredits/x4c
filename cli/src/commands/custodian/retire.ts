@@ -47,7 +47,8 @@ export default class extends Command {
         const custodian = await client.getCustodianContract(contract_str, oracle_str);
         const fa2 = await client.hashForArg(fa2_str);
         
-        custodian.retire(fa2, token_id, amount, source_name, reason);
+        const updateHash = await custodian.retire(fa2, token_id, amount, source_name, reason);
+        console.log(`Update hash: ${updateHash}`);
         
         return `Syncing tokens...`;
     }

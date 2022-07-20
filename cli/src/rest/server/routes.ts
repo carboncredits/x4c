@@ -10,11 +10,11 @@ const router = express.Router();
 // <><><> GET <><><> 
 
 // Sources of credits
-router.get('/credit/sources', controller.getCreditSources);
+router.get('/credit/sources/:custodianID', controller.getCreditSources);
 
 // <><><> POST <><><>
 
 // Retiring a credit using it's ID
-router.post('/retire/:creditId', controller.retireCredit);
+router.post('/retire/:custodianID', controller.retireCredit);
 
 export default router
