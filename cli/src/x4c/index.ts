@@ -203,5 +203,30 @@ export default class X4CClient {
             return new FA2Contract(this.node_base_url, this.indexer_base_url, contract, signer)
         })
     }
+    
+    async originateCustodianContract(
+        contract_michelson: string,
+        signer: Contract,
+        contractCustodian: string
+    ): Promise<CustodianContract> {
+        const tezos = new TezosToolkit(this.node_base_url);
+        tezos.setProvider({signer: signer});
+        return tezos.contract.originate({
+            code: contract_michelson,
+            storage: {
+                custodian: contractCustodian,
+                ledger: MichelsonMap.fromLiteral({}),
+                external_ledger: MichelsonMap.fromLiteral({}),
+                metadata: MichelsonMap.fromLiteral({})
+            }
+        })
+        .then((originationOp) => {
+            return originationOp.contract();
+        })
+        .then((contract) => {
+            this._contracts[contract.address] = contract;
+            return new CustodianContract(this.node_base_url, this.indexer_base_url, contract, signer)
+        })
+    }
 }
 
