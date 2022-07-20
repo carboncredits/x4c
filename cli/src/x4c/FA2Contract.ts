@@ -7,7 +7,7 @@ import FA2Storage from './FA2Storage'
 
 export default class FA2Contract {
     private readonly node_base_url: string;
-    private readonly indexer_base_url: string;    
+    private readonly indexer_api_base_url: string;    
 
     readonly contract: any;
     readonly signer?: InMemorySigner;
@@ -15,12 +15,12 @@ export default class FA2Contract {
 
     constructor(
         node_base_url: string,
-        index_base_url: string,
+        index_api_base_url: string,
         contract: any, 
         signer?: InMemorySigner
     ) {
         this.node_base_url = node_base_url
-        this.indexer_base_url = index_base_url
+        this.indexer_api_base_url = index_api_base_url
         
         this.contract = contract;
         this.signer = signer
@@ -115,7 +115,7 @@ export default class FA2Contract {
     }
     
     getStorage(): FA2Storage {
-        const client = new Tzstats(this.indexer_base_url);
+        const client = new Tzstats(this.indexer_api_base_url);
         return new FA2Storage(client, this.contract.address);
     }
 }

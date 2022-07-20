@@ -19,7 +19,8 @@ type TCPublicInfo = {name: string; value: string;}
 export default class X4CClient {
     
     private readonly node_base_url: string;
-    private readonly indexer_base_url: string;    
+    private readonly indexer_api_base_url: string;
+    private readonly indexer_base_url: string; 
     private readonly tezos_client_file_location: string;
 
     private _default_fa2_contract: Contract | null = null;
@@ -33,18 +34,21 @@ export default class X4CClient {
     // global instance
     static getInstance(
         node_base_url = "https://rpc.jakartanet.teztnets.xyz",
-        indexer_base_url = "https://api.jakarta.tzstats.com"
+        indexer_api_base_url = "https://api.jakarta.tzstats.com",
+        indexer_base_url = "https://jakarta.tzstats.com"
     ) {
         return this._instance || (
-            this._instance = new X4CClient(node_base_url, indexer_base_url)
+            this._instance = new X4CClient(node_base_url, indexer_api_base_url, indexer_base_url)
         )
     }
     
     private constructor (
         node_base_url = "https://rpc.jakartanet.teztnets.xyz",
-        indexer_base_url = "https://api.tzstats.com/"
+        indexer_api_base_url = "https://api.tzstats.com",
+        indexer_base_url = "https://tzstats.com"
     ) {
         this.node_base_url = node_base_url;
+        this.indexer_api_base_url = indexer_api_base_url;
         this.indexer_base_url = indexer_base_url;
         
         // we might want this configurable in future
@@ -61,6 +65,10 @@ export default class X4CClient {
     
     get keys(): Record<string, InMemorySigner> {
         return this._keys;
+    }
+
+    getIndexerUrl() {
+        return this.indexer_base_url
     }
     
     async loadClientState() {
@@ -109,7 +117,7 @@ export default class X4CClient {
             throw new Error('Contract name not recognised');
         }
         const signer = signer_str ? await this.signerForArg(signer_str) : undefined;
-        return new FA2Contract(this.node_base_url, this.indexer_base_url, contract, signer);
+        return new FA2Contract(this.node_base_url, this.indexer_api_base_url, contract, signer);
     }
     
     async getCustodianContract(contract_str: string, signer_str?: string): Promise<CustodianContract> {
@@ -118,7 +126,7 @@ export default class X4CClient {
             throw new Error('Contract name not recognised');
         }
         const signer = signer_str ? await this.signerForArg(signer_str) : undefined;
-        return new CustodianContract(this.node_base_url, this.indexer_base_url, contract, signer);
+        return new CustodianContract(this.node_base_url, this.indexer_api_base_url, contract, signer);
     }
     
     async hashForArg(arg: string): Promise<string> {

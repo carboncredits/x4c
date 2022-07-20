@@ -1,6 +1,8 @@
 interface CreditSource {
   minter: string
+  tzstatsMinterUrl: string
   kyc: string
+  tzstatsCustodianUrl: string
   tokenId: number
   amount: number
 }
@@ -15,7 +17,8 @@ interface CreditRetireRequest {
 
 interface CreditRetireResponse {
   message: string,
-  updateHash: string
+  updateHash: string,
+  tzstatsUpdateHashUrl: string
 }
 
 export {
