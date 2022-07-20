@@ -11,7 +11,12 @@ const getCreditSources = async (req: Request, res: Response, next: NextFunction)
         const storage = await custodian.getStorage()
         const ledger = await storage.ledger()
         return res.status(200).json({
-            data: ledger
+            data: ledger.map(entry => ({
+                tokenId: entry.token_id,
+                kyc: entry.kyc,
+                amount: entry.amount,
+                minter: entry.minter
+            }))
         })
     } catch {
         return res.status(404).send('Not found')

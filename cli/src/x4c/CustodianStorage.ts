@@ -14,7 +14,7 @@ type CustodianLedgerEntry = {
 	kyc: any;
 	minter: string;
 	token_id: number;
-	amount : number;
+	amount: number;
 }
 
 export default class CustodianStorage {
