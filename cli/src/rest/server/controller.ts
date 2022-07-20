@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { CreditRetireRequest } from '../common';
+import { CreditRetireRequest, CreditRetireResponse } from '../common';
 
 import X4CClient from '../../x4c';
 
@@ -30,11 +30,13 @@ const retireCredit = async (req: Request, res: Response, next: NextFunction) => 
         const x4c = X4CClient.getInstance();
         const custodian = await x4c.getCustodianContract(req.params.custodianID, "UoCCustodian")
         const updateHash = await custodian.retire(data.minter, data.tokenId, data.amount, data.kyc, data.reason)
-        
-        return res.status(200).json({
+
+        const retireResponse: CreditRetireResponse = {
             message: `Successfully retired credits`,
-            update: updateHash,
-        })
+            updateHash
+        }
+
+        return res.status(200).json({ data: retireResponse });
     } catch {
         return res.status(404).send('Not found')
     }
