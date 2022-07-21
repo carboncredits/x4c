@@ -7,19 +7,19 @@ import CustodianStorage from './CustodianStorage'
 
 export default class  CustodianContract {
     private readonly node_base_url: string;
-    private readonly indexer_base_url: string;    
+    private readonly indexer_api_base_url: string;    
 
     readonly contract: any;
     readonly tezos: TezosToolkit
 
     constructor(
         node_base_url: string,
-        index_base_url: string,
+        index_api_base_url: string,
         contract: any, 
         oracle?: InMemorySigner
     ) {
         this.node_base_url = node_base_url
-        this.indexer_base_url = index_base_url
+        this.indexer_api_base_url = index_api_base_url
         
         this.contract = contract;
 
@@ -103,7 +103,7 @@ export default class  CustodianContract {
     }
     
     getStorage(): CustodianStorage {
-        const client = new Tzstats(this.indexer_base_url);
+        const client = new Tzstats(this.indexer_api_base_url);
         return new CustodianStorage(client, this.contract.address);
     }
 }
