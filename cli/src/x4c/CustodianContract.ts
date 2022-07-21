@@ -1,9 +1,10 @@
 import { InMemorySigner } from '@taquito/signer';
 import { TezosToolkit } from '@taquito/taquito';
 
-import { stringToMichelsonBytes } from "./util"
+import { GenericClient, stringToMichelsonBytes } from "./util"
 import Tzstats from '../tzstats-client/Tzstats'
 import CustodianStorage from './CustodianStorage'
+import Tzkt from '../tzkt-client/Tzkt';
 
 export default class  CustodianContract {
     private readonly node_base_url: string;
@@ -103,7 +104,12 @@ export default class  CustodianContract {
     }
     
     getStorage(): CustodianStorage {
-        const client = new Tzstats(this.indexer_api_base_url);
+        let client: GenericClient;
+        if (this.indexer_api_base_url.includes("tzstats")) {
+            client = new Tzstats(this.indexer_api_base_url);    
+        } else {
+            client = new Tzkt(this.indexer_api_base_url);
+        }
         return new CustodianStorage(client, this.contract.address);
     }
 }

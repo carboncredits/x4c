@@ -1,9 +1,11 @@
 
 import { InMemorySigner } from '@taquito/signer';
 import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
+import Tzkt from '../tzkt-client/Tzkt';
 
 import Tzstats from '../tzstats-client/Tzstats'
 import FA2Storage from './FA2Storage'
+import { GenericClient } from './util';
 
 export default class FA2Contract {
     private readonly node_base_url: string;
@@ -115,7 +117,12 @@ export default class FA2Contract {
     }
     
     getStorage(): FA2Storage {
-        const client = new Tzstats(this.indexer_api_base_url);
+        let client: GenericClient;
+        if (this.indexer_api_base_url.includes("tzstats")) {
+            client = new Tzstats(this.indexer_api_base_url);    
+        } else {
+            client = new Tzkt(this.indexer_api_base_url);
+        }
         return new FA2Storage(client, this.contract.address);
     }
 }

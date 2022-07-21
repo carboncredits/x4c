@@ -1,5 +1,6 @@
 import Tzstats from '../tzstats-client/Tzstats'
 import {ContractStorage} from '../tzstats-client/types'
+import { GenericClient } from './util';
 
 type fa2 = {
 	oracle: string;
@@ -11,14 +12,14 @@ type fa2 = {
 
 export default class FA2Storage {
 	
-	private readonly client: Tzstats;
+	private readonly client: GenericClient;
 	readonly contract_hash: string;
 	
 	private _info: ContractStorage | null = null;
 	private _ledger: any | null = null;
 	private _token_metadata: any | null = null;
 	
-	constructor(client: Tzstats, contact_hash: string) {
+	constructor(client: GenericClient, contact_hash: string) {
 		this.client = client
 		this.contract_hash = contact_hash
 	}
@@ -38,7 +39,7 @@ export default class FA2Storage {
 	async ledger(): Promise<any> {
 		if (this._ledger === null) {
 			const info = await this.get_info();
-			this._ledger = await this.client.getBigMapValues(info.ledger, false);
+			this._ledger = await this.client.getBigMapValues(info.ledger);
 		}
 		return this._ledger;
 	}
@@ -46,7 +47,7 @@ export default class FA2Storage {
 	async token_metadata(): Promise<any> {
 		if (this._token_metadata === null) {
 			const info = await this.get_info();
-			this._token_metadata = await this.client.getBigMapValues(info.token_metadata, false);
+			this._token_metadata = await this.client.getBigMapValues(info.token_metadata);
 		}
 		return this._token_metadata;
 	}
