@@ -1,7 +1,6 @@
-import Tzstats from '../tzstats-client/Tzstats'
 import {ContractStorage} from '../tzstats-client/types'
 
-import { michelsonBytesToString } from './util'
+import { michelsonBytesToString, GenericClient } from './util'
 
 type tzcustodian = {
 	custodian: string;
@@ -19,14 +18,14 @@ type CustodianLedgerEntry = {
 
 export default class CustodianStorage {
 	
-	private readonly client: Tzstats;
+	private readonly client: GenericClient;
 	readonly contract_hash: string;
 	
 	private _info: ContractStorage | null = null;
 	private _ledger: any | null = null;
 	private _external_ledger: any | null = null;
 	
-	constructor(client: Tzstats, contact_hash: string) {
+	constructor(client: GenericClient, contact_hash: string) {
 		this.client = client
 		this.contract_hash = contact_hash
 	}
@@ -46,7 +45,7 @@ export default class CustodianStorage {
 	async ledger(): Promise<CustodianLedgerEntry[]> {
 		if (this._ledger === null) {
 			const info = await this.get_info();
-			this._ledger = await this.client.getBigMapValues(info.ledger, false);
+			this._ledger = await this.client.getBigMapValues(info.ledger);
 		}
 		return this._ledger.map((item: any) => {
 			const key = item.key;

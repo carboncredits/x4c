@@ -3,7 +3,13 @@ import http from 'http'
 import router from './routes'
 import X4CClient from '../../x4c'
 
-const x4cClient = X4CClient.getInstance()
+// Change the URLs to use Tzkt or Tzstats APIs
+const x4cClient = X4CClient.getInstance(
+    "https://rpc.jakartanet.teztnets.xyz",
+    "https://api.jakartanet.tzkt.io",
+    "https://jakartanet.tzkt.io"
+)
+
 x4cClient.loadClientState().then(() => {
     const server: Express = express();
 

@@ -21,7 +21,8 @@ const getCreditSources = async (req: Request, res: Response, next: NextFunction)
                 minter: entry.minter
             }))
         })
-    } catch {
+    } catch (error) {
+        console.error(error);
         return res.status(404).send('Not found')
     }
 }
