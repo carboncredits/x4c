@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { CreditRetireRequest, CreditRetireResponse, CreditSource } from '../common';
+import { CreditRetireRequest, CreditRetireResponse, CreditSource, OperationInfo } from '../common';
 
 import X4CClient from '../../x4c';
 
@@ -48,7 +48,23 @@ const retireCredit = async (req: Request, res: Response, next: NextFunction) => 
     }
 }
 
+const getOperation = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const x4c = X4CClient.getInstance();
+        const apiClient = x4c.getApiClient();
+        const op = await apiClient.getOperation(req.params.opHash);
+        const response: OperationInfo = {
+            data: op
+        }
+        return res.status(200).json(response);
+    } catch (error) {
+        console.error(error);
+        return res.status(404).send('Not found')
+    }
+}
+
 export {
     getCreditSources,
-    retireCredit
+    getOperation,
+    retireCredit,
 }

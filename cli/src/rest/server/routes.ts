@@ -12,6 +12,9 @@ const router = express.Router();
 // Sources of credits
 router.get('/credit/sources/:custodianID', controller.getCreditSources);
 
+// Get information about an operation
+router.get('/operation/:opHash', controller.getOperation);
+
 // <><><> POST <><><>
 
 // Retiring a credit using it's ID

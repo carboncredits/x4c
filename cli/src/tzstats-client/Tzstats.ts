@@ -1,6 +1,6 @@
 import fetch from "node-fetch";
 
-import { Account, Contract, ContractCalls, ContractStorage, IndexerStatus } from "./types";
+import { Account, Contract, ContractCalls, ContractStorage, IndexerStatus, Operation } from "./types";
 
 function withPromise<T>(fn: (v: void) => Promise<T>): Promise<T> {
     return new Promise(async (resolve, reject) => {
@@ -99,5 +99,23 @@ export default class Tzstats {
                 delegated_since_time: json.delegated_since_time ? new Date(json.delegated_since_time) : undefined
             } as Account;
         })
+    }
+
+    public getOperation(opHash: string): Promise<Operation[]> {
+        return withPromise(async () => {
+            const params = new URLSearchParams({ meta: "1" });
+            const request = this.buildEndpoint(`/explorer/op/${opHash}`, params);
+            const response = await fetch(request);
+            const json = await response.json();
+
+            const res = json.map((j: any) => {
+                return {
+                ...j,
+                time: new Date(j.time)
+                } as Operation;
+            });
+
+            return res;
+        });
     }
 }

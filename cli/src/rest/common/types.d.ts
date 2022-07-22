@@ -21,8 +21,13 @@ interface CreditRetireResponse {
   tzstatsUpdateHashUrl: string
 }
 
+interface OperationInfo {
+  data: any
+}
+
 export {
   CreditSource,
   CreditRetireRequest,
-  CreditRetireResponse
+  CreditRetireResponse,
+  OperationInfo,
 }

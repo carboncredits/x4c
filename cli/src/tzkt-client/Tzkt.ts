@@ -1,6 +1,6 @@
 import fetch from "node-fetch";
 
-import { ContractStorage } from "../tzstats-client/types";
+import { ContractStorage, Operation } from "../tzstats-client/types";
 
 function withPromise<T>(fn: (v: void) => Promise<T>): Promise<T> {
     return new Promise(async (resolve, reject) => {
@@ -55,5 +55,23 @@ export default class Tzkt {
             }))
             return res;
         })
+    }
+
+    // Assumes a transaction operation for now
+    public getOperation(opHash: string): Promise<Operation[]> {
+        return withPromise(async () => {
+            const request = this.buildEndpoint(`operations/${opHash}`);
+            const response = await fetch(request);
+            const json = await response.json();
+
+            const res = json.map((j: any) => {
+                return {
+                ...j,
+                time: new Date(j.timestamp)
+                } as Operation;
+            });
+
+            return res;
+        });
     }
 }
