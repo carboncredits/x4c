@@ -8,6 +8,9 @@ import { TezosToolkit } from '@taquito/taquito';
 
 import FA2Contract from './FA2Contract';
 import CustodianContract from './CustodianContract';
+import { GenericClient } from './util';
+import Tzstats from '../tzstats-client/Tzstats';
+import Tzkt from '../tzkt-client/Tzkt';
 
 // The Taquito ContractAbstract generic can't be used for type specification (at
 // least with my typescript knowledge), but I dislike have 'any' everywhere,
@@ -69,6 +72,16 @@ export default class X4CClient {
 
     getIndexerUrl() {
         return this.indexer_base_url
+    }
+
+    getApiClient(): GenericClient {
+        let client: GenericClient;
+        if (this.indexer_api_base_url.includes("tzstats")) {
+            client = new Tzstats(this.indexer_api_base_url);    
+        } else {
+            client = new Tzkt(this.indexer_api_base_url);
+        }
+        return client;
     }
     
     async loadClientState() {

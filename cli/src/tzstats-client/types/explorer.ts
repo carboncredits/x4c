@@ -102,3 +102,14 @@ export interface Account {
   delegated_since?: string // Delegator-only
   delegated_since_time?: Date // Delegator-only
 }
+
+export interface Operation {
+  id: string
+  hash: string
+  block: string
+  time: Date
+  status: string
+  sender: string
+  receiver: string
+  parameters: { entrypoint: string, value: any[] }
+}
