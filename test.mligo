@@ -35,6 +35,7 @@ let init_contracts () =
     let init_custodian_storage = {
         custodian = addr_admin ;
         ledger = (Big_map.empty : (owner_custodian, qty) big_map) ;
+        operators = (Big_map.empty : (operator, nat) big_map) ;
         external_ledger = (Big_map.empty : (token, nat) big_map) ;
         metadata = (Big_map.empty : (string, bytes) big_map) ;
     } in 
@@ -66,7 +67,7 @@ let init_contracts () =
 
 let test = 
     // initiate contracts 
-    let (addr_alice, _addr_bob, _addr_operator, addr_admin, _addr_dummy,
+    let (addr_alice, _addr_bob, addr_operator, addr_admin, _addr_dummy,
      typed_addr_custodian, addr_custodian, typed_addr_fa2, addr_fa2) = init_contracts () in 
 
     // add token id = 0n so it can be minted 
@@ -107,6 +108,46 @@ let test =
         let entrypoint_internal_transfer : internal_transfer list contract = 
             Test.to_entrypoint "internal_transfer" typed_addr_custodian in 
         Test.transfer_to_contract_exn entrypoint_internal_transfer txndata_internal_transfer 0tez in 
+
+    // custodian designates an operator for internal_transfer 
+    let _op_add_operator = 
+        let _ = Test.set_source addr_admin in 
+        let txndata_add_operator : update_internal_operators = 
+            let operator_data = { token_owner = (Bytes.pack "self") ; token_operator = addr_operator ; token_id = 0n ; qty = 500_000n ; } in 
+            [ Add_operator(operator_data) ; ] in 
+        let entrypoint_add_operator : update_internal_operators contract = 
+            Test.to_entrypoint "update_internal_operators" typed_addr_custodian in 
+        Test.transfer_to_contract_exn entrypoint_add_operator txndata_add_operator 0tez in 
+
+    // operator executes an internal transfer to bob
+    let _op_operator_transfer = 
+        let _ = Test.set_source addr_operator in 
+        let txndata_operator_transfer : internal_transfer list = 
+            let txs = [ { to_ = (Bytes.pack "bob") ; token_id = 0n ; amount = 500_000n } ; ] in 
+            [ { from_ = (Bytes.pack "self") ; token_address = addr_fa2 ; txs = txs ; } ; ] in 
+        let entrypoint_operator_transfer : internal_transfer list contract = 
+            Test.to_entrypoint "internal_transfer" typed_addr_custodian in 
+        Test.transfer_to_contract_exn entrypoint_operator_transfer txndata_operator_transfer 0tez in 
+
+    // custodian sends tokens from bob back to itself 
+    let _op_internal_transfer_2 = 
+        let _ = Test.set_source addr_admin in 
+        let txndata_internal_transfer : internal_transfer list = 
+            let txs = [ { to_ = (Bytes.pack "self") ; token_id = 0n ; amount = 500_000n } ; ] in 
+            [ { from_ = (Bytes.pack "bob") ; token_address = addr_fa2 ; txs = txs ; } ; ] in 
+        let entrypoint_internal_transfer : internal_transfer list contract = 
+            Test.to_entrypoint "internal_transfer" typed_addr_custodian in 
+        Test.transfer_to_contract_exn entrypoint_internal_transfer txndata_internal_transfer 0tez in 
+
+    // custodian removes operator
+    let _op_remove_operator = 
+        let _ = Test.set_source addr_admin in 
+        let txndata_remove_operator : update_internal_operators = 
+            let operator_data = { token_owner = (Bytes.pack "self") ; token_operator = addr_operator ; token_id = 0n ; qty = 0n ; } in // qty could be anything
+            [ Remove_operator(operator_data) ; ] in 
+        let entrypoint_remove_operator : update_internal_operators contract = 
+            Test.to_entrypoint "update_internal_operators" typed_addr_custodian in 
+        Test.transfer_to_contract_exn entrypoint_remove_operator txndata_remove_operator 0tez in 
 
     // custodian externally transfers tokens from Alice and Self to Alice's address 
     let _op_external_transfer = 
