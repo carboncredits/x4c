@@ -205,8 +205,6 @@ let update_internal_operator (storage, param : storage * update_internal_operato
     match param with
     | Add_operator o ->
         let (token_owner, token_operator, token_id, qty) = (o.token_owner, o.token_operator, o.token_id, o.qty) in 
-        // check permissions        
-        if ((Tezos.get_sender ()) <> storage.custodian) then (failwith error_PERMISSIONS_DENIED : storage) else
         // update storage
         {storage with operators = 
             let new_qty = 
@@ -218,13 +216,12 @@ let update_internal_operator (storage, param : storage * update_internal_operato
             Big_map.update {token_owner = token_owner; token_operator = token_operator; token_id = token_id ;} (Some new_qty) storage.operators ; }
     | Remove_operator o ->
         let (token_owner, token_operator, token_id) = (o.token_owner, o.token_operator, o.token_id) in 
-        // check permissions
-        if ((Tezos.get_sender ()) <> storage.custodian) then (failwith error_PERMISSIONS_DENIED : storage) else
         // update storage
         {storage with 
             operators = Big_map.update {token_owner = token_owner; token_operator = token_operator; token_id = token_id ;} (None : nat option) storage.operators ; }
 
 let update_internal_operators (param : update_internal_operators) (storage : storage) : result = 
+    if ((Tezos.get_sender ()) <> storage.custodian) then (failwith error_PERMISSIONS_DENIED : result) else
     ([] : operation list),
     List.fold update_internal_operator param storage
 
