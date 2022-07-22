@@ -45,6 +45,8 @@ let init_contracts () =
     // initiate the fa2 contract 
     let init_fa2_storage = {
         oracle = addr_admin ; 
+        previous_contract = (None : address option) ; // this is the first contract
+        upgraded_contract = (None : address option) ; // this is the current contract
         ledger = (Big_map.empty : (owner_fa2, qty) big_map) ;
         operators = (Big_map.empty : (operator, nat) big_map) ;
         token_metadata = (Big_map.empty : (token_id, token_metadata) big_map) ;

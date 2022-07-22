@@ -21,6 +21,10 @@ type contract_metadata = (string, bytes) big_map
 type storage = {
     // oracle / admin : has minting permissions and can edit the contract's metadata
     oracle : address ; 
+    
+    // for upgrades
+    previous_contract : address option ; // None if this is the first
+    upgraded_contract : address option ; // None if this is current
 
     // the ledger keeps track of who owns what token
     ledger : (owner , nat) big_map ; 
@@ -73,6 +77,9 @@ type update_oracle = {
     new_oracle : address ;
 }
 
+type upgrade_contract = address 
+type upgrade_clear_fetched_balance = owner
+
 type entrypoint = 
 | Transfer of transfer list // transfer tokens 
 | Balance_of of balance_of // query an address's balance
@@ -83,6 +90,9 @@ type entrypoint =
 | Add_token_id of token_metadata list 
 | Update_contract_metadata of contract_metadata
 | Update_oracle of update_oracle
+// for upgrades
+| Upgrade_contract of upgrade_contract
+| Upgrade_clear_fetched_balance of upgrade_clear_fetched_balance // for upgrades
 
 
 (* =============================================================================
@@ -102,6 +112,8 @@ let error_SENDER_HOOK_UNDEFINED = 9n // Sender hook is required by the permissio
 let error_PERMISSIONS_DENIED = 10n // General catch-all for operator-related permission errors
 let error_ID_ALREADY_IN_USE = 11n // A token ID can only be used once, error if a user wants to add a token ID that's already there
 let error_COLLISION = 12n // A collision in storage 
+let error_ADDRESS_NOT_FOUND = 13n // A (contract) address is not found
+let error_CONTRACT_INACTIVE = 14n // the contract has been upgraded
 
 (* =============================================================================
  * Aux Functions
@@ -125,6 +137,9 @@ let is_operator (operator : operator) (qty : nat) (operators : (operator, nat) b
 
 // The transfer entrypoint function
 let transfer (param : transfer list) (storage : storage) : result = 
+    // check the contract is active 
+    match storage.upgraded_contract with | Some _ -> (failwith error_CONTRACT_INACTIVE : result) | None -> 
+    // execute entrypoint call
     ([] : operation list),
     List.fold
     (fun (storage, p : storage * transfer) : storage -> 
@@ -206,8 +221,9 @@ let update_operators (param : update_operators) (storage : storage) : result =
 
 // This entrypoint can only be called by the admin
 let mint_tokens (param : mint) (storage : storage) : result =
-    // check permissions 
+    // check permissions and check the contract is active 
     if (Tezos.get_source ()) <> storage.oracle then (failwith error_PERMISSIONS_DENIED : result) else 
+    match storage.upgraded_contract with | Some _ -> (failwith error_CONTRACT_INACTIVE : result) | None -> 
     // mint tokens 
     ([] : operation list),
     List.fold 
@@ -222,6 +238,9 @@ let mint_tokens (param : mint) (storage : storage) : result =
 
 // retire tokens
 let retire_tokens (param : retire) (storage : storage) : result =
+    // check the contract is active 
+    match storage.upgraded_contract with | Some _ -> (failwith error_CONTRACT_INACTIVE : result) | None -> 
+    // execute retire
     ([] : operation list),
     List.fold 
     (fun (s, p : (storage * retire_tokens)) : storage -> 
@@ -278,6 +297,41 @@ let update_oracle (param : update_oracle) (storage : storage) : result =
     ([] : operation list),
     { storage with oracle = param.new_oracle ; }
 
+// upgrade the FA2 contract address
+let upgrade_contract (param : upgrade_contract) (storage : storage) : result = 
+    let upgraded_contract = param in 
+    // check the contract is active (can only be upgraded once)
+    match storage.upgraded_contract with | Some _ -> (failwith error_CONTRACT_INACTIVE : result) | None ->
+    // check permissions
+    if (Tezos.get_sender ()) <> storage.oracle then (failwith error_PERMISSIONS_DENIED : result) else
+    // upgrade, which freezes transfers, mints, and retires from this contract; upgraded contract can lazily port in balances
+    ([] : operation list), { storage with upgraded_contract = (Some upgraded_contract) ; }
+
+// upgrades can lazily port the token balance
+let upgrade_clear_fetched_balance (param : upgrade_clear_fetched_balance) (storage : storage) : result = 
+    let owner = param in 
+    // check that this contract is inactive 
+    match storage.upgraded_contract with | None -> (failwith error_PERMISSIONS_DENIED : result) | Some upgraded_contract_addr ->    
+    // check that the upgraded contract is the sender
+    if (Tezos.get_sender ()) <> upgraded_contract_addr then (failwith error_PERMISSIONS_DENIED : result) else
+    // fetch the balance and clear it from the ledger (this has now been fetched)
+    let (bal_option, storage) : nat option * storage = 
+        let (b, ledger) = Big_map.get_and_update owner (None : nat option) storage.ledger in 
+        (b, { storage with ledger = ledger ; }) in (
+    // if there was no balance to fetch, we need to check the previous contract 
+    match (bal_option : nat option) with 
+    | Some _ -> ([] : operation list), storage // we found and cleared the balance
+    | None -> (
+        // there might be balance in a previous contract 
+        match storage.previous_contract with 
+        | None -> ([] : operation list), storage // this is the first contract 
+        | Some previous_contract_addr -> (
+            match (Tezos.get_entrypoint_opt "%upgrade_clear_fetched_balance" previous_contract_addr : upgrade_clear_fetched_balance contract option) with
+            | None -> (failwith error_ADDRESS_NOT_FOUND : result)
+            | Some addr_entrypoint -> 
+                // recursively call %upgrade_clear_fetched_balance until you've cleared the balance
+                let op_upgrade_clear_fetched_balance = Tezos.transaction param 0tez addr_entrypoint in 
+                [ op_upgrade_clear_fetched_balance ; ], storage ) ) )
 
 (* =============================================================================
  * Contract Views
@@ -295,6 +349,26 @@ let update_oracle (param : update_oracle) (storage : storage) : result =
     match Big_map.find_opt token_id storage.token_metadata with 
     | None -> (failwith error_TOKEN_UNDEFINED : token_metadata) 
     | Some m -> {token_id = token_id ; token_info = m.token_info ; }
+
+// the contract's update status
+[@view] let view_is_active (_, storage : unit * storage) : bool = 
+    match storage.upgraded_contract with | None -> true | Some _ -> false
+
+// for upgrades -- the recursive backwards call to find storage (and later to lazily import it)
+[@view] let view_telescoping_balance_of (owner, storage : owner * storage) : nat option = 
+    // first search local storage 
+    match Big_map.find_opt owner storage.ledger with 
+    | Some n -> (Some n)
+    | None -> (
+        // if nothing shows up, recursively search the previous contract's storage
+        match storage.previous_contract with 
+        | None -> (None : nat option) // this is the first storage contract, all balances are cleared
+        | Some addr -> (
+            match (Tezos.call_view "view_telescoping_balance_of" owner addr : (nat option) option) with 
+            // if it returns None, this means there is no storage contract with a value for this key
+            | None -> (None : nat option)
+            // if it returns Some b then somewhere in the backwards chain of storage contracts n was stored
+            | Some nat_option -> nat_option ) )
 
 (* =============================================================================
  * Main
@@ -320,3 +394,8 @@ let rec main ((entrypoint, storage) : entrypoint * storage) : result =
         update_contract_metadata param storage
     | Update_oracle param ->
         update_oracle param storage
+    // for upgrades
+    | Upgrade_contract param ->
+        upgrade_contract param storage
+    | Upgrade_clear_fetched_balance param -> 
+        upgrade_clear_fetched_balance param storage
