@@ -1,6 +1,6 @@
 (*****
     The Cambridge Custody Contract
-    This records who we are holding on behalf of, what balances, emits txns to buy etc 
+    This records who we are holding on behalf of, what balances, emits txns to buy etc
  *****)
 
 (* =============================================================================
@@ -27,7 +27,7 @@ type storage = {
     external_ledger : (token, nat) big_map ;
 
     // contract metadata
-    metadata : (string, bytes) big_map ; 
+    metadata : (string, bytes) big_map ;
 }
 
 type result = operation list * storage
