@@ -69,6 +69,10 @@ type get_metadata = {
     callback : token_metadata list contract ;
 }
 
+type update_oracle = {
+    new_oracle : address ;
+}
+
 type entrypoint =
 | Transfer of transfer list // transfer tokens
 | Balance_of of balance_of // query an address's balance
@@ -78,6 +82,7 @@ type entrypoint =
 | Get_metadata of get_metadata // query the metadata of a given token
 | Add_token_id of token_metadata list
 | Update_contract_metadata of contract_metadata
+| Update_oracle of update_oracle
 
 
 (* =============================================================================
@@ -126,14 +131,14 @@ let transfer (param : transfer list) (storage : storage) : result =
         let from = p.from_ in
         List.fold
         (fun (storage, p : storage * transfer_to) : storage ->
-            let (to, token_id, qty, operator) = (p.to_, p.token_id, p.amount, Tezos.get_sender ()) in
+            let (to, token_id, qty, operator) = (p.to_, p.token_id, p.amount, (Tezos.get_sender ())) in
             let owner = from in
             // check permissions
-            if Tezos.get_sender () <> from && not is_operator { token_owner = owner ; token_operator = operator ; token_id = token_id ; } qty storage.operators
+            if (Tezos.get_sender ()) <> from && not is_operator { token_owner = owner ; token_operator = operator ; token_id = token_id ; } qty storage.operators
                 then (failwith error_PERMISSIONS_DENIED : storage) else
             // update operator permissions to reflect this transfer; fails if not an operator
             let operators =
-                if Tezos.get_sender () <> from // thus this is an operator acting
+                if (Tezos.get_sender ()) <> from // thus this is an operator acting
                 then update_balance
                     { token_owner = owner ; token_operator = operator ; token_id = token_id ; }
                     (int (qty))
@@ -176,7 +181,7 @@ let update_operator (storage, param : storage * update_operator) : storage =
     | Add_operator o ->
         let (owner, operator, token_id, qty) = (o.owner, o.operator, o.token_id, o.qty) in
         // check permissions
-        if (Tezos.get_sender () <> owner) then (failwith error_PERMISSIONS_DENIED : storage) else
+        if ((Tezos.get_sender ()) <> owner) then (failwith error_PERMISSIONS_DENIED : storage) else
         if operator = owner then (failwith error_COLLISION : storage) else // an owner can't be their own operator
         // update storage
         {storage with operators =
@@ -190,7 +195,7 @@ let update_operator (storage, param : storage * update_operator) : storage =
     | Remove_operator o ->
         let (owner, operator, token_id) = (o.owner, o.operator, o.token_id) in
         // check permissions
-        if (Tezos.get_sender () <> owner) then (failwith error_PERMISSIONS_DENIED : storage) else
+        if ((Tezos.get_sender ()) <> owner) then (failwith error_PERMISSIONS_DENIED : storage) else
         // update storage
         {storage with
             operators = Big_map.update {token_owner = owner; token_operator = operator; token_id = token_id ;} (None : nat option) storage.operators ; }
@@ -202,11 +207,14 @@ let update_operators (param : update_operators) (storage : storage) : result =
 // This entrypoint can only be called by the admin
 let mint_tokens (param : mint) (storage : storage) : result =
     // check permissions
-    if Tezos.get_source () <> storage.oracle then (failwith error_PERMISSIONS_DENIED : result) else
+    if (Tezos.get_source ()) <> storage.oracle then (failwith error_PERMISSIONS_DENIED : result) else
     // mint tokens
     ([] : operation list),
     List.fold
     (fun (s, p : storage * mint_data) : storage ->
+        // check that token id exists
+        if not Big_map.mem p.token_id storage.token_metadata then (failwith error_TOKEN_UNDEFINED : storage) else
+        // update storage
         { storage with
             ledger = update_balance { token_owner = p.owner ; token_id = p.token_id ; } (int (p.qty)) s.ledger ; } )
     param
@@ -218,7 +226,7 @@ let retire_tokens (param : retire) (storage : storage) : result =
     List.fold
     (fun (s, p : (storage * retire_tokens)) : storage ->
         // check permissions
-        if Tezos.get_sender () <> p.retiring_party && not (is_operator { token_owner = p.retiring_party ; token_operator = Tezos.get_sender () ; token_id = p.token_id ; } p.amount s.operators)
+        if (Tezos.get_sender ()) <> p.retiring_party && not (is_operator { token_owner = p.retiring_party ; token_operator = (Tezos.get_sender ()) ; token_id = p.token_id ; } p.amount s.operators)
         then (failwith error_PERMISSIONS_DENIED : storage) else
         // update storage
         { storage with
@@ -246,7 +254,7 @@ let get_metadata (param : get_metadata) (storage : storage) : result =
 // This entrypoint allows the admin to add token ids to their contract
 // If there is a collision on token ids, this entrypoint will return a failwith
 let add_token_id (param : token_metadata list) (storage : storage) : result =
-    if Tezos.get_sender () <> storage.oracle then (failwith error_PERMISSIONS_DENIED : result) else
+    if (Tezos.get_sender ()) <> storage.oracle then (failwith error_PERMISSIONS_DENIED : result) else
     ([] : operation list),
     List.fold_left
     (fun (s, d : storage * token_metadata) ->
@@ -259,9 +267,16 @@ let add_token_id (param : token_metadata list) (storage : storage) : result =
 
 // this entrypoint allows the admin to update the contract metadata
 let update_contract_metadata (param : contract_metadata) (storage : storage) : result =
-    if Tezos.get_sender () <> storage.oracle then (failwith error_PERMISSIONS_DENIED : result) else
+    if (Tezos.get_sender ()) <> storage.oracle then (failwith error_PERMISSIONS_DENIED : result) else
     ([] : operation list),
     { storage with metadata = param }
+
+
+// entrypoint for the oracle to be updated
+let update_oracle (param : update_oracle) (storage : storage) : result =
+    if (Tezos.get_sender ()) <> storage.oracle then (failwith error_PERMISSIONS_DENIED : result) else
+    ([] : operation list),
+    { storage with oracle = param.new_oracle ; }
 
 
 (* =============================================================================
@@ -303,3 +318,5 @@ let rec main ((entrypoint, storage) : entrypoint * storage) : result =
         add_token_id param storage
     | Update_contract_metadata param ->
         update_contract_metadata param storage
+    | Update_oracle param ->
+        update_oracle param storage

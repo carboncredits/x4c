@@ -69,8 +69,17 @@ let test =
     let (addr_alice, _addr_bob, _addr_operator, addr_admin, _addr_dummy,
      typed_addr_custodian, addr_custodian, typed_addr_fa2, addr_fa2) = init_contracts () in
 
+    // add token id = 0n so it can be minted
+    let _op_add_token_id =
+        let _ = Test.set_source addr_admin in
+        let txndata_add_token_id : token_metadata list =
+            [ { token_id = 0n ; token_info = (Map.empty : (string, bytes) map) ; } ; ] in
+        let entrypoint_add_token_id : token_metadata list contract =
+            Test.to_entrypoint "add_token_id" typed_addr_fa2 in
+        Test.transfer_to_contract_exn entrypoint_add_token_id txndata_add_token_id 0tez in
+
     // mint tokens for the custodian
-    let _txn_mint_tokens =
+    let _op_mint_tokens =
         let _ = Test.set_source addr_admin in
         let txndata_mint_tokens : mint = [
             { owner = addr_custodian ; token_id = 0n ; qty = 1_000_000n ; }

@@ -95,7 +95,7 @@ let update_balance (type k) (k : k) (diff : int) (ledger : (k, nat) big_map) : (
  * ============================================================================= *)
 
 let internal_transfer (param : internal_transfer list) (storage : storage) : result =
-    if Tezos.get_sender () <> storage.custodian then (failwith error_PERMISSIONS_DENIED : result) else
+    if (Tezos.get_sender ()) <> storage.custodian then (failwith error_PERMISSIONS_DENIED : result) else
     // updates the internal ledger
     ([] : operation list),
     List.fold
@@ -117,14 +117,14 @@ let internal_transfer (param : internal_transfer list) (storage : storage) : res
     storage
 
 let internal_mint (param : internal_mint list) (storage : storage) : result =
-    if Tezos.get_sender () <> storage.custodian then (failwith error_PERMISSIONS_DENIED : result) else
+    if (Tezos.get_sender ()) <> storage.custodian then (failwith error_PERMISSIONS_DENIED : result) else
     // port in tokens
     ([] : operation list),
     List.fold
     (fun (storage, p : storage * internal_mint) : storage ->
         let external_internal_diff =
             let external_balance =
-                match (Tezos.call_view "view_balance_of" ({ token_owner = Tezos.get_self_address () ; token_id = p.token_id ; } : external_owner) p.token_address : nat option) with
+                match (Tezos.call_view "view_balance_of" ({ token_owner = (Tezos.get_self_address ()) ; token_id = p.token_id ; } : external_owner) p.token_address : nat option) with
                 | None -> (failwith error_CALL_VIEW_FAILED : nat) | Some b -> b in
             let internal_balance =
                 match Big_map.find_opt p storage.external_ledger with
@@ -140,7 +140,7 @@ let internal_mint (param : internal_mint list) (storage : storage) : result =
 
 // triggers a transfer in the FA2 contract
 let external_transfer (param : external_transfer list) (storage : storage) : result =
-    if Tezos.get_sender () <> storage.custodian then (failwith error_PERMISSIONS_DENIED : result) else
+    if (Tezos.get_sender ()) <> storage.custodian then (failwith error_PERMISSIONS_DENIED : result) else
     // decreases internal balance
     let storage =
         List.fold
@@ -169,7 +169,7 @@ let external_transfer (param : external_transfer list) (storage : storage) : res
             let txndata_external_transfer : transfer list =
                 List.map
                 (fun (p : external_transfer_batch) : transfer ->
-                    { from_ = Tezos.get_self_address () ; txs = p.txs ; } )
+                    { from_ = (Tezos.get_self_address ()) ; txs = p.txs ; } )
                 p.txn_batch in
             let entrypoint_external_transfer =
                 match (Tezos.get_entrypoint_opt "%transfer" p.token_address : transfer list contract option) with
@@ -181,7 +181,7 @@ let external_transfer (param : external_transfer list) (storage : storage) : res
 
 
 let retire (param : internal_retire list) (storage : storage) : result =
-    if Tezos.get_sender () <> storage.custodian then (failwith error_PERMISSIONS_DENIED : result) else
+    if (Tezos.get_sender ()) <> storage.custodian then (failwith error_PERMISSIONS_DENIED : result) else
     // update internal ledger
     let storage =
         List.fold
@@ -210,7 +210,7 @@ let retire (param : internal_retire list) (storage : storage) : result =
                 List.map
                 (fun (tx : internal_retire_data) : external_retire ->
                     {
-                        retiring_party = Tezos.get_self_address () ;
+                        retiring_party = (Tezos.get_self_address ()) ;
                         token_id = tx.token_id ;
                         amount = tx.amount ;
                         retiring_data = tx.retiring_data ;
