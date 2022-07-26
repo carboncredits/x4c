@@ -8,6 +8,7 @@ type storage_fa2 = storage
 type entrypoint_fa2 = entrypoint 
 type result_fa2 = result
 type owner_fa2 = owner
+type operator_fa2 = operator
 
 #include "custodian.mligo"
 let  main_custodian = main
@@ -15,6 +16,7 @@ type storage_custodian = storage
 type entrypoint_custodian = entrypoint 
 type result_custodian = result
 type owner_custodian = owner
+type operator_custodian = operator
 
 (* ============================================================================
  * Aux Functions
@@ -35,7 +37,7 @@ let init_contracts () =
     let init_custodian_storage = {
         custodian = addr_admin ;
         ledger = (Big_map.empty : (owner_custodian, qty) big_map) ;
-        operators = (Big_map.empty : (operator, nat) big_map) ;
+        operators = (Big_map.empty : (operator_custodian, unit) big_map) ;
         external_ledger = (Big_map.empty : (token, nat) big_map) ;
         metadata = (Big_map.empty : (string, bytes) big_map) ;
     } in 
@@ -47,7 +49,7 @@ let init_contracts () =
     let init_fa2_storage = {
         oracle = addr_admin ; 
         ledger = (Big_map.empty : (owner_fa2, qty) big_map) ;
-        operators = (Big_map.empty : (operator, nat) big_map) ;
+        operators = (Big_map.empty : (operator_fa2, nat) big_map) ;
         token_metadata = (Big_map.empty : (token_id, token_metadata) big_map) ;
         metadata = (Big_map.empty : (string, bytes) big_map) ;
     } in 
@@ -113,7 +115,7 @@ let test =
     let _op_add_operator = 
         let _ = Test.set_source addr_admin in 
         let txndata_add_operator : update_internal_operators = 
-            let operator_data = { token_owner = (Bytes.pack "self") ; token_operator = addr_operator ; token_id = 0n ; qty = 500_000n ; } in 
+            let operator_data = { token_owner = (Bytes.pack "self") ; token_operator = addr_operator ; token_id = 0n ; } in 
             [ Add_operator(operator_data) ; ] in 
         let entrypoint_add_operator : update_internal_operators contract = 
             Test.to_entrypoint "update_internal_operators" typed_addr_custodian in 
@@ -143,7 +145,7 @@ let test =
     let _op_remove_operator = 
         let _ = Test.set_source addr_admin in 
         let txndata_remove_operator : update_internal_operators = 
-            let operator_data = { token_owner = (Bytes.pack "self") ; token_operator = addr_operator ; token_id = 0n ; qty = 0n ; } in // qty could be anything
+            let operator_data = { token_owner = (Bytes.pack "self") ; token_operator = addr_operator ; token_id = 0n ; } in 
             [ Remove_operator(operator_data) ; ] in 
         let entrypoint_remove_operator : update_internal_operators contract = 
             Test.to_entrypoint "update_internal_operators" typed_addr_custodian in 
