@@ -10,8 +10,8 @@ type token_id = nat
 
 type owner = [@layout:comb]{ token_owner : address ; token_id : nat ; }
 type operator = [@layout:comb]{
-    token_owner : address ; 
-    token_operator : address ; 
+    token_owner : address ;
+    token_operator : address ;
     token_id : nat ;
 }
 
@@ -20,17 +20,17 @@ type contract_metadata = (string, bytes) big_map
 
 type storage = {
     // oracle / admin : has minting permissions and can edit the contract's metadata
-    oracle : address ; 
+    oracle : address ;
 
     // the ledger keeps track of who owns what token
-    ledger : (owner , nat) big_map ; 
-    
+    ledger : (owner , nat) big_map ;
+
     // an operator can trade tokens on behalf of the fa2_owner
     operators : (operator, unit) big_map;
     
     // token metadata for each token type supported by this contract
     token_metadata : (token_id, token_metadata) big_map;
-    // contract metadata 
+    // contract metadata
     metadata : (string, bytes) big_map;
 }
 
@@ -57,12 +57,12 @@ type mint_data = { owner : address ; token_id : nat ; qty : nat ; }
 type mint = mint_data list
 
 type retire_tokens = {
-    retiring_party : address ; 
+    retiring_party : address ;
     token_id : nat ;
     amount : nat ;
     retiring_data : bytes ;
 }
-type retire = retire_tokens list 
+type retire = retire_tokens list
 
 type get_metadata = {
     token_ids : nat list ;
@@ -73,14 +73,14 @@ type update_oracle = {
     new_oracle : address ;
 }
 
-type entrypoint = 
-| Transfer of transfer list // transfer tokens 
+type entrypoint =
+| Transfer of transfer list // transfer tokens
 | Balance_of of balance_of // query an address's balance
 | Update_operators of update_operators // change operators for some address
 | Mint of mint // mint credits
-| Retire of retire // retire credits 
+| Retire of retire // retire credits
 | Get_metadata of get_metadata // query the metadata of a given token
-| Add_token_id of token_metadata list 
+| Add_token_id of token_metadata list
 | Update_contract_metadata of contract_metadata
 | Update_oracle of update_oracle
 
@@ -101,18 +101,18 @@ let error_RECEIVER_HOOK_UNDEFINED = 8n // Receiver hook is required by the permi
 let error_SENDER_HOOK_UNDEFINED = 9n // Sender hook is required by the permission behavior, but is not implemented by a sender contract
 let error_PERMISSIONS_DENIED = 10n // General catch-all for operator-related permission errors
 let error_ID_ALREADY_IN_USE = 11n // A token ID can only be used once, error if a user wants to add a token ID that's already there
-let error_COLLISION = 12n // A collision in storage 
+let error_COLLISION = 12n // A collision in storage
 
 (* =============================================================================
  * Aux Functions
  * ============================================================================= *)
 
-let update_balance (type k) (k : k) (diff : int) (ledger : (k, nat) big_map) : (k, nat) big_map = 
-    let new_bal = 
-        let old_bal = match Big_map.find_opt k ledger with | None -> 0n | Some b -> b in 
-        if old_bal + diff < 0 then (failwith error_INSUFFICIENT_BALANCE : nat) else 
-        abs(old_bal + diff) in 
-    Big_map.update k (if new_bal = 0n then None else Some new_bal) ledger 
+let update_balance (type k) (k : k) (diff : int) (ledger : (k, nat) big_map) : (k, nat) big_map =
+    let new_bal =
+        let old_bal = match Big_map.find_opt k ledger with | None -> 0n | Some b -> b in
+        if old_bal + diff < 0 then (failwith error_INSUFFICIENT_BALANCE : nat) else
+        abs(old_bal + diff) in
+    Big_map.update k (if new_bal = 0n then None else Some new_bal) ledger
 
 let is_operator (operator : operator) (operators : (operator, unit) big_map) : bool = 
     Big_map.mem operator operators
@@ -122,7 +122,7 @@ let is_operator (operator : operator) (operators : (operator, unit) big_map) : b
  * ============================================================================= *)
 
 // The transfer entrypoint function
-let transfer (param : transfer list) (storage : storage) : result = 
+let transfer (param : transfer list) (storage : storage) : result =
     ([] : operation list),
     List.fold
     (fun (storage, p : storage * transfer) : storage -> 
@@ -141,43 +141,43 @@ let transfer (param : transfer list) (storage : storage) : result =
             { storage with ledger = ledger ; }
         )
         p.txs
-        storage    
+        storage
     )
     param
     storage
 
-// the entrypoint to query balance 
-let balance_of (param : balance_of) (storage : storage) : result = 
-    let (request_list, callback) = (param.requests, param.callback) in 
-    let op_balanceOf = 
-        Tezos.transaction 
+// the entrypoint to query balance
+let balance_of (param : balance_of) (storage : storage) : result =
+    let (request_list, callback) = (param.requests, param.callback) in
+    let op_balanceOf =
+        Tezos.transaction
         (
-            List.map 
+            List.map
             (
-                fun (r : request) ->  
-                { request = r ; 
-                  balance = 
-                    match Big_map.find_opt r storage.ledger with | None -> 0n | Some b -> b ; } 
+                fun (r : request) ->
+                { request = r ;
+                  balance =
+                    match Big_map.find_opt r storage.ledger with | None -> 0n | Some b -> b ; }
             )
-            request_list 
+            request_list
         )
-        0mutez 
+        0mutez
         callback in
     ([op_balanceOf], storage)
 
 // The entrypoint where fa2_owner adds or removes fa2_operator from storage.operators
-let update_operator (storage, param : storage * update_operator) : storage = 
+let update_operator (storage, param : storage * update_operator) : storage =
     match param with
     | Add_operator o ->
         let (owner, operator, token_id) = (o.owner, o.operator, o.token_id) in 
         // check permissions        
         if ((Tezos.get_sender ()) <> owner) then (failwith error_PERMISSIONS_DENIED : storage) else
-        if operator = owner then (failwith error_COLLISION : storage) else // an owner can't be their own operator 
+        if operator = owner then (failwith error_COLLISION : storage) else // an owner can't be their own operator
         // update storage
         {storage with operators = 
             Big_map.update {token_owner = owner; token_operator = operator; token_id = token_id ;} (Some ()) storage.operators ; }
     | Remove_operator o ->
-        let (owner, operator, token_id) = (o.owner, o.operator, o.token_id) in 
+        let (owner, operator, token_id) = (o.owner, o.operator, o.token_id) in
         // check permissions
         if ((Tezos.get_sender ()) <> owner) then (failwith error_PERMISSIONS_DENIED : storage) else
         // update storage
@@ -186,23 +186,23 @@ let update_operator (storage, param : storage * update_operator) : storage =
         
 let update_operators (param : update_operators) (storage : storage) : result = 
     ([] : operation list),
-    List.fold update_operator param storage 
+    List.fold update_operator param storage
 
 // This entrypoint can only be called by the admin
 let mint_tokens (param : mint) (storage : storage) : result =
-    // check permissions 
-    if (Tezos.get_source ()) <> storage.oracle then (failwith error_PERMISSIONS_DENIED : result) else 
-    // mint tokens 
+    // check permissions
+    if (Tezos.get_source ()) <> storage.oracle then (failwith error_PERMISSIONS_DENIED : result) else
+    // mint tokens
     ([] : operation list),
-    List.fold 
-    (fun (s, p : storage * mint_data) : storage -> 
-        // check that token id exists 
+    List.fold
+    (fun (s, p : storage * mint_data) : storage ->
+        // check that token id exists
         if not Big_map.mem p.token_id storage.token_metadata then (failwith error_TOKEN_UNDEFINED : storage) else
-        // update storage 
-        { storage with 
+        // update storage
+        { storage with
             ledger = update_balance { token_owner = p.owner ; token_id = p.token_id ; } (int (p.qty)) s.ledger ; } )
-    param 
-    storage 
+    param
+    storage
 
 // retire tokens
 let retire_tokens (param : retire) (storage : storage) : result =
@@ -212,37 +212,37 @@ let retire_tokens (param : retire) (storage : storage) : result =
         // check permissions 
         if (Tezos.get_sender ()) <> p.retiring_party && not (is_operator { token_owner = p.retiring_party ; token_operator = (Tezos.get_sender ()) ; token_id = p.token_id ; } s.operators) 
         then (failwith error_PERMISSIONS_DENIED : storage) else
-        // update storage 
-        { storage with 
+        // update storage
+        { storage with
             ledger = update_balance { token_owner = p.retiring_party ; token_id = p.token_id ; } (-p.amount) s.ledger ; } )
-    param 
+    param
     storage
 
 // The entrypoint to query token metadata
-let get_metadata (param : get_metadata) (storage : storage) : result = 
-    let (query, callback) = (param.token_ids, param.callback) in 
-    let op_metadata = 
+let get_metadata (param : get_metadata) (storage : storage) : result =
+    let (query, callback) = (param.token_ids, param.callback) in
+    let op_metadata =
         Tezos.transaction
         (
-            List.map 
-            (fun (token_id : nat) : token_metadata -> 
-                match Big_map.find_opt token_id storage.token_metadata with 
-                | None -> (failwith error_TOKEN_UNDEFINED : token_metadata) 
+            List.map
+            (fun (token_id : nat) : token_metadata ->
+                match Big_map.find_opt token_id storage.token_metadata with
+                | None -> (failwith error_TOKEN_UNDEFINED : token_metadata)
                 | Some m -> {token_id = token_id ; token_info = m.token_info ; })
             query
         )
-        0tez 
-        callback in 
+        0tez
+        callback in
     ([op_metadata] , storage)
 
 // This entrypoint allows the admin to add token ids to their contract
 // If there is a collision on token ids, this entrypoint will return a failwith
-let add_token_id (param : token_metadata list) (storage : storage) : result = 
+let add_token_id (param : token_metadata list) (storage : storage) : result =
     if (Tezos.get_sender ()) <> storage.oracle then (failwith error_PERMISSIONS_DENIED : result) else
     ([] : operation list),
     List.fold_left
-    (fun (s, d : storage * token_metadata) -> 
-        { s with token_metadata = 
+    (fun (s, d : storage * token_metadata) ->
+        { s with token_metadata =
             match Big_map.get_and_update d.token_id (Some d) s.token_metadata with
             | (None, m) -> m
             | (Some _, m) -> (failwith error_COLLISION : (token_id, token_metadata) big_map) } )
@@ -250,14 +250,14 @@ let add_token_id (param : token_metadata list) (storage : storage) : result =
     param
 
 // this entrypoint allows the admin to update the contract metadata
-let update_contract_metadata (param : contract_metadata) (storage : storage) : result = 
+let update_contract_metadata (param : contract_metadata) (storage : storage) : result =
     if (Tezos.get_sender ()) <> storage.oracle then (failwith error_PERMISSIONS_DENIED : result) else
     ([] : operation list),
     { storage with metadata = param }
 
 
 // entrypoint for the oracle to be updated
-let update_oracle (param : update_oracle) (storage : storage) : result = 
+let update_oracle (param : update_oracle) (storage : storage) : result =
     if (Tezos.get_sender ()) <> storage.oracle then (failwith error_PERMISSIONS_DENIED : result) else
     ([] : operation list),
     { storage with oracle = param.new_oracle ; }
@@ -268,16 +268,16 @@ let update_oracle (param : update_oracle) (storage : storage) : result =
  * ============================================================================= *)
 
 // contract view for balances
-[@view] let view_balance_of (o, storage : owner * storage) : nat = 
+[@view] let view_balance_of (o, storage : owner * storage) : nat =
     let owner : owner = { token_owner = o.token_owner ; token_id = o.token_id ; } in
-    match Big_map.find_opt owner storage.ledger with 
-    | None -> 0n 
+    match Big_map.find_opt owner storage.ledger with
+    | None -> 0n
     | Some b -> b
 
 // contract view for metadata
-[@view] let view_get_metadata (token_id, storage : nat * storage) : token_metadata = 
-    match Big_map.find_opt token_id storage.token_metadata with 
-    | None -> (failwith error_TOKEN_UNDEFINED : token_metadata) 
+[@view] let view_get_metadata (token_id, storage : nat * storage) : token_metadata =
+    match Big_map.find_opt token_id storage.token_metadata with
+    | None -> (failwith error_TOKEN_UNDEFINED : token_metadata)
     | Some m -> {token_id = token_id ; token_info = m.token_info ; }
 
 (* =============================================================================
@@ -288,7 +288,7 @@ let rec main ((entrypoint, storage) : entrypoint * storage) : result =
     match entrypoint with
     | Transfer param ->
         transfer param storage
-    | Balance_of param -> 
+    | Balance_of param ->
         balance_of param storage
     | Update_operators param ->
         update_operators param storage
