@@ -26,7 +26,7 @@ type storage = {
     ledger : (owner , nat) big_map ; 
     
     // an operator can trade tokens on behalf of the fa2_owner
-    operators : (operator, nat) big_map;
+    operators : (operator, unit) big_map;
     
     // token metadata for each token type supported by this contract
     token_metadata : (token_id, token_metadata) big_map;
@@ -47,7 +47,7 @@ type request = [@layout:comb]{ token_owner : address ; token_id : nat ; }
 type callback_data = [@layout:comb]{ request : request ; balance : nat ; }
 type balance_of = [@layout:comb]{ requests : request list ; callback : callback_data list contract ; }
 
-type operator_data = [@layout:comb]{ owner : address ; operator : address ; token_id : nat ; qty : nat ; }
+type operator_data = [@layout:comb]{ owner : address ; operator : address ; token_id : nat ; }
 type update_operator = 
     | Add_operator of operator_data
     | Remove_operator of operator_data
@@ -114,10 +114,8 @@ let update_balance (type k) (k : k) (diff : int) (ledger : (k, nat) big_map) : (
         abs(old_bal + diff) in 
     Big_map.update k (if new_bal = 0n then None else Some new_bal) ledger 
 
-let is_operator (operator : operator) (qty : nat) (operators : (operator, nat) big_map) : bool = 
-    match Big_map.find_opt operator operators with 
-    | None -> false 
-    | Some b -> if qty <= b then true else false
+let is_operator (operator : operator) (operators : (operator, unit) big_map) : bool = 
+    Big_map.mem operator operators
 
 (* =============================================================================
  * Entrypoint Functions
@@ -134,21 +132,13 @@ let transfer (param : transfer list) (storage : storage) : result =
             let (to, token_id, qty, operator) = (p.to_, p.token_id, p.amount, (Tezos.get_sender ())) in 
             let owner = from in 
             // check permissions 
-            if (Tezos.get_sender ()) <> from && not is_operator { token_owner = owner ; token_operator = operator ; token_id = token_id ; } qty storage.operators 
+            if (Tezos.get_sender ()) <> from && not is_operator { token_owner = owner ; token_operator = operator ; token_id = token_id ; } storage.operators 
                 then (failwith error_PERMISSIONS_DENIED : storage) else 
-            // update operator permissions to reflect this transfer; fails if not an operator
-            let operators = 
-                if (Tezos.get_sender ()) <> from // thus this is an operator acting
-                then update_balance 
-                    { token_owner = owner ; token_operator = operator ; token_id = token_id ; } 
-                    (int (qty))
-                    storage.operators 
-                else storage.operators in
             // update the ledger
             let ledger = 
                 update_balance { token_owner = from ; token_id = token_id ; } (-qty) ( 
                 update_balance { token_owner = to   ; token_id = token_id ; } (int (qty)) storage.ledger ) in 
-            { storage with ledger = ledger ; operators = operators ; }
+            { storage with ledger = ledger ; }
         )
         p.txs
         storage    
@@ -179,26 +169,20 @@ let balance_of (param : balance_of) (storage : storage) : result =
 let update_operator (storage, param : storage * update_operator) : storage = 
     match param with
     | Add_operator o ->
-        let (owner, operator, token_id, qty) = (o.owner, o.operator, o.token_id, o.qty) in 
+        let (owner, operator, token_id) = (o.owner, o.operator, o.token_id) in 
         // check permissions        
         if ((Tezos.get_sender ()) <> owner) then (failwith error_PERMISSIONS_DENIED : storage) else
         if operator = owner then (failwith error_COLLISION : storage) else // an owner can't be their own operator 
         // update storage
         {storage with operators = 
-            let new_qty = 
-                let old_qty = 
-                    match Big_map.find_opt {token_owner = owner; token_operator = operator; token_id = token_id ;} storage.operators with 
-                    | None -> 0n 
-                    | Some q -> q in 
-                old_qty + qty in 
-            Big_map.update {token_owner = owner; token_operator = operator; token_id = token_id ;} (Some new_qty) storage.operators ; }
+            Big_map.update {token_owner = owner; token_operator = operator; token_id = token_id ;} (Some ()) storage.operators ; }
     | Remove_operator o ->
         let (owner, operator, token_id) = (o.owner, o.operator, o.token_id) in 
         // check permissions
         if ((Tezos.get_sender ()) <> owner) then (failwith error_PERMISSIONS_DENIED : storage) else
         // update storage
         {storage with 
-            operators = Big_map.update {token_owner = owner; token_operator = operator; token_id = token_id ;} (None : nat option) storage.operators ; }
+            operators = Big_map.update {token_owner = owner; token_operator = operator; token_id = token_id ;} (None : unit option) storage.operators ; }
         
 let update_operators (param : update_operators) (storage : storage) : result = 
     ([] : operation list),
@@ -226,7 +210,7 @@ let retire_tokens (param : retire) (storage : storage) : result =
     List.fold 
     (fun (s, p : (storage * retire_tokens)) : storage -> 
         // check permissions 
-        if (Tezos.get_sender ()) <> p.retiring_party && not (is_operator { token_owner = p.retiring_party ; token_operator = (Tezos.get_sender ()) ; token_id = p.token_id ; } p.amount s.operators) 
+        if (Tezos.get_sender ()) <> p.retiring_party && not (is_operator { token_owner = p.retiring_party ; token_operator = (Tezos.get_sender ()) ; token_id = p.token_id ; } s.operators) 
         then (failwith error_PERMISSIONS_DENIED : storage) else
         // update storage 
         { storage with 
