@@ -64,11 +64,6 @@ type retire_tokens = {
 }
 type retire = retire_tokens list
 
-type get_metadata = {
-    token_ids : nat list ;
-    callback : token_metadata list contract ;
-}
-
 type update_oracle = {
     new_oracle : address ;
 }
@@ -79,7 +74,6 @@ type entrypoint =
 | Update_operators of update_operators // change operators for some address
 | Mint of mint // mint credits
 | Retire of retire // retire credits
-| Get_metadata of get_metadata // query the metadata of a given token
 | Add_token_id of token_metadata list
 | Update_contract_metadata of contract_metadata
 | Update_oracle of update_oracle
@@ -234,23 +228,6 @@ let retire_tokens (param : retire) (storage : storage) : result =
     param
     storage
 
-// The entrypoint to query token metadata
-let get_metadata (param : get_metadata) (storage : storage) : result =
-    let (query, callback) = (param.token_ids, param.callback) in
-    let op_metadata =
-        Tezos.transaction
-        (
-            List.map
-            (fun (token_id : nat) : token_metadata ->
-                match Big_map.find_opt token_id storage.token_metadata with
-                | None -> (failwith error_TOKEN_UNDEFINED : token_metadata)
-                | Some m -> {token_id = token_id ; token_info = m.token_info ; })
-            query
-        )
-        0tez
-        callback in
-    ([op_metadata] , storage)
-
 // This entrypoint allows the admin to add token ids to their contract
 // If there is a collision on token ids, this entrypoint will return a failwith
 let add_token_id (param : token_metadata list) (storage : storage) : result =
@@ -312,8 +289,6 @@ let rec main ((entrypoint, storage) : entrypoint * storage) : result =
         mint_tokens param storage
     | Retire param ->
         retire_tokens param storage
-    | Get_metadata param ->
-        get_metadata param storage
     | Add_token_id param ->
         add_token_id param storage
     | Update_contract_metadata param ->
