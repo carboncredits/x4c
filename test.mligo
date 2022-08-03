@@ -49,7 +49,7 @@ let init_contracts () =
     let init_fa2_storage = {
         oracle = addr_admin ;
         ledger = (Big_map.empty : (owner_fa2, qty) big_map) ;
-        operators = (Big_map.empty : (operator_fa2, unit) big_map) ;
+        operators = (Set.empty : operator_fa2 set) ;
         token_metadata = (Big_map.empty : (token_id, token_metadata) big_map) ;
         metadata = (Big_map.empty : (string, bytes) big_map) ;
     } in

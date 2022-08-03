@@ -26,7 +26,7 @@ type storage = {
     ledger : (owner , nat) big_map ;
 
     // an operator can trade tokens on behalf of the fa2_owner
-    operators : (operator, unit) big_map;
+    operators : operator set;
     
     // token metadata for each token type supported by this contract
     token_metadata : (token_id, token_metadata) big_map;
@@ -114,8 +114,8 @@ let update_balance (type k) (k : k) (diff : int) (ledger : (k, nat) big_map) : (
         abs(old_bal + diff) in
     Big_map.update k (if new_bal = 0n then None else Some new_bal) ledger
 
-let is_operator (operator : operator) (operators : (operator, unit) big_map) : bool = 
-    Big_map.mem operator operators
+let is_operator (operator : operator) (operators : operator set) : bool = 
+    Set.mem operator operators
 
 (* =============================================================================
  * Entrypoint Functions
@@ -175,14 +175,14 @@ let update_operator (storage, param : storage * update_operator) : storage =
         if operator = owner then (failwith error_COLLISION : storage) else // an owner can't be their own operator
         // update storage
         {storage with operators = 
-            Big_map.update {token_owner = owner; token_operator = operator; token_id = token_id ;} (Some ()) storage.operators ; }
+            Set.add {token_owner = owner; token_operator = operator; token_id = token_id ;} storage.operators ; }
     | Remove_operator o ->
         let (owner, operator, token_id) = (o.owner, o.operator, o.token_id) in
         // check permissions
         if ((Tezos.get_sender ()) <> owner) then (failwith error_PERMISSIONS_DENIED : storage) else
         // update storage
-        {storage with 
-            operators = Big_map.update {token_owner = owner; token_operator = operator; token_id = token_id ;} (None : unit option) storage.operators ; }
+        {storage with operators =
+            Set.remove {token_owner = owner; token_operator = operator; token_id = token_id ;} storage.operators ; }
         
 let update_operators (param : update_operators) (storage : storage) : result = 
     ([] : operation list),
