@@ -37,7 +37,7 @@ let init_contracts () =
     let init_custodian_storage = {
         custodian = addr_admin ;
         ledger = (Big_map.empty : (owner_custodian, qty) big_map) ;
-        operators = (Big_map.empty : (operator_custodian, unit) big_map) ;
+        operators = (Set.empty : operator_custodian set) ;
         external_ledger = (Big_map.empty : (token, nat) big_map) ;
         metadata = (Big_map.empty : (string, bytes) big_map) ;
     } in
