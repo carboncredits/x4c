@@ -77,8 +77,14 @@ type update_oracle = {
     new_oracle : address ;
 }
 
+type pointer = | Upgraded | Previous | Both
+type update_pointers = {
+    pointer : pointer ; 
+    new_pointer : address option ;
+}
 type upgrade_contract = address 
-type upgrade_clear_fetched_balance = owner
+type clear_fetched_balance = owner
+type oracle_fetch_balance = owner list 
 
 type entrypoint = 
 | Transfer of transfer list // transfer tokens 
@@ -92,7 +98,9 @@ type entrypoint =
 | Update_oracle of update_oracle
 // for upgrades
 | Upgrade_contract of upgrade_contract
-| Upgrade_clear_fetched_balance of upgrade_clear_fetched_balance // for upgrades
+| Update_pointers of update_pointers
+| Clear_fetched_balance of clear_fetched_balance // for upgrades
+| Oracle_fetch_balance of oracle_fetch_balance 
 
 
 (* =============================================================================
@@ -130,6 +138,31 @@ let is_operator (operator : operator) (qty : nat) (operators : (operator, nat) b
     match Big_map.find_opt operator operators with
     | None -> false
     | Some b -> if qty <= b then true else false
+
+// for upgrades: updates the ledger and clears old balances
+let view_and_fetch_balance (param_list : owner list) (storage : storage) : result = 
+    match storage.previous_contract with 
+    | None -> ([] : operation list), storage // this is the first contract 
+    | Some previous_contract_addr ->
+        List.fold 
+        (fun ((ops, storage), o : result * owner) : result -> 
+            match (Tezos.call_view "view_telescoping_balance_of" o previous_contract_addr : (nat option) option) with 
+            | None -> ops, storage // there was nothing to view; do nothing 
+            | Some v -> (
+                match v with 
+                | None -> ops, storage // there was nothing to view; do nothing 
+                | Some imported_bal -> ( // there is a balance somewhere along 
+                    // clear that balance by calling clear_fetched_balance
+                    match (Tezos.get_entrypoint_opt "%clear_fetched_balance" previous_contract_addr : clear_fetched_balance contract option) with 
+                    | None -> (failwith error_ADDRESS_NOT_FOUND : result)
+                    | Some entrypoint_addr -> 
+                        ((Tezos.transaction o 0tez entrypoint_addr) :: ops),
+                        { storage with ledger = update_balance o (int(imported_bal)) storage.ledger ; }
+                )
+            )
+        )
+        param_list 
+        (([] : operation list), storage)
 
 (* =============================================================================
  * Entrypoint Functions
@@ -307,8 +340,51 @@ let upgrade_contract (param : upgrade_contract) (storage : storage) : result =
     // upgrade, which freezes transfers, mints, and retires from this contract; upgraded contract can lazily port in balances
     ([] : operation list), { storage with upgraded_contract = (Some upgraded_contract) ; }
 
+// contracts in the linked list can update the link list to remove themselves if the ledger is empty
+let update_pointers (param : update_pointers) (storage : storage) : result = 
+    // update the storage with the new pointer
+    //  only the upgraded contract can change the upgraded pointer
+    //  and only the previous can change the previous pointer
+    match param.pointer with 
+    | Previous -> (
+        match storage.previous_contract with 
+        | None -> (failwith error_PERMISSIONS_DENIED : result) // there is no one that can call this 
+        | Some previous_contract_addr -> 
+            if Tezos.get_sender() <> previous_contract_addr then (failwith error_PERMISSIONS_DENIED : result) else 
+            ([] : operation list), { storage with previous_contract = param.new_pointer } )
+    | Upgraded -> (
+        match storage.upgraded_contract with 
+        | None -> (failwith error_PERMISSIONS_DENIED : result) // there is no one that can call this 
+        | Some upgraded_contract_addr ->
+            if Tezos.get_sender() <> upgraded_contract_addr then (failwith error_PERMISSIONS_DENIED : result) else 
+            ([] : operation list), { storage with upgraded_contract = param.new_pointer } ) 
+    | Both -> (
+            if Tezos.get_source() <> storage.oracle then (failwith error_PERMISSIONS_DENIED : result) else
+            // update the previous_contract pointer of the upgraded contract to be 
+            // this contract's upgraded pointer (removing this contract from the linked list)
+            let ops = 
+                match storage.upgraded_contract with 
+                | None -> (failwith error_PERMISSIONS_DENIED : operation list) // contract is active and this should fail anyway
+                | Some upgraded_contract_addr -> (
+                    match (Tezos.get_entrypoint_opt "%update_pointers" upgraded_contract_addr : update_pointers contract option) with 
+                    | None -> (failwith error_ADDRESS_NOT_FOUND : operation list)
+                    | Some addr_entrypoint -> 
+                        // our list ops now has one element
+                        (Tezos.transaction { pointer = Previous ; new_pointer = storage.previous_contract ; } 0tez addr_entrypoint) :: ([] : operation list) ) in 
+            // update the upgraded_contract pointer of the previous contract to be 
+            // this contract's upgraded pointer (removing this contract from the linked list)
+            let ops = 
+                match storage.previous_contract with 
+                | None -> ops // this was the beginning of the linked list, and the upgraded contract now is the beginning of the linked list due to the above operation
+                | Some previous_contract_addr -> (
+                    match (Tezos.get_entrypoint_opt "%update_pointers" previous_contract_addr : update_pointers contract option) with 
+                    | None -> (failwith error_ADDRESS_NOT_FOUND : operation list)
+                    | Some addr_entrypoint -> 
+                        (Tezos.transaction { pointer = Upgraded ; new_pointer = storage.upgraded_contract ; } 0tez addr_entrypoint) :: ops )
+            in ops, storage )
+
 // upgrades can lazily port the token balance
-let upgrade_clear_fetched_balance (param : upgrade_clear_fetched_balance) (storage : storage) : result = 
+let clear_fetched_balance (param : clear_fetched_balance) (storage : storage) : result = 
     let owner = param in 
     // check that this contract is inactive 
     match storage.upgraded_contract with | None -> (failwith error_PERMISSIONS_DENIED : result) | Some upgraded_contract_addr ->    
@@ -326,12 +402,28 @@ let upgrade_clear_fetched_balance (param : upgrade_clear_fetched_balance) (stora
         match storage.previous_contract with 
         | None -> ([] : operation list), storage // this is the first contract 
         | Some previous_contract_addr -> (
-            match (Tezos.get_entrypoint_opt "%upgrade_clear_fetched_balance" previous_contract_addr : upgrade_clear_fetched_balance contract option) with
+            match (Tezos.get_entrypoint_opt "%clear_fetched_balance" previous_contract_addr : clear_fetched_balance contract option) with
             | None -> (failwith error_ADDRESS_NOT_FOUND : result)
             | Some addr_entrypoint -> 
-                // recursively call %upgrade_clear_fetched_balance until you've cleared the balance
-                let op_upgrade_clear_fetched_balance = Tezos.transaction param 0tez addr_entrypoint in 
-                [ op_upgrade_clear_fetched_balance ; ], storage ) ) )
+                // recursively call %clear_fetched_balance until you've cleared the balance
+                let op_clear_fetched_balance = Tezos.transaction param 0tez addr_entrypoint in 
+                [ op_clear_fetched_balance ; ], storage ) ) )
+
+// an oracle can fetch user balances and unlinks the most recent upgrade from the linked list
+let oracle_fetch_balance (param : oracle_fetch_balance) (storage : storage) : result = 
+    // check permissions 
+    if Tezos.get_sender() <> storage.oracle then (failwith error_PERMISSIONS_DENIED : result) else 
+    // view and fetch the balance 
+    let (op_list, storage) = view_and_fetch_balance param storage in 
+    // remove the most recent upgrade from the linked list 
+    match storage.previous_contract with 
+    | None -> (op_list, storage)
+    | Some previous_contract_addr -> (
+        match (Tezos.get_entrypoint_opt "%update_pointers" previous_contract_addr : update_pointers contract option) with 
+        | None -> (failwith error_ADDRESS_NOT_FOUND : result)
+        | Some entrypoint_addr -> 
+            (Tezos.transaction { pointer = Both ; new_pointer = (None : address option) ; } 0tez entrypoint_addr) :: op_list,
+            storage )
 
 (* =============================================================================
  * Contract Views
@@ -397,5 +489,9 @@ let rec main ((entrypoint, storage) : entrypoint * storage) : result =
     // for upgrades
     | Upgrade_contract param ->
         upgrade_contract param storage
-    | Upgrade_clear_fetched_balance param -> 
-        upgrade_clear_fetched_balance param storage
+    | Update_pointers param -> 
+        update_pointers param storage 
+    | Clear_fetched_balance param -> 
+        clear_fetched_balance param storage
+    | Oracle_fetch_balance param -> 
+        oracle_fetch_balance param storage
