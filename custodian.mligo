@@ -33,7 +33,7 @@ type storage = {
     external_ledger : (token, nat) big_map ;
 
     // an operator can trade tokens on behalf of the fa2_owner
-    operators : (operator, unit) big_map;
+    operators : operator set;
 
     // contract metadata 
     metadata : (string, bytes) big_map ; 
@@ -106,8 +106,8 @@ let update_balance (type k) (k : k) (diff : int) (ledger : (k, nat) big_map) : (
         abs(old_bal + diff) in
     Big_map.update k (if new_bal = 0n then None else Some new_bal) ledger
 
-let is_operator (operator : operator) (operators : (operator, unit) big_map) : bool = 
-    Big_map.mem operator operators
+let is_operator (operator : operator) (operators : operator set) : bool = 
+    Set.mem operator operators
 
 (* =============================================================================
  * Entrypoint Functions
@@ -205,12 +205,12 @@ let update_internal_operator (storage, param : storage * update_internal_operato
         let (token_owner, token_operator, token_id) = (o.token_owner, o.token_operator, o.token_id) in 
         // update storage
         {storage with operators = 
-            Big_map.update {token_owner = token_owner; token_operator = token_operator; token_id = token_id ;} (Some ()) storage.operators ; }
+            Set.add {token_owner = token_owner; token_operator = token_operator; token_id = token_id ;} storage.operators ; }
     | Remove_operator o ->
         let (token_owner, token_operator, token_id) = (o.token_owner, o.token_operator, o.token_id) in 
         // update storage
-        {storage with 
-            operators = Big_map.update {token_owner = token_owner; token_operator = token_operator; token_id = token_id ;} (None : unit option) storage.operators ; }
+        {storage with operators =
+            Set.remove {token_owner = token_owner; token_operator = token_operator; token_id = token_id ;} storage.operators ; }
 
 let update_internal_operators (param : update_internal_operators) (storage : storage) : result = 
     if ((Tezos.get_sender ()) <> storage.custodian) then (failwith error_PERMISSIONS_DENIED : result) else
