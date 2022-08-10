@@ -79,12 +79,17 @@ type external_retire = {
     retiring_data : bytes ;
 }
 
+type migrate_owner = { old_owner : owner ; new_owner : owner ; }
+type migrate_tokens = migrate_owner list
+
 type entrypoint =
 | Internal_transfer of internal_transfer list
 | Internal_mint of internal_mint list
 | External_transfer of external_transfer list
 | Update_internal_operators of update_internal_operators // change operators for some address
 | Retire of internal_retire list 
+// for token contract upgrades 
+| Migrate_tokens of migrate_tokens
 
 (* =============================================================================
  * Error Codes
@@ -94,6 +99,7 @@ let error_PERMISSIONS_DENIED = 0n
 let error_ADDRESS_NOT_FOUND = 1n
 let error_INSUFFICIENT_BALANCE = 2n
 let error_CALL_VIEW_FAILED = 3n
+let error_NOT_OWNER = 4n
 
 (* =============================================================================
  * Aux Functions
@@ -262,6 +268,24 @@ let retire (param : internal_retire list) (storage : storage) : result =
     ops_retire_tokens, storage
 
 
+// for if one of the token contracts upgrades 
+let migrate_tokens (param : migrate_tokens) (storage : storage) : result = 
+    if Tezos.get_sender() <> storage.custodian then (failwith error_PERMISSIONS_DENIED : result) else 
+    // update the ledger to reflect the new token address 
+    ([] : operation list),
+    List.fold 
+    (fun (storage, o : storage * migrate_owner) : storage -> 
+        // get the balance with the old data and clear it from the ledger
+        let (qty, ledger) = 
+            match Big_map.get_and_update o.old_owner (None : nat option) storage.ledger with 
+            | (Some q, ledger) -> (q,ledger)
+            | (None, _) -> (failwith error_NOT_OWNER : nat * ((owner, nat) big_map)) in 
+        // update the ledger with the new information 
+        { storage with ledger = Big_map.update o.new_owner (Some qty) ledger } )
+    param
+    storage
+
+
 (* =============================================================================
  * Contract Views
  * ============================================================================= *)
@@ -288,5 +312,7 @@ let main (param, storage : entrypoint * storage) : result =
         update_internal_operators p storage
     | Retire p -> 
         retire p storage 
+    | Migrate_tokens p ->
+        migrate_tokens p storage
 
 
