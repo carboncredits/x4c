@@ -32,6 +32,9 @@ type storage = {
     token_metadata : (token_id, token_metadata) big_map;
     // contract metadata
     metadata : (string, bytes) big_map;
+
+    // for upgrades 
+    is_active : bool ;
 }
 
 type result = (operation list) * storage
@@ -68,6 +71,11 @@ type update_oracle = {
     new_oracle : address ;
 }
 
+type upgrade_contract = {
+    new_token_contract : address ; 
+    to_migrate : owner list ; 
+}
+
 type entrypoint =
 | Transfer of transfer list // transfer tokens
 | Balance_of of balance_of // query an address's balance
@@ -77,6 +85,8 @@ type entrypoint =
 | Add_token_id of token_metadata list
 | Update_contract_metadata of contract_metadata
 | Update_oracle of update_oracle
+// for upgrades 
+| Upgrade_contract of upgrade_contract
 
 
 (* =============================================================================
@@ -96,6 +106,7 @@ let error_SENDER_HOOK_UNDEFINED = 9n // Sender hook is required by the permissio
 let error_PERMISSIONS_DENIED = 10n // General catch-all for operator-related permission errors
 let error_ID_ALREADY_IN_USE = 11n // A token ID can only be used once, error if a user wants to add a token ID that's already there
 let error_COLLISION = 12n // A collision in storage
+let error_ADDRESS_NOT_FOUND = 13n // Address not found 
 
 (* =============================================================================
  * Aux Functions
@@ -117,6 +128,7 @@ let is_operator (operator : operator) (operators : operator set) : bool =
 
 // The transfer entrypoint function
 let transfer (param : transfer list) (storage : storage) : result =
+    if storage.is_active = false then ([] : operation list), storage else 
     ([] : operation list),
     List.fold
     (fun (storage, p : storage * transfer) : storage -> 
@@ -184,6 +196,7 @@ let update_operators (param : update_operators) (storage : storage) : result =
 
 // This entrypoint can only be called by the admin
 let mint_tokens (param : mint) (storage : storage) : result =
+    if storage.is_active = false then ([] : operation list), storage else 
     // check permissions
     if (Tezos.get_source ()) <> storage.oracle then (failwith error_PERMISSIONS_DENIED : result) else
     // mint tokens
@@ -200,6 +213,7 @@ let mint_tokens (param : mint) (storage : storage) : result =
 
 // retire tokens
 let retire_tokens (param : retire) (storage : storage) : result =
+    if storage.is_active = false then ([] : operation list), storage else 
     ([] : operation list),
     List.fold 
     (fun (s, p : (storage * retire_tokens)) : storage -> 
@@ -238,6 +252,32 @@ let update_oracle (param : update_oracle) (storage : storage) : result =
     if (Tezos.get_sender ()) <> storage.oracle then (failwith error_PERMISSIONS_DENIED : result) else
     ([] : operation list),
     { storage with oracle = param.new_oracle ; }
+
+
+// the oracle can migrate the ledger to another contract
+let upgrade_contract (param : upgrade_contract) (storage : storage) : result = 
+    if Tezos.get_sender() <> storage.oracle then (failwith error_PERMISSIONS_DENIED : result) else 
+    // fetch the values
+    let payload : (owner * nat) list = 
+        List.map 
+        (fun (x : owner) : owner * nat -> 
+            match Big_map.find_opt x storage.ledger with 
+            | Some n -> (x, n) 
+            | None -> (failwith error_NOT_OWNER : owner * nat))
+        param.to_migrate in 
+    // clear the ledger 
+    let storage = 
+        List.fold 
+        (fun (storage, x : storage * owner) : storage -> { storage with ledger = Big_map.update x (None : nat option) storage.ledger ; })
+        param.to_migrate 
+        storage in 
+    // send to the %import_ledger entrypoint of the new contract
+    let op_migrate = 
+        match (Tezos.get_entrypoint_opt "%import_ledger" param.new_token_contract : (owner * nat) list contract option) with 
+        | None -> (failwith error_ADDRESS_NOT_FOUND : operation)
+        | Some contract_addr -> Tezos.transaction payload 0tez contract_addr in 
+    [ op_migrate ; ], // migrates the ledger to the new contract
+    { storage with is_active = false ; } // deactivate if not already deactivated
 
 
 (* =============================================================================
@@ -279,3 +319,5 @@ let rec main ((entrypoint, storage) : entrypoint * storage) : result =
         update_contract_metadata param storage
     | Update_oracle param ->
         update_oracle param storage
+    | Upgrade_contract param ->
+        upgrade_contract param storage

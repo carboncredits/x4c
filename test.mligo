@@ -52,6 +52,7 @@ let init_contracts () =
         operators = (Set.empty : operator_fa2 set) ;
         token_metadata = (Big_map.empty : (token_id, token_metadata) big_map) ;
         metadata = (Big_map.empty : (string, bytes) big_map) ;
+        is_active = true ;
     } in
     let (addr_fa2, _pgm_fa2, _size_fa2) =
         Test.originate_from_file "fa2.mligo" "main" [ "view_balance_of" ; "view_get_metadata" ; ] (Test.compile_value init_fa2_storage) 0tez in
