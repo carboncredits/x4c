@@ -4,7 +4,7 @@ import { homedir } from 'os';
 import * as Path from 'path';
 
 import { InMemorySigner } from '@taquito/signer';
-import { TezosToolkit } from '@taquito/taquito';
+import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
 
 import FA2Contract from './FA2Contract';
 import CustodianContract from './CustodianContract';
@@ -84,6 +84,11 @@ export default class X4CClient {
         return client;
     }
     
+    private static isContractFA2(contract: Contract): boolean {
+        // Obviously weak for now
+        return contract.methods.mint !== undefined;
+    }
+    
     async loadClientState() {
         const tezos = new TezosToolkit(this.node_base_url);
         
@@ -92,15 +97,14 @@ export default class X4CClient {
         
         const contract_data = await readFile(Path.join(this.tezos_client_file_location, 'contracts'), 'utf8')
         if (contract_data !== undefined) {
-            const contracts_list: [TCPublicInfo] = JSON.parse(contract_data)
+            const contracts_list: TCPublicInfo[] = JSON.parse(contract_data)
             for (const item of contracts_list) {
                 const name = item.name;
                 const key = item.value;
                 const contract = await tezos.contract.at(key);
                 this.contracts[name] = contract;
         
-                // This is obviously weak
-                if (contract.methods.mint !== undefined) {
+                if (X4CClient.isContractFA2(contract)) {
                     fa2s.push(contract);
                 }
             }
@@ -111,7 +115,7 @@ export default class X4CClient {
         
         const key_data = await readFile(Path.join(this.tezos_client_file_location, 'secret_keys'), 'utf8')
         if (key_data !== undefined) {
-            const keys_list: [TCPublicInfo] = JSON.parse(key_data);
+            const keys_list: TCPublicInfo[] = JSON.parse(key_data);
             for (const item of keys_list) {
                 const name = item.name;
                 let secret_key = item.value;
@@ -183,6 +187,67 @@ export default class X4CClient {
             }
         }
         return undefined;
+    }
+    
+    async originateFA2Contract(
+        contract_michelson: string,
+        signer: Contract,
+        contractOracle: string
+    ): Promise<FA2Contract> {
+        const tezos = new TezosToolkit(this.node_base_url);
+        tezos.setProvider({signer: signer});
+        return tezos.contract.originate({
+            code: contract_michelson,
+            storage: {
+                oracle: contractOracle,
+                operators: MichelsonMap.fromLiteral({}),
+                ledger: MichelsonMap.fromLiteral({}),
+                metadata: MichelsonMap.fromLiteral({}),
+                token_metadata: MichelsonMap.fromLiteral({})
+            }
+        })
+        .then((originationOp) => {
+            return originationOp.contract();
+        })
+        .then((contract) => {
+            this._contracts[contract.address] = contract;
+            // we store the default FA2 contract, so now we need to refresh that
+            const fa2s: Contract[] = []
+            for (const contract_address in this._contracts) {
+                const contract = this._contracts[contract_address];
+                if (X4CClient.isContractFA2(contract)) {
+                    fa2s.push(contract);
+                }
+            }
+            this._default_fa2_contract = fa2s.length === 1 ? fa2s[0] : null;
+            
+            return new FA2Contract(this.node_base_url, this.indexer_base_url, contract, signer)
+        })
+    }
+    
+    async originateCustodianContract(
+        contract_michelson: string,
+        signer: Contract,
+        contractCustodian: string
+    ): Promise<CustodianContract> {
+        const tezos = new TezosToolkit(this.node_base_url);
+        tezos.setProvider({signer: signer});
+        return tezos.contract.originate({
+            code: contract_michelson,
+            storage: {
+                custodian: contractCustodian,
+                ledger: MichelsonMap.fromLiteral({}),
+                external_ledger: MichelsonMap.fromLiteral({}),
+                metadata: MichelsonMap.fromLiteral({})
+            }
+        })
+        .then((originationOp) => {
+            return originationOp.contract();
+        })
+        .then((contract) => {
+            this._contracts[contract.address] = contract;
+            return new CustodianContract(this.node_base_url, this.indexer_base_url, contract, signer)
+        })
     }
 }
 
