@@ -8,7 +8,7 @@ import Tzkt from '../tzkt-client/Tzkt';
 
 export default class  CustodianContract {
     private readonly node_base_url: string;
-    private readonly indexer_api_base_url: string;    
+    private readonly indexer_api_base_url: string;
 
     readonly contract: any;
     readonly tezos: TezosToolkit
@@ -16,15 +16,15 @@ export default class  CustodianContract {
     constructor(
         node_base_url: string,
         index_api_base_url: string,
-        contract: any, 
+        contract: any,
         oracle?: InMemorySigner
     ) {
         this.node_base_url = node_base_url
         this.indexer_api_base_url = index_api_base_url
-        
+
         this.contract = contract;
 
-        this.tezos = new TezosToolkit('https://rpc.jakartanet.teztnets.xyz');
+        this.tezos = new TezosToolkit(node_base_url);
         if (oracle) {
             this.tezos.setProvider({signer: oracle});
         }
@@ -33,7 +33,7 @@ export default class  CustodianContract {
     internal_mint(fa2_contract: string, token_id: number) {
         if (this.tezos.signer === undefined) {
             throw new Error('Oracle for custodian not provided')
-        } 
+        }
         this.tezos.contract.at(this.contract.address).then((contract) => {
             return contract.methods.internal_mint([{
                 token_id: token_id,
@@ -51,7 +51,7 @@ export default class  CustodianContract {
     internal_transfer(fa2_contract: string, token_id: number, amount: number, source_name: string, target_name: string) {
         if (this.tezos.signer === undefined) {
             throw new Error('Oracle for custodian not provided')
-        } 
+        }
         if (source_name === undefined) {
             source_name = "self";
         }
@@ -81,7 +81,7 @@ export default class  CustodianContract {
     async retire(fa2_contract: string, token_id: number, amount: number, source_name: string, reason: string): Promise<string> {
         if (this.tezos.signer === undefined) {
             throw new Error('Oracle for custodian not provided')
-        } 
+        }
         if (source_name === undefined) {
             source_name = "self";
         }
@@ -102,11 +102,11 @@ export default class  CustodianContract {
             return op.confirmation().then(() => op.hash);
         })
     }
-    
+
     getStorage(): CustodianStorage {
         let client: GenericClient;
         if (this.indexer_api_base_url.includes("tzstats")) {
-            client = new Tzstats(this.indexer_api_base_url);    
+            client = new Tzstats(this.indexer_api_base_url);
         } else {
             client = new Tzkt(this.indexer_api_base_url);
         }

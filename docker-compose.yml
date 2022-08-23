@@ -1,0 +1,29 @@
+version: "3.7"
+
+services:
+    tezossandbox:
+        image: oxheadalpha/flextesa:20220510
+        command: jakartabox start
+        profiles: ["setup"]
+
+    tzstats:
+        image: blockwatch/tzindex
+        command: tzindex run --rpcurl http://tezossandbox:20000 --notls
+        depends_on:
+            - tezossandbox
+        restart: on-failure:5
+        profiles: ["setup"]
+
+    test:
+        build:
+            context: .
+            dockerfile: Dockerfile.test
+        environment:
+            - TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER=yes
+            - TEZOS_RPC_HOST=http://tezossandbox:20000
+            - TEZOS_INDEX_HOST=http://tzstats:8000
+        depends_on:
+            - tezossandbox
+            - tzstats
+        command: /app/integration_tests.sh
+        profiles: ["test"]

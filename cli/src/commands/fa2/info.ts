@@ -16,16 +16,16 @@ export default class extends Command {
 	) {
 		const client = X4CClient.getInstance()
 		const contract = await client.getFA2Contact(contract_str)
-		
+
 		const storage = contract.getStorage()
 		console.log('Oracle: ', await storage.oracle_address())
-		
+
 		const ledger = await storage.ledger()
 		console.log('Ledger:')
 		const table = new Table({
 			head: ['ID', 'Owner', 'Tokens'],
-			chars: { 'top': '' , 'top-mid': '' , 'top-left': '' , 'top-right': '', 'bottom': '' , 	'bottom-mid': '' , 'bottom-left': '' , 'bottom-right': '', 
-				'left': '' , 'left-mid': '' , 'mid': '' , 'mid-mid': '', 
+			chars: { 'top': '' , 'top-mid': '' , 'top-left': '' , 'top-right': '', 'bottom': '' , 	'bottom-mid': '' , 'bottom-left': '' , 'bottom-right': '',
+				'left': '' , 'left-mid': '' , 'mid': '' , 'mid-mid': '',
 				'right': '' , 'right-mid': '' , 'middle': ' '
 			}
 		});
@@ -33,24 +33,9 @@ export default class extends Command {
 			const key = item.key;
 			const value = item.value;
 			table.push([key[1], key[0], value]);
-		}		
+		}
 		console.log(table.toString());
-		
-		// const token_metadata = await storage.token_metadata()
-		// console.log('Token info:')
-		// for (const item of token_metadata) {
-		// 	const key = item.key;
-		// 	const value = item.value;
-		// 	console.log(`\t#${key}:`)
-		// 	console.log(value[1]);
-		// 	if (value[1] != {}) {
-		// 		for (const info of value[1]) {
-		// 			console.log(`\t\t${info}`)
-		// 		}
-		// 	}
-		// }
-		// 
-		
+
 		return '';
 	}
 }

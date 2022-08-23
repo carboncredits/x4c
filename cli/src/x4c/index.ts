@@ -20,18 +20,18 @@ type Contract = any
 type TCPublicInfo = {name: string; value: string;}
 
 export default class X4CClient {
-    
+
     private readonly node_base_url: string;
     private readonly indexer_api_base_url: string;
-    private readonly indexer_base_url: string; 
+    private readonly indexer_base_url: string;
     private readonly tezos_client_file_location: string;
 
     private _default_fa2_contract: Contract | null = null;
     private _contracts: Record<string, Contract> = {}
     private _keys: Record<string, InMemorySigner> = {}
-    
+
     private static _instance: X4CClient
-    
+
     // I don't really want a singleton system here, but clime doesn't make it
     // possible to pass objects around, so this is the quickest way to get a
     // global instance
@@ -44,7 +44,7 @@ export default class X4CClient {
             this._instance = new X4CClient(node_base_url, indexer_api_base_url, indexer_base_url)
         )
     }
-    
+
     private constructor (
         node_base_url = "https://rpc.jakartanet.teztnets.xyz",
         indexer_api_base_url = "https://api.tzstats.com",
@@ -53,19 +53,19 @@ export default class X4CClient {
         this.node_base_url = node_base_url;
         this.indexer_api_base_url = indexer_api_base_url;
         this.indexer_base_url = indexer_base_url;
-        
+
         // we might want this configurable in future
         this.tezos_client_file_location = Path.join(homedir(), '.tezos-client')
     }
-    
+
     get default_fa2_contract(): Contract | null {
         return this._default_fa2_contract;
     }
-    
+
     get contracts(): Record<string, Contract> {
         return this._contracts;
     }
-    
+
     get keys(): Record<string, InMemorySigner> {
         return this._keys;
     }
@@ -77,57 +77,62 @@ export default class X4CClient {
     getApiClient(): GenericClient {
         let client: GenericClient;
         if (this.indexer_api_base_url.includes("tzstats")) {
-            client = new Tzstats(this.indexer_api_base_url);    
+            client = new Tzstats(this.indexer_api_base_url);
         } else {
             client = new Tzkt(this.indexer_api_base_url);
         }
         return client;
     }
-    
+
     private static isContractFA2(contract: Contract): boolean {
         // Obviously weak for now
         return contract.methods.mint !== undefined;
     }
-    
+
     async loadClientState() {
         const tezos = new TezosToolkit(this.node_base_url);
-        
+
         // if there's one and only one FA2 contract, note it as a default
         const fa2s: Contract[] = []
-        
-        const contract_data = await readFile(Path.join(this.tezos_client_file_location, 'contracts'), 'utf8')
-        if (contract_data !== undefined) {
-            const contracts_list: TCPublicInfo[] = JSON.parse(contract_data)
-            for (const item of contracts_list) {
-                const name = item.name;
-                const key = item.value;
-                const contract = await tezos.contract.at(key);
-                this.contracts[name] = contract;
-        
-                if (X4CClient.isContractFA2(contract)) {
-                    fa2s.push(contract);
+
+        try {
+            const contract_data = await readFile(Path.join(this.tezos_client_file_location, 'contracts'), 'utf8')
+            if (contract_data !== undefined) {
+                const contracts_list: TCPublicInfo[] = JSON.parse(contract_data)
+                for (const item of contracts_list) {
+                    const name = item.name;
+                    const key = item.value;
+                    const contract = await tezos.contract.at(key);
+                    this.contracts[name] = contract;
+
+                    if (X4CClient.isContractFA2(contract)) {
+                        fa2s.push(contract);
+                    }
                 }
             }
-        }
+        } catch {}
+
         if (fa2s.length === 1) {
             this._default_fa2_contract = fa2s[0];
         }
-        
-        const key_data = await readFile(Path.join(this.tezos_client_file_location, 'secret_keys'), 'utf8')
-        if (key_data !== undefined) {
-            const keys_list: TCPublicInfo[] = JSON.parse(key_data);
-            for (const item of keys_list) {
-                const name = item.name;
-                let secret_key = item.value;
-                if (secret_key.startsWith('unencrypted:')) {
-                    secret_key = item.value.slice(12);
+
+        try {
+            const key_data = await readFile(Path.join(this.tezos_client_file_location, 'secret_keys'), 'utf8')
+            if (key_data !== undefined) {
+                const keys_list: TCPublicInfo[] = JSON.parse(key_data);
+                for (const item of keys_list) {
+                    const name = item.name;
+                    let secret_key = item.value;
+                    if (secret_key.startsWith('unencrypted:')) {
+                        secret_key = item.value.slice(12);
+                    }
+                    const signer = await InMemorySigner.fromSecretKey(secret_key);
+                    this.keys[name] = signer;
                 }
-                const signer = await InMemorySigner.fromSecretKey(secret_key);
-                this.keys[name] = signer;
             }
-        }
+        } catch {}
     }
-    
+
     async getFA2Contact(contract_str: string, signer_str?: string): Promise<FA2Contract> {
         const contract = this.contractForArg(contract_str);
         if (contract === undefined) {
@@ -136,7 +141,7 @@ export default class X4CClient {
         const signer = signer_str ? await this.signerForArg(signer_str) : undefined;
         return new FA2Contract(this.node_base_url, this.indexer_api_base_url, contract, signer);
     }
-    
+
     async getCustodianContract(contract_str: string, signer_str?: string): Promise<CustodianContract> {
         const contract = this.contractForArg(contract_str);
         if (contract === undefined) {
@@ -145,7 +150,7 @@ export default class X4CClient {
         const signer = signer_str ? await this.signerForArg(signer_str) : undefined;
         return new CustodianContract(this.node_base_url, this.indexer_api_base_url, contract, signer);
     }
-    
+
     async hashForArg(arg: string): Promise<string> {
         for (const name in this.keys) {
             if (name === arg) {
@@ -159,7 +164,7 @@ export default class X4CClient {
         }
         return arg;
     }
-    
+
     async signerForArg(arg: string): Promise<InMemorySigner | undefined> {
         for (const name in this.keys) {
             const key = this.keys[name]
@@ -172,7 +177,7 @@ export default class X4CClient {
         }
         return undefined;
     }
-    
+
     contractForArg(arg: string): Contract | undefined {
         if (arg === undefined) {
             return this.default_fa2_contract;
@@ -188,7 +193,7 @@ export default class X4CClient {
         }
         return undefined;
     }
-    
+
     async originateFA2Contract(
         contract_michelson: string,
         signer: Contract,
@@ -196,13 +201,19 @@ export default class X4CClient {
     ): Promise<FA2Contract> {
         const tezos = new TezosToolkit(this.node_base_url);
         tezos.setProvider({signer: signer});
+        // Note the docs for the tezos library imply that the contract
+        // has to be in JSON format, but if you dig deeper they accept
+        // michelson too.
+        //
+        // The library is not that smart either - the order of the arguments in
+        // storage must match the michelson.
         return tezos.contract.originate({
             code: contract_michelson,
             storage: {
-                oracle: contractOracle,
-                operators: MichelsonMap.fromLiteral({}),
                 ledger: MichelsonMap.fromLiteral({}),
                 metadata: MichelsonMap.fromLiteral({}),
+                operators: [],
+                oracle: contractOracle,
                 token_metadata: MichelsonMap.fromLiteral({})
             }
         })
@@ -220,11 +231,11 @@ export default class X4CClient {
                 }
             }
             this._default_fa2_contract = fa2s.length === 1 ? fa2s[0] : null;
-            
+
             return new FA2Contract(this.node_base_url, this.indexer_base_url, contract, signer)
         })
     }
-    
+
     async originateCustodianContract(
         contract_michelson: string,
         signer: Contract,
@@ -232,13 +243,20 @@ export default class X4CClient {
     ): Promise<CustodianContract> {
         const tezos = new TezosToolkit(this.node_base_url);
         tezos.setProvider({signer: signer});
+        // Note the docs for the tezos library imply that the contract
+        // has to be in JSON format, but if you dig deeper they accept
+        // michelson too.
+        //
+        // The library is not that smart either - the order of the arguments in
+        // storage must match the michelson.
         return tezos.contract.originate({
             code: contract_michelson,
             storage: {
                 custodian: contractCustodian,
-                ledger: MichelsonMap.fromLiteral({}),
                 external_ledger: MichelsonMap.fromLiteral({}),
-                metadata: MichelsonMap.fromLiteral({})
+                ledger: MichelsonMap.fromLiteral({}),
+                metadata: MichelsonMap.fromLiteral({}),
+                operators: []
             }
         })
         .then((originationOp) => {
