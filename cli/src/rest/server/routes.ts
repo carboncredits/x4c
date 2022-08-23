@@ -15,6 +15,9 @@ router.get('/credit/sources/:custodianID', controller.getCreditSources);
 // Get information about an operation
 router.get('/operation/:opHash', controller.getOperation);
 
+// Get the URL of the indexer that the server is using
+router.get('/info/indexer-url', controller.getIndexerUrl)
+
 // <><><> POST <><><>
 
 // Retiring a credit using it's ID
