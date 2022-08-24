@@ -59,7 +59,7 @@ export default class extends Command {
 		try {
 			 const contracts_data = await readFile(contracts_path, 'utf8');
 			 contracts_list = JSON.parse(contracts_data);
-		} catch {}
+		} catch { /* No file just means no data */ }
 		contracts_list.push({
 			name: alias,
 			value: contract.contract.address
@@ -69,3 +69,4 @@ export default class extends Command {
 		return '';
 	}
 }
+

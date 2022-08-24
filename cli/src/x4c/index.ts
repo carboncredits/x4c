@@ -110,7 +110,7 @@ export default class X4CClient {
                     }
                 }
             }
-        } catch {}
+        } catch { /* No file just means no data */ }
 
         if (fa2s.length === 1) {
             this._default_fa2_contract = fa2s[0];
@@ -130,7 +130,7 @@ export default class X4CClient {
                     this.keys[name] = signer;
                 }
             }
-        } catch {}
+        } catch { /* No file just means no data */ }
     }
 
     async getFA2Contact(contract_str: string, signer_str?: string): Promise<FA2Contract> {
