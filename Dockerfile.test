@@ -1,0 +1,30 @@
+FROM ligolang/ligo:0.49.0 AS ligo
+COPY *.mligo /root/
+RUN ./ligo compile contract fa2.mligo --entry-point main -o fa2.michelson
+RUN ./ligo compile contract custodian.mligo --entry-point main -o custodian.michelson
+
+FROM node:18 AS node
+
+# node is based on debian
+RUN apt-get update -qqy \
+	&& apt-get install -qy wget \
+	&& rm -rf /var/lib/apt/lists/* \
+	&& rm -rf /var/cache/apt/*
+
+RUN arch=$(arch | sed s/aarch64/-arm64/ | sed s/x86_64//) && \
+	wget -O tezos-client "https://github.com/serokell/tezos-packaging/releases/download/v14.0-1/tezos-client${arch}"
+RUN chmod 755 tezos-client
+RUN mv tezos-client /bin/tezos-client
+RUN tezos-client config reset
+
+WORKDIR /app
+COPY cli .
+RUN npm install -g typescript && npm install
+RUN tsc
+RUN npm link
+RUN chmod 755 /app/integration_tests.sh
+
+COPY --from=ligo /root/fa2.michelson .
+COPY --from=ligo /root/custodian.michelson .
+
+# ENTRYPOINT "/app/integration_tests.sh"

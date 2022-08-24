@@ -33,39 +33,38 @@ export default class extends Command {
 		oracle_str: string,
 	) {
 		const client = X4CClient.getInstance();
-		
+
 		// don't let the alias be used if it's already a thing
 		if (await client.hashForArg(alias) !== alias) {
 			throw new Error(`Alias ${alias} already exists`);
 		}
-		
+
 		const signer = await client.signerForArg(signer_str);
 		if (signer === undefined) {
 			throw new Error(`Failed to find signer ${signer_str}`);
 		}
-		
+
 		if (!oracle_str) {
 			oracle_str = signer_str;
 		}
-		const oracle = await client.hashForArg(oracle_str);		
+		const oracle = await client.hashForArg(oracle_str);
 		const contract_michelson = await readFile(contract_path, 'utf-8');
-
 		const contract = await client.originateFA2Contract(contract_michelson, signer, oracle);
 		console.log(`Contract originated as ${contract.contract.address}`)
-		
+
 		// add the contract to the tezos-client info
 		const contracts_path = Path.join(homedir(), '.tezos-client/contracts')
-		const contracts_data = await readFile(contracts_path, 'utf8')
 		let contracts_list = [];
-		if (contracts_data !== undefined) {
-			contracts_list = JSON.parse(contracts_data)
-		}
+		try {
+			 const contracts_data = await readFile(contracts_path, 'utf8');
+			 contracts_list = JSON.parse(contracts_data);
+		} catch { /* No file just means no data */ }
 		contracts_list.push({
 			name: alias,
 			value: contract.contract.address
 		})
 		await writeFile(contracts_path, JSON.stringify(contracts_list))
-		
+
 		return '';
 	}
 }
