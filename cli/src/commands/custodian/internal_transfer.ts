@@ -34,21 +34,21 @@ export default class extends Command {
         amount: number,
         @param({
             description: 'source name',
-            required: false,
+            required: true,
         })
         source_name: string,
         @param({
             description: 'target name',
-            required: false,
+            required: true,
         })
         target_name: string,
     ) {
         const client = X4CClient.getInstance()
-        const custodian = await client.getCustodianContract(contract_str, oracle_str);        
+        const custodian = await client.getCustodianContract(contract_str, oracle_str);
         const fa2 = await client.hashForArg(fa2_str);
-        
+
         custodian.internal_transfer(fa2, token_id, amount, source_name, target_name);
-        
+
         return `Syncing tokens...`;
     }
 }

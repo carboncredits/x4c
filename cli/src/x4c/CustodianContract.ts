@@ -30,6 +30,48 @@ export default class  CustodianContract {
         }
     }
 
+    add_operator(operator: string, token_id: number, token_owner: string) {
+        if (this.tezos.signer === undefined) {
+            throw new Error('Oracle for custodian not provided')
+        }
+        this.tezos.contract.at(this.contract.address).then((contract) => {
+            return contract.methods.update_internal_operators([{
+                "add_operator": {
+                    token_owner: stringToMichelsonBytes(token_owner),
+                    token_operator: operator,
+                    token_id: token_id
+                }
+            }]).send();
+        })
+        .then((op) => {
+            console.log(`Awaiting for ${op.hash} to be confirmed...`);
+            return op.confirmation().then(() => op.hash);
+        })
+        .then((hash) => console.log(`Operation injected: ${this.node_base_url}/${hash}`))
+        .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
+    }
+
+    remove_operator(operator: string, token_id: number, token_owner: string) {
+        if (this.tezos.signer === undefined) {
+            throw new Error('Oracle for custodian not provided')
+        }
+        this.tezos.contract.at(this.contract.address).then((contract) => {
+            return contract.methods.update_internal_operators([{
+                "remove_operator": {
+                    token_owner: stringToMichelsonBytes(token_owner),
+                    token_operator: operator,
+                    token_id: token_id
+                }
+            }]).send();
+        })
+        .then((op) => {
+            console.log(`Awaiting for ${op.hash} to be confirmed...`);
+            return op.confirmation().then(() => op.hash);
+        })
+        .then((hash) => console.log(`Operation injected: ${this.node_base_url}/${hash}`))
+        .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
+    }
+
     internal_mint(fa2_contract: string, token_id: number) {
         if (this.tezos.signer === undefined) {
             throw new Error('Oracle for custodian not provided')
