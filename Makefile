@@ -1,20 +1,26 @@
-CONTRACTS = fa2.mligo custodian.mligo
-TESTS = tests/test_standard_flow.mligo tests/test_fa2.mligo
+LIGO = ligo
 
 .PHONY = test build all clean
 
-BUILT_CONTRACTS = $(CONTRACTS:%.mligo=build/%.tz)
-OUTPUT_TESTS = $(TESTS:%.mligo=build/%.test.output)
+SRC := .
+BUILD := build
+TEST := tests
 
-build: $(BUILT_CONTRACTS)
+SOURCES := $(wildcard $(SRC)/*.mligo)
+TARGETS := $(patsubst $(SRC)/%.mligo, $(BUILD)/%.tz, $(SOURCES))
 
-$(BUILT_CONTRACTS): $(CONTRACTS)
-	ligo compile contract $< --entry-point main --output-file $@
+TESTS := $(wildcard $(TEST)/test_*.mligo)
+TEST_TARGETS := $(patsubst $(TEST)/%.mligo, $(BUILD)/%.output, $(TESTS))
 
-test: $(OUTPUT_TESTS)
+build: $(TARGETS)
 
-$(OUTPUT_TESTS): $(TESTS)
-	ligo run test $< > $@
+$(BUILD)/%.tz: $(SRC)/%.mligo
+	$(LIGO) compile contract $< --entry-point main --output-file $@
+
+test: $(TEST_TARGETS)
+
+$(BUILD)/%.output: $(TEST)/%.mligo
+	$(LIGO) run test $< > $@
 
 all: build test
 
