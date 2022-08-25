@@ -1,5 +1,5 @@
 CONTRACTS = fa2.mligo custodian.mligo
-TESTS = test.mligo
+TESTS = tests/test_standard_flow.mligo tests/test_fa2.mligo
 
 .PHONY = test build all clean
 
