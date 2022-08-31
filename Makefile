@@ -1,4 +1,4 @@
-LIGO = ligo
+LIGO = docker run --rm -v "$(PWD)":"$(PWD)" -w "$(PWD)" ligolang/ligo:0.49.0
 
 .PHONY = test build all clean
 
@@ -19,7 +19,7 @@ $(BUILD)/%.tz: $(SRC)/%.mligo
 
 test: $(TEST_TARGETS)
 
-$(BUILD)/%.output: $(TEST)/%.mligo
+$(BUILD)/%.output: $(TEST)/%.mligo tests/common.mligo tests/assert.mligo $(SRC)/*.mligo
 	$(LIGO) run test $< > $@
 
 all: build test

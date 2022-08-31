@@ -1,34 +1,19 @@
 #import "./assert.mligo" "Assert"
+#import "./common.mligo" "Common"
+
 #include "../fa2.mligo"
 type storage_fa2 = storage
 type entrypoint_fa2 = entrypoint
 type owner_fa2 = owner
 type operator_fa2 = operator
 
-let bootstrap_fa2 () =
-	let (fa2_owner) =
-		let _reset_state_unit = Test.reset_state 6n ([] : tez list) in
-			(Test.nth_bootstrap_account 0) in
-
-	let _ = Test.set_source fa2_owner in
-
-	let init_fa2_storage = {
-		oracle = fa2_owner ;
-		ledger = (Big_map.empty : (owner_fa2, nat) big_map) ;
-		operators = (Set.empty : operator_fa2 set) ;
-		token_metadata = (Big_map.empty : (token_id, token_metadata) big_map) ;
-		metadata = (Big_map.empty : (string, bytes) big_map) ;
-	} in
-	let (addr_fa2, _pgm_fa2, _size_fa2) =
-		Test.originate_from_file "fa2.mligo" "main" [ "view_balance_of" ; "view_get_metadata" ; ] (Test.compile_value init_fa2_storage) 0tez in
-	let typed_addr_fa2 = (Test.cast_address addr_fa2 : (entrypoint_fa2, storage_fa2) typed_address) in
-
-	// return
-	(fa2_owner, typed_addr_fa2)
+let fa2_bootstrap () =
+	let test_fa2 = Common.fa2_bootstrap() in
+	(test_fa2.owner, test_fa2.contract)
 
 
 let test_add_token_and_mint =
-	let (fa2_owner, fa2_contract) = bootstrap_fa2() in
+	let (fa2_owner, fa2_contract) = fa2_bootstrap() in
 	let _ = Test.set_source fa2_owner in
 
 	let _op_add_token_id =
@@ -47,11 +32,25 @@ let test_add_token_and_mint =
 
 		let res = Test.transfer_to_contract entrypoint_mint_tokens txndata_mint_tokens 0tez in
 
-		Assert.tx_success(res) in ()
+		Assert.tx_success(res) in
 
+	let updated_state = Test.get_storage fa2_contract in
+	let _test_metadata =
+		let opt_token_metadata = Big_map.find_opt 0n updated_state.token_metadata in
+		match opt_token_metadata with
+			| None -> Test.failwith "No tokendata found"
+			| Some _ -> ()
+		in
+	let _test_ledger =
+		let owner = {token_owner = fa2_owner; token_id = 0n; } in
+		let opt_ledger = Big_map.find_opt owner updated_state.ledger in
+		match opt_ledger with
+			| None -> Test.failwith ""
+			| Some val -> assert (val = 1_000_000n)
+		in ()
 
 let test_mint_without_add_fails =
-	let (fa2_owner, fa2_contract) = bootstrap_fa2() in
+	let (fa2_owner, fa2_contract) = fa2_bootstrap() in
 	let _ = Test.set_source fa2_owner in
 
 	let _op_mint_tokens =
@@ -67,7 +66,7 @@ let test_mint_without_add_fails =
 
 
 let test_add_existing_token_id_fails =
-	let (fa2_owner, fa2_contract) = bootstrap_fa2() in
+	let (fa2_owner, fa2_contract) = fa2_bootstrap() in
 	let _ = Test.set_source fa2_owner in
 
 	let _op_add_token_id =
@@ -88,7 +87,7 @@ let test_add_existing_token_id_fails =
 
 
 let test_non_oracle_add_token_fails =
-	let (_, fa2_contract) = bootstrap_fa2() in
+	let (_, fa2_contract) = fa2_bootstrap() in
 	let other_wallet = Test.nth_bootstrap_account 1 in
 	let _ = Test.set_source other_wallet in
 
@@ -103,7 +102,7 @@ let test_non_oracle_add_token_fails =
 
 
 let test_non_oracle_mint_fails =
-	let (fa2_owner, fa2_contract) = bootstrap_fa2() in
+	let (fa2_owner, fa2_contract) = fa2_bootstrap() in
 
 	let _op_add_token_id =
 		let _ = Test.set_source fa2_owner in
@@ -128,7 +127,7 @@ let test_non_oracle_mint_fails =
 
 
 let test_update_oracle =
-	let (fa2_owner, fa2_contract) = bootstrap_fa2() in
+	let (fa2_owner, fa2_contract) = fa2_bootstrap() in
 	let other_wallet = Test.nth_bootstrap_account 1 in
 	let _ = Test.set_source fa2_owner in
 
@@ -148,7 +147,7 @@ let test_update_oracle =
 
 
 let test_non_oracle_update_oracle_fails =
-	let (fa2_owner, fa2_contract) = bootstrap_fa2() in
+	let (fa2_owner, fa2_contract) = fa2_bootstrap() in
 	let other_wallet = Test.nth_bootstrap_account 1 in
 	let _ = Test.set_source other_wallet in
 
