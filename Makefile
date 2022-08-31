@@ -1,4 +1,8 @@
+ifndef USE_DOCKER
+LIGO = ligo
+else
 LIGO = docker run --rm -v "$(PWD)":"$(PWD)" -w "$(PWD)" ligolang/ligo:0.49.0
+endif
 
 .PHONY = test build all clean
 
