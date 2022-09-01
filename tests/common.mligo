@@ -102,3 +102,20 @@ let custodian_retire (test_custodian: test_custodian) (test_fa2: test_fa2) (reti
 		Test.to_entrypoint "retire" test_custodian.contract in
 	Test.transfer_to_contract entrypoint_internal_retire txndata_retire 0tez
 
+
+let custodian_add_operator (test_custodian: test_custodian) (operator_data: operator_custodian) : test_exec_result =
+	let _ = Test.set_source test_custodian.owner in
+	let txndata_add_operator : update_internal_operators =
+		[ Add_operator(operator_data) ; ] in
+	let entrypoint_add_operator : update_internal_operators contract =
+		Test.to_entrypoint "update_internal_operators" test_custodian.contract in
+	Test.transfer_to_contract entrypoint_add_operator txndata_add_operator 0tez
+
+
+let custodian_remove_operator (test_custodian: test_custodian) (operator_data: operator_custodian) : test_exec_result =
+	let _ = Test.set_source test_custodian.owner in
+	let txndata_add_operator : update_internal_operators =
+		[ Remove_operator(operator_data) ; ] in
+	let entrypoint_add_operator : update_internal_operators contract =
+		Test.to_entrypoint "update_internal_operators" test_custodian.contract in
+	Test.transfer_to_contract entrypoint_add_operator txndata_add_operator 0tez
