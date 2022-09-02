@@ -222,7 +222,7 @@ let add_token_id (param : token_metadata list) (storage : storage) : result =
         { s with token_metadata =
             match Big_map.get_and_update d.token_id (Some d) s.token_metadata with
             | (None, m) -> m
-            | (Some _, m) -> (failwith error_ID_ALREADY_IN_USE : (token_id, token_metadata) big_map) } )
+            | (Some _, m) -> (failwith error_COLLISION : (token_id, token_metadata) big_map) } )
     storage
     param
 

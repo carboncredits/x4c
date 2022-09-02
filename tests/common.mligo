@@ -22,7 +22,7 @@ let fa2_bootstrap(): test_fa2 =
 		let _reset_state_unit = Test.reset_state 6n ([] : tez list) in
 			(Test.nth_bootstrap_account 0) in
 
-	let _ = Test.set_source fa2_owner in
+	let _ : unit = Test.set_source fa2_owner in
 
 	let init_fa2_storage = {
 		oracle = fa2_owner ;
@@ -40,7 +40,7 @@ let fa2_bootstrap(): test_fa2 =
 
 
 let fa2_add_token (test_fa2: test_fa2) (token_id: nat) : test_exec_result =
-	let _ = Test.set_source test_fa2.owner in
+	let _ : unit = Test.set_source test_fa2.owner in
 	let txndata_add_token_id : token_metadata list =
 		[ { token_id = token_id ; token_info = (Map.empty : (string, bytes) map) ; } ; ] in
 	let entrypoint_add_token_id : token_metadata list contract =
@@ -49,7 +49,7 @@ let fa2_add_token (test_fa2: test_fa2) (token_id: nat) : test_exec_result =
 
 
 let fa2_mint_token (test_fa2: test_fa2) (token_id: nat) (owner: address) (count: nat) : test_exec_result =
-	let _ = Test.set_source test_fa2.owner in
+	let _ : unit = Test.set_source test_fa2.owner in
 	let txndata_mint_tokens : mint = [
 		{ owner = owner ; token_id = token_id ; qty = count ; }
 	] in
@@ -67,7 +67,7 @@ type test_custodian = {
 
 let custodian_bootstrap (): test_custodian =
 	let custodian_owner = Test.nth_bootstrap_account 1 in
-	let _ = Test.set_source custodian_owner in
+	let _ : unit = Test.set_source custodian_owner in
 
 	let init_custodian_storage = {
 		custodian = custodian_owner;
@@ -84,7 +84,7 @@ let custodian_bootstrap (): test_custodian =
 
 
 let custodian_internal_mint (test_custodian: test_custodian) (test_fa2: test_fa2) (token_id: nat) : test_exec_result =
-	let _ = Test.set_source test_custodian.owner in
+	let _ : unit = Test.set_source test_custodian.owner in
 	let txndata_internal_mint : internal_mint list = [
 		{ token_id = token_id ; token_address = test_fa2.contract_address ; } ;
 	] in
@@ -94,7 +94,7 @@ let custodian_internal_mint (test_custodian: test_custodian) (test_fa2: test_fa2
 
 
 let custodian_retire (test_custodian: test_custodian) (test_fa2: test_fa2) (retire_data: internal_retire_data) : test_exec_result =
-	let _ = Test.set_source test_custodian.owner in
+	let _ : unit = Test.set_source test_custodian.owner in
 	let txndata_retire : internal_retire list =
 		let txs = [ retire_data ; ] in
 		[ { token_address = test_fa2.contract_address ; txs = txs ; } ] in
@@ -104,7 +104,7 @@ let custodian_retire (test_custodian: test_custodian) (test_fa2: test_fa2) (reti
 
 
 let custodian_add_operator (test_custodian: test_custodian) (operator_data: operator_custodian) : test_exec_result =
-	let _ = Test.set_source test_custodian.owner in
+	let _ : unit = Test.set_source test_custodian.owner in
 	let txndata_add_operator : update_internal_operators =
 		[ Add_operator(operator_data) ; ] in
 	let entrypoint_add_operator : update_internal_operators contract =
@@ -113,7 +113,7 @@ let custodian_add_operator (test_custodian: test_custodian) (operator_data: oper
 
 
 let custodian_remove_operator (test_custodian: test_custodian) (operator_data: operator_custodian) : test_exec_result =
-	let _ = Test.set_source test_custodian.owner in
+	let _ : unit = Test.set_source test_custodian.owner in
 	let txndata_add_operator : update_internal_operators =
 		[ Remove_operator(operator_data) ; ] in
 	let entrypoint_add_operator : update_internal_operators contract =
