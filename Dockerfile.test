@@ -1,4 +1,4 @@
-FROM ligolang/ligo:0.49.0 AS ligo
+FROM ligolang/ligo:0.50.0 AS ligo
 COPY *.mligo /root/
 RUN ./ligo compile contract fa2.mligo --entry-point main -o fa2.michelson
 RUN ./ligo compile contract custodian.mligo --entry-point main -o custodian.michelson

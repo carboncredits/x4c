@@ -1,20 +1,30 @@
-CONTRACTS = fa2.mligo custodian.mligo
-TESTS = test.mligo
+ifndef USE_DOCKER
+LIGO = ligo
+else
+LIGO = docker run --rm -v "$(PWD)":"$(PWD)" -w "$(PWD)" ligolang/ligo:0.50.0
+endif
 
 .PHONY = test build all clean
 
-BUILT_CONTRACTS = $(CONTRACTS:%.mligo=build/%.tz)
-OUTPUT_TESTS = $(TESTS:%.mligo=build/%.test.output)
+SRC := .
+BUILD := build
+TEST := tests
 
-build: $(BUILT_CONTRACTS)
+SOURCES := $(wildcard $(SRC)/*.mligo)
+TARGETS := $(patsubst $(SRC)/%.mligo, $(BUILD)/%.tz, $(SOURCES))
 
-$(BUILT_CONTRACTS): $(CONTRACTS)
-	ligo compile contract $< --entry-point main --output-file $@
+TESTS := $(wildcard $(TEST)/test_*.mligo)
+TEST_TARGETS := $(patsubst $(TEST)/%.mligo, $(BUILD)/%.output, $(TESTS))
 
-test: $(OUTPUT_TESTS)
+build: $(TARGETS)
 
-$(OUTPUT_TESTS): $(TESTS)
-	ligo run test $< > $@
+$(BUILD)/%.tz: $(SRC)/%.mligo
+	$(LIGO) compile contract $< --entry-point main --output-file $@
+
+test: $(TEST_TARGETS)
+
+$(BUILD)/%.output: $(TEST)/%.mligo tests/common.mligo tests/assert.mligo $(SRC)/*.mligo
+	$(LIGO) run test $< > $@
 
 all: build test
 
