@@ -66,7 +66,7 @@ let test_add_existing_token_id_fails =
 		let entrypoint_add_token_id : token_metadata list contract =
 			Test.to_entrypoint "add_token_id" test_fa2.contract in
 		let res = Test.transfer_to_contract entrypoint_add_token_id txndata_add_token_id 0tez in
-		Assert.failure_code res error_COLLISION in
+		Assert.failure_code res error_ID_ALREADY_IN_USE in
 
 	let updated_state = Test.get_storage test_fa2.contract in
 	let opt_updated_metadata = Big_map.find_opt 42n updated_state.token_metadata in
