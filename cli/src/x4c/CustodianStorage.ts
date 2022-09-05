@@ -17,6 +17,12 @@ type CustodianLedgerEntry = {
 	amount: number;
 }
 
+type CustodianOperator = {
+	kyc: any;
+	operator: String;
+	token_id: number;
+}
+
 export default class CustodianStorage {
 
 	private readonly client: GenericClient;
@@ -61,6 +67,18 @@ export default class CustodianStorage {
 				minter: key[1],
 				token_id: parseInt(key[2]),
 				amount: parseInt(amount)
+			}
+		});
+	}
+
+	async operators(): Promise<CustodianOperator[]> {
+		const info = await this.get_info();
+		const operators = await info.operators;
+		return operators.map((item: any) => {
+			return {
+				kyc: michelsonBytesToString(item.token_owner),
+				operator: item.token_operator,
+				token_id: item.token_id
 			}
 		});
 	}

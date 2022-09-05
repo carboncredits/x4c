@@ -191,6 +191,97 @@ let test_others_cannot_retire =
 		in ()
 
 
+let test_operator_can_retire =
+	let test_fa2 = Common.fa2_bootstrap() in
+	let test_custodian = Common.custodian_bootstrap() in
+
+	let operator_data = { token_owner = (Bytes.pack "self") ; token_operator = test_fa2.owner ; token_id = 42n ; } in
+	let _ = Common.custodian_add_operator test_custodian operator_data in
+
+	let _ : test_exec_result = Common.fa2_add_token test_fa2 42n in
+	let _ : test_exec_result = Common.fa2_mint_token test_fa2 42n test_custodian.contract_address 1_000n in
+	let _ : test_exec_result = Common.custodian_internal_mint test_custodian test_fa2 42n in
+
+	let retire_data = {
+		retiring_party_kyc = (Bytes.pack "self") ;
+		token_id = 42n ;
+		amount = 350n ;
+		retiring_data = (Bytes.pack "this is for testing") ;
+	} in
+	let operator_actor: Common.test_custodian = {owner = test_fa2.owner; contract = test_custodian.contract; contract_address = test_custodian.contract_address; } in
+	let res = Common.custodian_retire operator_actor test_fa2 retire_data in
+	let _ : unit = Assert.tx_success(res) in
+
+	let custodian_state = Test.get_storage test_custodian.contract in
+	let tok = { token_id = 42n; token_address = test_fa2.contract_address; } in
+	let _test_ledger =
+		let owner = { kyc = (Bytes.pack "self"); token = tok; } in
+		let val = Big_map.find_opt owner custodian_state.ledger in
+		match val with
+			| None ->  Test.failwith "Should be ledger entry"
+			| Some val -> assert (val = 650n)
+		 in
+	let _test_ext_ledger =
+		let val = Big_map.find_opt tok custodian_state.external_ledger in
+		match val with
+			| None -> Test.failwith "Should be external ledger entry"
+			| Some val -> assert (val = 650n)
+		in
+
+	let fa2_state = Test.get_storage test_fa2.contract in
+	let _test_ledger =
+		let owner = { token_owner = test_custodian.contract_address; token_id = 42n; } in
+		let val = Big_map.find_opt owner fa2_state.ledger in
+		match val with
+			| None -> Test.failwith "Should be a ledger entry"
+			| Some val -> assert (val = 650n)
+		in ()
+
+
+let test_operator_for_other_token_cannot_retire =
+	let test_fa2 = Common.fa2_bootstrap() in
+	let test_custodian = Common.custodian_bootstrap() in
+
+	let operator_data = { token_owner = (Bytes.pack "self") ; token_operator = test_fa2.owner ; token_id = 43n ; } in
+	let _ = Common.custodian_add_operator test_custodian operator_data in
+
+	let _ : test_exec_result = Common.fa2_add_token test_fa2 42n in
+	let _ : test_exec_result = Common.fa2_mint_token test_fa2 42n test_custodian.contract_address 1_000n in
+	let _ : test_exec_result = Common.custodian_internal_mint test_custodian test_fa2 42n in
+
+	let retire_data = {
+		retiring_party_kyc = (Bytes.pack "self") ;
+		token_id = 42n ;
+		amount = 350n ;
+		retiring_data = (Bytes.pack "this is for testing") ;
+	} in
+	let other_operator_actor: Common.test_custodian = {owner = test_fa2.owner; contract = test_custodian.contract; contract_address = test_custodian.contract_address; } in
+	let res = Common.custodian_retire other_operator_actor test_fa2 retire_data in
+	let _ : unit = Assert.failure_code res error_PERMISSIONS_DENIED in ()
+
+
+let test_operator_for_other_kyc_cannot_retire =
+	let test_fa2 = Common.fa2_bootstrap() in
+	let test_custodian = Common.custodian_bootstrap() in
+
+	let operator_data = { token_owner = (Bytes.pack "other") ; token_operator = test_fa2.owner ; token_id = 42n ; } in
+	let _ = Common.custodian_add_operator test_custodian operator_data in
+
+	let _ : test_exec_result = Common.fa2_add_token test_fa2 42n in
+	let _ : test_exec_result = Common.fa2_mint_token test_fa2 42n test_custodian.contract_address 1_000n in
+	let _ : test_exec_result = Common.custodian_internal_mint test_custodian test_fa2 42n in
+
+	let retire_data = {
+		retiring_party_kyc = (Bytes.pack "self") ;
+		token_id = 42n ;
+		amount = 350n ;
+		retiring_data = (Bytes.pack "this is for testing") ;
+	} in
+	let other_operator_actor: Common.test_custodian = {owner = test_fa2.owner; contract = test_custodian.contract; contract_address = test_custodian.contract_address; } in
+	let res = Common.custodian_retire other_operator_actor test_fa2 retire_data in
+	let _ : unit = Assert.failure_code res error_PERMISSIONS_DENIED in ()
+
+
 let test_cannot_retire_too_much =
 	let test_fa2 = Common.fa2_bootstrap() in
 	let test_custodian = Common.custodian_bootstrap() in

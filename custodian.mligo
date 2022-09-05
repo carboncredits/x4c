@@ -16,8 +16,8 @@ type owner = {
     token : token ;
 }
 type operator = [@layout:comb]{
-    token_owner : bytes ; 
-    token_operator : address ; 
+    token_owner : bytes ;
+    token_operator : address ;
     token_id : nat ;
 }
 
@@ -35,8 +35,8 @@ type storage = {
     // an operator can trade tokens on behalf of the fa2_owner
     operators : operator set;
 
-    // contract metadata 
-    metadata : (string, bytes) big_map ; 
+    // contract metadata
+    metadata : (string, bytes) big_map ;
 }
 
 type result = operation list * storage
@@ -59,7 +59,7 @@ type transfer = [@layout:comb]{ from_ : address ; txs : transfer_to list; }
 type internal_mint = { token_id : nat ; token_address : address ; }
 
 type operator_data = [@layout:comb]{ token_owner : bytes ; token_operator : address ; token_id : nat ; }
-type update_internal_operator = 
+type update_internal_operator =
     | Add_operator of operator_data
     | Remove_operator of operator_data
 type update_internal_operators = update_internal_operator list
@@ -84,7 +84,7 @@ type entrypoint =
 | Internal_mint of internal_mint list
 | External_transfer of external_transfer list
 | Update_internal_operators of update_internal_operators // change operators for some address
-| Retire of internal_retire list 
+| Retire of internal_retire list
 
 (* =============================================================================
  * Error Codes
@@ -106,22 +106,22 @@ let update_balance (type k) (k : k) (diff : int) (ledger : (k, nat) big_map) : (
         abs(old_bal + diff) in
     Big_map.update k (if new_bal = 0n then None else Some new_bal) ledger
 
-let is_operator (operator : operator) (operators : operator set) : bool = 
+let is_operator (operator : operator) (operators : operator set) : bool =
     Set.mem operator operators
 
 (* =============================================================================
  * Entrypoint Functions
  * ============================================================================= *)
 
-let internal_transfer (param : internal_transfer list) (storage : storage) : result = 
+let internal_transfer (param : internal_transfer list) (storage : storage) : result =
     ([] : operation list),
     List.fold
-    (fun (storage, p_1 : storage * internal_transfer) : storage -> 
-        List.fold 
-        (fun (storage, p_2 : storage * internal_transfer_to) : storage -> 
+    (fun (storage, p_1 : storage * internal_transfer) : storage ->
+        List.fold
+        (fun (storage, p_2 : storage * internal_transfer_to) : storage ->
             // check permissions
-            if (Tezos.get_sender ()) <> storage.custodian && not is_operator { token_owner = p_1.from_ ; token_operator = (Tezos.get_sender ()) ; token_id = p_2.token_id ; } storage.operators 
-                        then (failwith error_PERMISSIONS_DENIED : storage) else     
+            if (Tezos.get_sender ()) <> storage.custodian && not is_operator { token_owner = p_1.from_ ; token_operator = (Tezos.get_sender ()) ; token_id = p_2.token_id ; } storage.operators
+                        then (failwith error_PERMISSIONS_DENIED : storage) else
             // update the ledger
             let token : token = { token_address = p_1.token_address ; token_id = p_2.token_id ; } in
             { storage with
@@ -199,32 +199,33 @@ let external_transfer (param : external_transfer list) (storage : storage) : res
         param in
     ops_external_transfer, storage
 
-let update_internal_operator (storage, param : storage * update_internal_operator) : storage = 
+let update_internal_operator (storage, param : storage * update_internal_operator) : storage =
     match param with
     | Add_operator o ->
-        let (token_owner, token_operator, token_id) = (o.token_owner, o.token_operator, o.token_id) in 
+        let (token_owner, token_operator, token_id) = (o.token_owner, o.token_operator, o.token_id) in
         // update storage
-        {storage with operators = 
+        {storage with operators =
             Set.add {token_owner = token_owner; token_operator = token_operator; token_id = token_id ;} storage.operators ; }
     | Remove_operator o ->
-        let (token_owner, token_operator, token_id) = (o.token_owner, o.token_operator, o.token_id) in 
+        let (token_owner, token_operator, token_id) = (o.token_owner, o.token_operator, o.token_id) in
         // update storage
         {storage with operators =
             Set.remove {token_owner = token_owner; token_operator = token_operator; token_id = token_id ;} storage.operators ; }
 
-let update_internal_operators (param : update_internal_operators) (storage : storage) : result = 
+let update_internal_operators (param : update_internal_operators) (storage : storage) : result =
     if ((Tezos.get_sender ()) <> storage.custodian) then (failwith error_PERMISSIONS_DENIED : result) else
     ([] : operation list),
     List.fold update_internal_operator param storage
 
 let retire (param : internal_retire list) (storage : storage) : result =
-    if (Tezos.get_sender ()) <> storage.custodian then (failwith error_PERMISSIONS_DENIED : result) else
     // update internal ledger
     let storage =
         List.fold
         (fun (storage, p_1 : storage * internal_retire) : storage ->
             List.fold
             (fun (storage, p_2 : storage * internal_retire_data) : storage ->
+                if (Tezos.get_sender ()) <> storage.custodian && not is_operator { token_owner = p_2.retiring_party_kyc ; token_operator = (Tezos.get_sender ()) ; token_id = p_2.token_id ; } storage.operators
+                    then (failwith error_PERMISSIONS_DENIED : storage) else
                 let token = { token_address = p_1.token_address ; token_id = p_2.token_id ; } in
                 { storage with
                     ledger =
@@ -282,11 +283,11 @@ let main (param, storage : entrypoint * storage) : result =
         internal_transfer p storage
     | Internal_mint p ->
         internal_mint p storage
-    | External_transfer p -> 
-        external_transfer p storage 
+    | External_transfer p ->
+        external_transfer p storage
     | Update_internal_operators p ->
         update_internal_operators p storage
-    | Retire p -> 
-        retire p storage 
+    | Retire p ->
+        retire p storage
 
 
