@@ -36,10 +36,43 @@ let test_mint_without_add_fails =
 
 let test_add_existing_token_id_fails =
 	let test_fa2 = Common.fa2_bootstrap() in
+	let _ : unit = Test.set_source test_fa2.owner in
 
-	let _ : test_exec_result = Common.fa2_add_token test_fa2 0n in
-	let res = Common.fa2_add_token test_fa2 0n in
-	let _ : unit = Assert.failure_code res error_COLLISION in ()
+	let expected_metadata: token_metadata = {token_id = 42n; token_info = Map.literal[
+		("test", Bytes.pack "foo")
+	];} in
+
+	let _initial_insert =
+		let txndata_add_token_id : token_metadata list = [ expected_metadata; ] in
+		let entrypoint_add_token_id : token_metadata list contract =
+			Test.to_entrypoint "add_token_id" test_fa2.contract in
+		let res = Test.transfer_to_contract entrypoint_add_token_id txndata_add_token_id 0tez in
+		Assert.tx_success(res) in
+
+
+	let current_state = Test.get_storage test_fa2.contract in
+	let opt_current_metadata: token_metadata option = Big_map.find_opt 42n current_state.token_metadata in
+	let _: unit = match opt_current_metadata with
+		| None -> Test.failwith "Expected some current metadata"
+		| Some val -> assert (val = expected_metadata)
+	in
+
+	let unexpected_metadata: token_metadata = {token_id = 42n; token_info = Map.literal[
+		("test", Bytes.pack "bar")
+	];} in
+
+	let _repeat_insert =
+		let txndata_add_token_id : token_metadata list = [ unexpected_metadata; ] in
+		let entrypoint_add_token_id : token_metadata list contract =
+			Test.to_entrypoint "add_token_id" test_fa2.contract in
+		let res = Test.transfer_to_contract entrypoint_add_token_id txndata_add_token_id 0tez in
+		Assert.failure_code res error_ID_ALREADY_IN_USE in
+
+	let updated_state = Test.get_storage test_fa2.contract in
+	let opt_updated_metadata = Big_map.find_opt 42n updated_state.token_metadata in
+	match opt_updated_metadata with
+		| None -> Test.failwith "Expected some updated metadata"
+		| Some val -> assert (val = expected_metadata)
 
 
 let test_non_oracle_add_token_fails =
