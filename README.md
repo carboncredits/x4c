@@ -93,7 +93,7 @@ This should give you fa2.tz and custodian.tz in the build/ directory.
 Finally you'll want to select a [test network](https://teztnets.xyz) on which to instantiate the contracts. For the 4C end-to-end experience you'll need to ensure you have the following endpoints available on the test network:
 
 * An Tezos node RPC endpoint - e.g., https://rpc.jakartanet.teztnets.xyz
-* An Indexer PRC endpoint - e.g., https://api.jakarta.tzstats.com
+* An Indexer RPC endpoint - e.g., https://api.jakarta.tzstats.com
 * An Indexer human frontend - e.g., https://jakarta.tzstats.com
 
 When using a test net tezos-client will report that you're not on mainnet on every command invocation, so you may wish to set the following environmental variable to prevent that:
@@ -139,7 +139,7 @@ $ tezos-client get balance for facetwallet
 6001 ꜩ
 ```
 
-Note that it may take a little time for the transaction to prepegate, so you may initially see a zero balance, but just try again in a minute.
+Note that it may take a little time for the transaction to propagate, so you may initially see a zero balance, but just try again in a minute.
 
 ### Set up X4C actors wallets
 
@@ -208,7 +208,7 @@ Awaiting for opViJhWJz3HBzS2K5x3hf5BaXWpbmrD5yLkYd2y55YxcCznZAbJ to be confirmed
 Operation injected: https://rpc.jakartanet.teztnets.xyz/opViJhWJz3HBzS2K5x3hf5BaXWpbmrD5yLkYd2y55YxcCznZAbJ
 ```
 
-Finally, the custodian is holding tokens for off chain entities that aren't expected to hold their own wallets. By default the internal_mint call to the custodian has "self" holding the tokens, but in practice you'd then assign them to others:
+Finally, the custodian is holding tokens for off-chain entities that aren't expected to hold their own wallets. By default the internal_mint call to the custodian has "self" holding the tokens, but in practice you'd then assign them to others:
 
 ```
 $ x4c custodian internal_transfer CustodianOwner CustodianContract FA2Contract 123 500 "self" "example corp"
