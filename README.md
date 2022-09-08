@@ -67,23 +67,172 @@ in a particular token contract, and the latter is a transfer on the internal
 ledger. The `%external_transfer` and `%retire` emit, respectively, transfer and
 retire contract calls to the token contract.
 
-# v1.0
+# Usage
 
-In `v1.0` we intend to move to having a set of permissioned on-chain entities
-who can hold and exchange the FA2 carbon credit tokens.
+These are the steps required to instantiate the basic contract pair on a testnet.
 
-Why permissioned? There are requirements around what they can do with them (e.g
-keeping them on Tezos, ensuring a % of secondary sales go to the original
-projects/some other pot). These requirements will be determined by the
-flexibility of agreements made with initial supply partners.
+## Prerequisites
 
-Our primary goal with v1.0 is to enable these entities to sell and (preferably)
-auto-retire carbon credits to on-chain demand.  This enables many different
-opportunities in the Tezos ecosystem:
+First make sure you have [tezos-client](https://assets.tqtezos.com/docs/setup/1-tezos-client/) and the [x4c CLI](cli/) tools installed.
 
-* Exchanges that facilitate buying/selling between these entities
-* Market makers that use metadata (permanence/additionality/leakage) from credits to rate and "bundle" credits to sell to other participants
-* Providing the purchase+offset on-chain (they would provide an API for other smart contracts to call)
-* Providing the purchase+offset to retail demand off-chain (e.g take fiat payments, bring that on-chain, purchase/retire offset and provide a display of this. There's value in making that process seamless and dealing with volatility).
-* Integration with other demand sources, e.g Razer integrating in to the checkout process of the customers they provide payment processing for, then purchase+auto retiring and also hosting a page/email to show the offset)
-* Wallet integration to show available offsets for purchase planning.
+Next ensure you have the contracts up to date. You’ll need [ligo tools](https://ligolang.org/docs/intro/installation) installed, or you'll want to use Docker (which is what ligo generally recommend). To have the Makefile for compiling the contracts use docker set the following environment variable:
+
+```
+$ export USE_DOCKER=yes
+```
+
+Then run make:
+
+```
+$ cd path_to_x4c_repo
+$ make
+```
+
+This should give you fa2.tz and custodian.tz in the build/ directory.
+
+Finally you'll want to select a [test network](https://teztnets.xyz) on which to instantiate the contracts. For the 4C end-to-end experience you'll need to ensure you have the following endpoints available on the test network:
+
+* An Tezos node RPC endpoint - e.g., https://rpc.jakartanet.teztnets.xyz
+* An Indexer RPC endpoint - e.g., https://api.jakarta.tzstats.com
+* An Indexer human frontend - e.g., https://jakarta.tzstats.com
+
+When using a test net tezos-client will report that you're not on mainnet on every command invocation, so you may wish to set the following environmental variable to prevent that:
+
+```
+$ export TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER=yes
+```
+
+## Steps
+
+### Set up an admin wallet
+
+Not strictly necessary, but I find it makes testing easier - you should create a wallet for you as the admin and ensure it has some tez associated with it. In this example we're using [Jakartanet](https://teztnets.xyz/jakartanet-about).
+
+If you have an old tezos-client state, you may wish to backup your ~/.tezos-client folder. You can then reset the state there if you're not already on jakartanet using:
+
+```
+$ tezos-client config reset
+```
+
+Set tezos-client to use the right test network:
+
+```
+$ tezos-client --endpoint https://rpc.jakartanet.teztnets.xyz config update
+
+```
+
+Now you want to set up a new wallet and get some tez on that. First create the wallet:
+
+```
+$ tezos-client gen keys facetwallet
+$ tezos-client get balance for facetwallet
+0 ꜩ
+$ x4c info
+Alias           Hash                                   Contract type   Default
+ facetwallet    tz1cyDKwRw1CAT1dw7B95eBPqUq456rW6Gsw   Wallet
+```
+
+Then go to https://faucet.jakartanet.teztnets.xyz and request tez for the wallet’s hash. Once you've done that you should hopefully find you now have some tez:
+
+```
+$ tezos-client get balance for facetwallet
+6001 ꜩ
+```
+
+Note that it may take a little time for the transaction to propagate, so you may initially see a zero balance, but just try again in a minute.
+
+### Set up X4C actors wallets
+
+Now we need to create three wallets for the different actors in the X4C contract world. You can have more, but three is the recommended minimum:
+
+1. A wallet for the owner of the FA2 contract
+2. A wallet for the owner of the custodian contract
+3. A wallet for the online operator of the custodian contract
+
+The first two wallets will generally live not on a live server, but out of necessity the final wallet will be one that has to be online to let API calls be accessed from the 4C web frontend. It is recommended that the other two wallets are not put on a publically accessible server.
+
+We can create these wallets and assign them some tez so that they can do things:
+
+```
+$ tezos-client gen keys FA2Owner
+$ tezos-client transfer 1000 from facetwallet to FA2Owner --burn-cap 0.1
+...
+$ tezos-client gen keys CustodianOwner
+$ tezos-client transfer 1000 from facetwallet to CustodianOwner --burn-cap 0.1
+...
+$ tezos-client gen keys CustodianOperator
+$ tezos-client transfer 1000 from facetwallet to CustodianOperator --burn-cap 0.1
+...
+```
+
+### Originate the contracts
+
+You can use the x4c tools to instantiate the contracts. First do the FA2 contract thus:
+
+```
+$ x4c fa2 originate FA2Contract build/fa2.tz FA2Owner
+Contract originated as KT1HrP3bxARDNWxGyEPtx3LprzUQczg8u19a
+```
+
+and then a custodian contract:
+
+```
+$ x4c custodian originate CustodianContract build/custodian.tz CustodianOwner
+Contract originated as KT1AoLsWX28kH4YhyCKm2g9wGUJGgud8Mkp3
+```
+
+In practice there may be many custodians, but few FA2s (citation needed).
+
+### Create some tokens
+
+Now we need to add a token definition and then mint some actual tokens. There would be a token per project ideally.
+
+```
+$ x4c fa2 add_token FA2Owner 123 "My project" "http://project.url" FA2Contract
+Adding token...
+Awaiting for onwEvkpVH19BPzoZdgHNqLQnD5k3AreZchXw5HSXdadDcEEUdBb to be confirmed...
+Operation injected: https://rpc.jakartanet.teztnets.xyz/onwEvkpVH19BPzoZdgHNqLQnD5k3AreZchXw5HSXdadDcEEUdBb
+
+$ x4c fa2 mint FA2Owner CustodianContract 123 1000 FA2Contract
+Minting tokens...
+Awaiting for ooowBFJwhYMLcBCTeycxa9w7BWE3fbUPMraEAsrVW2LgxStqQ2P to be confirmed...
+Operation injected: https://rpc.jakartanet.teztnets.xyz/ooowBFJwhYMLcBCTeycxa9w7BWE3fbUPMraEAsrVW2LgxStqQ2P
+```
+
+We need then to sync the custodian contract with the FA2 contract:
+
+```
+$ x4c custodian internal_mint CustodianOwner CustodianContract FA2Contract 123
+Syncing tokens...
+Awaiting for opViJhWJz3HBzS2K5x3hf5BaXWpbmrD5yLkYd2y55YxcCznZAbJ to be confirmed...
+Operation injected: https://rpc.jakartanet.teztnets.xyz/opViJhWJz3HBzS2K5x3hf5BaXWpbmrD5yLkYd2y55YxcCznZAbJ
+```
+
+Finally, the custodian is holding tokens for off-chain entities that aren't expected to hold their own wallets. By default the internal_mint call to the custodian has "self" holding the tokens, but in practice you'd then assign them to others:
+
+```
+$ x4c custodian internal_transfer CustodianOwner CustodianContract FA2Contract 123 500 "self" "example corp"
+Syncing tokens...
+Awaiting for opCPgnfteYVeKNL2gNo75h9WzGJaS2MAmPbK9DepPegu7FDsXxH to be confirmed...
+Operation injected: https://rpc.jakartanet.teztnets.xyz/opCPgnfteYVeKNL2gNo75h9WzGJaS2MAmPbK9DepPegu7FDsXxH```
+
+$ x4c custodian internal_transfer CustodianOwner CustodianContract FA2Contract 123 500 "self" "other org"
+Syncing tokens...
+Awaiting for ooatdoMAwHRNwTJ7trxd5G8m391yDFaWkHSddpT8JwCXmeZu7HY to be confirmed...
+Operation injected: https://rpc.jakartanet.teztnets.xyz/ooatdoMAwHRNwTJ7trxd5G8m391yDFaWkHSddpT8JwCXmeZu7HY
+```
+
+### Delegate retirement authority
+
+To avoid having the custodian contract's owner's wallet online, we should delegate responsibility for retiring the credits to one or more operators. In this example I'm going to use a single operator wallet, but you would probably use one per off-chain client. The operator's wallet can then be held on a public facing server without fear that if it is compromised all tokens held by the custodian contract can be drained.
+
+```
+$ x4c custodian add_operator CustodianOwner CustodianContract CustodianOperator 123 "other org"
+Adding operator...
+Awaiting for oow5qgodszwHSo17eXN2XdcumDpMMsbDeSuYVCVCnDEyDAghVK5 to be confirmed...
+Operation injected: https://rpc.jakartanet.teztnets.xyz/oow5qgodszwHSo17eXN2XdcumDpMMsbDeSuYVCVCnDEyDAghVK5
+```
+
+Once this is done the CustodianOperator wallet can only call retire or internal_transfer on the CustodianContract for the tokens of ID 123 that have been assigned to "other org".
+
+
