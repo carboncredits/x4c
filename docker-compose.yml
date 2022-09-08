@@ -25,5 +25,5 @@ services:
         depends_on:
             - tezossandbox
             - tzstats
-        command: /app/integration_tests.sh
+        command: /app/cli/integration_tests.sh
         profiles: ["test"]

@@ -1,7 +1,13 @@
-FROM ligolang/ligo:0.50.0 AS ligo
-COPY *.mligo /root/
-RUN ./ligo compile contract fa2.mligo --entry-point main -o fa2.michelson
-RUN ./ligo compile contract custodian.mligo --entry-point main -o custodian.michelson
+FROM ocaml/opam:debian-11-ocaml-4.14 as ligobuild
+RUN sudo apt-get update -qqy \
+	&& sudo apt-get install -qy libev-dev libgmp-dev pkg-config cargo libev-dev libgmp-dev \
+	&& sudo rm -rf /var/lib/apt/lists/* \
+	&& sudo rm -rf /var/cache/apt/*
+RUN git clone https://gitlab.com/ligolang/ligo.git
+WORKDIR /home/opam/ligo
+RUN git checkout 0.50.0
+RUN make build-deps
+RUN make build
 
 FROM node:18 AS node
 
@@ -17,14 +23,16 @@ RUN chmod 755 tezos-client
 RUN mv tezos-client /bin/tezos-client
 RUN tezos-client config reset
 
+COPY --from=ligobuild /home/opam/ligo/_build/install/default/bin/ligo /bin/ligo
+
 WORKDIR /app
-COPY cli .
+COPY . .
+
+WORKDIR /app/cli
 RUN npm install -g typescript && npm install
 RUN tsc
 RUN npm link
-RUN chmod 755 /app/integration_tests.sh
+RUN chmod 755 /app/cli/integration_tests.sh
 
-COPY --from=ligo /root/fa2.michelson .
-COPY --from=ligo /root/custodian.michelson .
-
-# ENTRYPOINT "/app/integration_tests.sh"
+WORKDIR /app
+RUN make build
