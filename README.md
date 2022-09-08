@@ -188,7 +188,7 @@ In practice there may be many custodians, but few FA2s (citation needed).
 Now we need to add a token definition and then mint some actual tokens. There would be a token per project ideally.
 
 ```
-$ x4c fa3 add_token FA2Owner 123 "My project" "http://project.url" FA2Contract
+$ x4c fa2 add_token FA2Owner 123 "My project" "http://project.url" FA2Contract
 Adding token...
 Awaiting for onwEvkpVH19BPzoZdgHNqLQnD5k3AreZchXw5HSXdadDcEEUdBb to be confirmed...
 Operation injected: https://rpc.jakartanet.teztnets.xyz/onwEvkpVH19BPzoZdgHNqLQnD5k3AreZchXw5HSXdadDcEEUdBb
