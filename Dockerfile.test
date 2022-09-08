@@ -5,6 +5,7 @@ RUN sudo apt-get update -qqy \
 	&& sudo rm -rf /var/cache/apt/*
 RUN git clone https://gitlab.com/ligolang/ligo.git
 WORKDIR /home/opam/ligo
+RUN mkdir ./_opam
 RUN git checkout 0.50.0
 RUN make build-deps
 RUN make build
