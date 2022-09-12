@@ -3,6 +3,7 @@ import { readFile } from 'fs/promises';
 import { homedir } from 'os';
 import * as Path from 'path';
 
+import { RemoteSigner } from '@taquito/remote-signer';
 import { InMemorySigner } from '@taquito/signer';
 import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
 
@@ -25,10 +26,12 @@ export default class X4CClient {
     private readonly indexer_api_base_url: string;
     private readonly indexer_base_url: string;
     private readonly tezos_client_file_location: string;
+    private readonly signatory_base_url: string;
 
     private _default_fa2_contract: Contract | null = null;
     private _contracts: Record<string, Contract> = {}
     private _keys: Record<string, InMemorySigner> = {}
+    private _addresses: Record<string, RemoteSigner> = {}
 
     private static _instance: X4CClient
 
@@ -38,21 +41,24 @@ export default class X4CClient {
     static getInstance(
         node_base_url = "https://rpc.jakartanet.teztnets.xyz",
         indexer_api_base_url = "https://api.jakarta.tzstats.com",
-        indexer_base_url = "https://jakarta.tzstats.com"
+        indexer_base_url = "https://jakarta.tzstats.com",
+        signatory_base_url = 'http://signatory:6732'
     ) {
         return this._instance || (
-            this._instance = new X4CClient(node_base_url, indexer_api_base_url, indexer_base_url)
+            this._instance = new X4CClient(node_base_url, indexer_api_base_url, indexer_base_url, signatory_base_url)
         )
     }
 
     private constructor (
         node_base_url = "https://rpc.jakartanet.teztnets.xyz",
         indexer_api_base_url = "https://api.tzstats.com",
-        indexer_base_url = "https://tzstats.com"
+        indexer_base_url = "https://tzstats.com",
+        signatory_base_url = 'http://signatory:6732'
     ) {
         this.node_base_url = node_base_url;
         this.indexer_api_base_url = indexer_api_base_url;
         this.indexer_base_url = indexer_base_url;
+        this.signatory_base_url = signatory_base_url;
 
         // we might want this configurable in future
         this.tezos_client_file_location = Path.join(homedir(), '.tezos-client')
@@ -68,6 +74,10 @@ export default class X4CClient {
 
     get keys(): Record<string, InMemorySigner> {
         return this._keys;
+    }
+
+    get addresses(): Record<string, RemoteSigner> {
+        return this._addresses;
     }
 
     getIndexerUrl() {
@@ -96,7 +106,7 @@ export default class X4CClient {
         const fa2s: Contract[] = []
 
         try {
-            const contract_data = await readFile(Path.join(this.tezos_client_file_location, 'contracts'), 'utf8')
+            const contract_data = await readFile(Path.join(this.tezos_client_file_location, 'contracts'), 'utf8');
             if (contract_data !== undefined) {
                 const contracts_list: TCPublicInfo[] = JSON.parse(contract_data)
                 for (const item of contracts_list) {
@@ -117,7 +127,7 @@ export default class X4CClient {
         }
 
         try {
-            const key_data = await readFile(Path.join(this.tezos_client_file_location, 'secret_keys'), 'utf8')
+            const key_data = await readFile(Path.join(this.tezos_client_file_location, 'secret_keys'), 'utf8');
             if (key_data !== undefined) {
                 const keys_list: TCPublicInfo[] = JSON.parse(key_data);
                 for (const item of keys_list) {
@@ -128,6 +138,27 @@ export default class X4CClient {
                     }
                     const signer = await InMemorySigner.fromSecretKey(secret_key);
                     this.keys[name] = signer;
+                }
+            }
+        } catch { /* No file just means no data */ }
+
+        // It's not a given that any hashes without keys are stored in signatory in
+        // general, but in the 4C app context I think we can assert this is, if not
+        // true. something we're happy to see errors for if we mess our tezos-client
+        // stores for :)
+        try {
+            const hash_data = await readFile(Path.join(this.tezos_client_file_location, 'public_key_hashs'), 'utf8');
+            if (hash_data !== undefined) {
+                const hash_list: TCPublicInfo[] = JSON.parse(hash_data);
+                for (const item of hash_list) {
+                    const name = item.name;
+                    // if the name is in the other lists, just skip it - we're just looking for addresses
+                    // that either we don't have the key for and are not our contracts
+                    if ((this.keys[name] !== undefined) || (this.contracts[name] !== undefined)) {
+                        continue;
+                    }
+                    const signer = new RemoteSigner(item.value, this.signatory_base_url);
+                    this.addresses[name] = signer;
                 }
             }
         } catch { /* No file just means no data */ }
@@ -162,12 +193,27 @@ export default class X4CClient {
                 return this.contracts[name].address;
             }
         }
+        for (const name in this.addresses) {
+            if (name === arg) {
+                return await this.addresses[name].publicKeyHash();
+            }
+        }
         return arg;
     }
 
-    async signerForArg(arg: string): Promise<InMemorySigner | undefined> {
+    async signerForArg(arg: string): Promise<any | undefined> {
         for (const name in this.keys) {
             const key = this.keys[name]
+            if (name === arg) {
+                return key;
+            }
+            if (await key.publicKeyHash() === arg) {
+                return key;
+            }
+        }
+
+        for (const name in this.addresses) {
+            const key = this.addresses[name]
             if (name === arg) {
                 return key;
             }

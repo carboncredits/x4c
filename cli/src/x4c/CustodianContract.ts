@@ -135,7 +135,7 @@ export default class  CustodianContract {
                     retiring_party_kyc: stringToMichelsonBytes(source_name),
                     token_id: token_id,
                     amount: amount,
-                    retiring_data: Uint8Array.from(reason.split('').map(letter => letter.charCodeAt(0)))
+                    retiring_data: new TextEncoder().encode(reason)
                 }]
             }]).send();
         })
@@ -143,6 +143,7 @@ export default class  CustodianContract {
             console.log(`Awaiting for ${op.hash} to be confirmed...`);
             return op.confirmation().then(() => op.hash);
         })
+        .catch((error) => 'Error: '  + error);
     }
 
     getStorage(): CustodianStorage {

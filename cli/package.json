@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@taquito/remote-signer": "^14.0.0",
     "@taquito/signer": "^13.0.1",
     "@taquito/taquito": "^13.0.1",
     "@types/express": "^4.17.13",

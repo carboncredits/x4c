@@ -19,7 +19,7 @@ type CustodianLedgerEntry = {
 
 type CustodianOperator = {
 	kyc: any;
-	operator: String;
+	operator: string;
 	token_id: number;
 }
 
@@ -73,7 +73,7 @@ export default class CustodianStorage {
 
 	async operators(): Promise<CustodianOperator[]> {
 		const info = await this.get_info();
-		const operators = await info.operators;
+		const operators = info.operators;
 		return operators.map((item: any) => {
 			return {
 				kyc: michelsonBytesToString(item.token_owner),
