@@ -1,18 +1,4 @@
-FROM ocaml/opam:debian-11-ocaml-4.14 as ligobuild
-# Checkout a known good commit of the opam-repository, the hash will need updated if we need new released packages
-RUN cd ~/opam-repository && git pull origin -q master && git reset --hard 42a177d7ac37cd347aab366a90d20469203fc926 && opam update
-RUN sudo apt-get update -qqy \
-	&& sudo apt-get install -qy libgmp-dev pkg-config cargo libev-dev \
-	&& sudo rm -rf /var/lib/apt/lists/* \
-	&& sudo rm -rf /var/cache/apt/*
-RUN git clone https://gitlab.com/ligolang/ligo.git
-WORKDIR /home/opam/ligo
-RUN git checkout 0.50.0
-
-# Bypassing ligo Makefile which generates a new opam switch.
-RUN git submodule update --init --recursive
-RUN opam install -y --deps-only --with-test . --locked
-RUN opam exec -- dune build -p ligo
+FROM ligolang/ligo:0.50.0 as ligolang
 
 FROM node:18 AS node
 
@@ -28,7 +14,7 @@ RUN chmod 755 tezos-client
 RUN mv tezos-client /bin/tezos-client
 RUN tezos-client config reset
 
-COPY --from=ligobuild /home/opam/ligo/_build/install/default/bin/ligo /bin/ligo
+COPY --from=ligolang /root/ligo /bin/ligo
 
 WORKDIR /app
 COPY . .
