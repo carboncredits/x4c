@@ -67,7 +67,7 @@ in a particular token contract, and the latter is a transfer on the internal
 ledger. The `%external_transfer` and `%retire` emit, respectively, transfer and
 retire contract calls to the token contract.
 
-# Usage
+# Example usage
 
 These are the steps required to instantiate the basic contract pair on a testnet.
 
@@ -165,6 +165,8 @@ $ tezos-client transfer 1000 from facetwallet to CustodianOperator --burn-cap 0.
 ...
 ```
 
+Note that in practice you would not use a local wallet for the operator - you'd want to use a remote signer that is based on a hardware security key. See the section [Deployment security](#deployment-security) for details below.
+
 ### Originate the contracts
 
 You can use the x4c tools to instantiate the contracts. First do the FA2 contract thus:
@@ -235,4 +237,17 @@ Operation injected: https://rpc.jakartanet.teztnets.xyz/oow5qgodszwHSo17eXN2Xdcu
 
 Once this is done the CustodianOperator wallet can only call retire or internal_transfer on the CustodianContract for the tokens of ID 123 that have been assigned to "other org".
 
+## Deployment security
 
+In the above test setup we have three addresses in play. The first two are used offline to manage tokens: the FA2 owner can add projects, mint tokens, and then assign them to a custodian, and the custodian owner can assign their tokens to different internal "users". Then there is the custodian operator contract, which is the token that is used online to retire requests based on imagined API calls. Whilst in the demo script above we use tezos-client to manage this wallet, in practice you should not do that, as that requires the wallet's secret key to be stored online.
+
+Instead, in this setup a remote signature should be configured that uses something like [Signatory.io](https://signatory.io/) to provide access to a key managed via an HSM. The x4c library will assume that any addresses found in the .tezos-client library that don't have a secret key configured are remote managed, so you can simply add them as follows:
+
+```
+$ tezos-client add address CustodianOperator tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z
+$ x4c info
+Alias                 Hash                                   Contract type   Default
+ CustodianOperator    tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z   Remote
+```
+
+An example use case of this can be seen in the integration tests shell script in the cli directory.

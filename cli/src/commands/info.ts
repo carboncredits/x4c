@@ -40,6 +40,10 @@ export default class extends Command {
                contract === client.default_fa2_contract ? '✅' : ''
             ]);
         }
+        for (const key in client.addresses) {
+            const signer = client.addresses[key];
+            table.push([key, await signer.publicKeyHash(), 'Remote', '']);
+        }
         console.log(table.toString());
     }
 }

@@ -1,6 +1,14 @@
 version: "3.7"
 
 services:
+    signatory:
+        image: ecadlabs/signatory:latest
+        volumes:
+            - "./signatory_config/signatory.yaml:/etc/signatory.yaml"
+            - "./signatory_config/secret.json:/etc/secret.json"
+        command: serve -c /etc/signatory.yaml
+        profiles: ["setup"]
+
     tezossandbox:
         image: oxheadalpha/flextesa:20220510
         command: jakartabox start
@@ -22,7 +30,9 @@ services:
             - TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER=yes
             - TEZOS_RPC_HOST=http://tezossandbox:20000
             - TEZOS_INDEX_HOST=http://tzstats:8000
+            - SIGNATORY_HOST=http://signatory:6732
         depends_on:
+            - signatory
             - tezossandbox
             - tzstats
         command: /app/integration_tests.sh

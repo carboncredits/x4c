@@ -1,5 +1,5 @@
 import { InMemorySigner } from '@taquito/signer';
-import { TezosToolkit } from '@taquito/taquito';
+import { Signer, TezosToolkit } from '@taquito/taquito';
 
 import { GenericClient, stringToMichelsonBytes } from "./util"
 import Tzstats from '../tzstats-client/Tzstats'
@@ -17,7 +17,7 @@ export default class  CustodianContract {
         node_base_url: string,
         index_api_base_url: string,
         contract: any,
-        oracle?: InMemorySigner
+        oracle?: Signer
     ) {
         this.node_base_url = node_base_url
         this.indexer_api_base_url = index_api_base_url
@@ -135,7 +135,7 @@ export default class  CustodianContract {
                     retiring_party_kyc: stringToMichelsonBytes(source_name),
                     token_id: token_id,
                     amount: amount,
-                    retiring_data: Uint8Array.from(reason.split('').map(letter => letter.charCodeAt(0)))
+                    retiring_data: new TextEncoder().encode(reason)
                 }]
             }]).send();
         })
@@ -143,6 +143,7 @@ export default class  CustodianContract {
             console.log(`Awaiting for ${op.hash} to be confirmed...`);
             return op.confirmation().then(() => op.hash);
         })
+        .catch((error) => 'Error: '  + error);
     }
 
     getStorage(): CustodianStorage {

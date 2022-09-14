@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 set -e
 
 sleep 5
@@ -20,7 +21,11 @@ tcli gen keys 4CTokenOracle --force
 tcli transfer 1000 from alice to 4CTokenOracle --burn-cap 1
 tcli gen keys OffChainCustodian --force
 tcli transfer 1000 from alice to OffChainCustodian --burn-cap 1
-tcli gen keys CustodianOperator --force
+
+# To simulate deployment, the operator key would be in an HSM,
+# and so is handled by signatory. Thus we just need to make a note
+# of it here and assign it some tez
+tcli add address CustodianOperator tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z --force
 tcli transfer 1000 from alice to CustodianOperator --burn-cap 1
 
 # this is more a sanity check of the world
@@ -60,10 +65,18 @@ x4c custodian info CustodianContract
 
 # Assign some tokens to a department and make sure the operator can access them
 x4c custodian internal_transfer OffChainCustodian CustodianContract 4CTokenContract 123 500 self compsci
-x4c custodian add_operator OffChainCustodian CustodianContract CustodianOperator 123 compsci
 
 c=0
 until x4c custodian info CustodianContract | grep -q "compsci";
+do
+  ((c++)) && ((c==20)) && exit 1
+  sleep 1;
+done
+x4c custodian info CustodianContract
+
+x4c custodian add_operator OffChainCustodian CustodianContract CustodianOperator 123 compsci
+c=0
+until x4c custodian info CustodianContract | grep -q "tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
