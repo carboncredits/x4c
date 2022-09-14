@@ -32,8 +32,8 @@ tcli transfer 1000 from alice to CustodianOperator --burn-cap 1
 x4c info
 
 # make a couple of contracts
-x4c fa2 originate 4CTokenContract fa2.michelson 4CTokenOracle
-x4c custodian originate CustodianContract custodian.michelson OffChainCustodian
+x4c fa2 originate 4CTokenContract build/fa2.tz 4CTokenOracle
+x4c custodian originate CustodianContract build/custodian.tz OffChainCustodian
 
 # this is more a sanity check of the world with contracts
 x4c info
