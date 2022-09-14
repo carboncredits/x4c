@@ -1,5 +1,5 @@
 import { InMemorySigner } from '@taquito/signer';
-import { TezosToolkit } from '@taquito/taquito';
+import { Signer, TezosToolkit } from '@taquito/taquito';
 
 import { GenericClient, stringToMichelsonBytes } from "./util"
 import Tzstats from '../tzstats-client/Tzstats'
@@ -17,7 +17,7 @@ export default class  CustodianContract {
         node_base_url: string,
         index_api_base_url: string,
         contract: any,
-        oracle?: InMemorySigner
+        oracle?: Signer
     ) {
         this.node_base_url = node_base_url
         this.indexer_api_base_url = index_api_base_url

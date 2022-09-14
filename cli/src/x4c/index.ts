@@ -5,7 +5,7 @@ import * as Path from 'path';
 
 import { RemoteSigner } from '@taquito/remote-signer';
 import { InMemorySigner } from '@taquito/signer';
-import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
+import { TezosToolkit, MichelsonMap, Signer } from '@taquito/taquito';
 
 import FA2Contract from './FA2Contract';
 import CustodianContract from './CustodianContract';
@@ -201,7 +201,7 @@ export default class X4CClient {
         return arg;
     }
 
-    async signerForArg(arg: string): Promise<any | undefined> {
+    async signerForArg(arg: string): Promise<Signer | undefined> {
         for (const name in this.keys) {
             const key = this.keys[name]
             if (name === arg) {
