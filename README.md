@@ -239,9 +239,9 @@ Once this is done the CustodianOperator wallet can only call retire or internal_
 
 ## Deployment security
 
-In the above test setup we have three addresses in play. The first two are used offline to manage tokens: the FA2 owner can add projects, mint tokens, and then assign them to a custodian, and the custodian owner can assign their tokens to different internal "users". Then there is the custodian operator contract, which is the tokent that is used online to retire requests based on imagined API calls. Whilst in the demo script above we use tezos-client to manage this wallet, in practice you should not do that, as that requires the wallet's secret key to be stored online.
+In the above test setup we have three addresses in play. The first two are used offline to manage tokens: the FA2 owner can add projects, mint tokens, and then assign them to a custodian, and the custodian owner can assign their tokens to different internal "users". Then there is the custodian operator contract, which is the token that is used online to retire requests based on imagined API calls. Whilst in the demo script above we use tezos-client to manage this wallet, in practice you should not do that, as that requires the wallet's secret key to be stored online.
 
-Instead, if this setup a remote signed should be configured that uses something like [Signatory.io](https://signatory.io/) to provide access to a key managed via an HSM. The x4c library will assume that any addresses found in the .tezos-client library that don't have a secret key configured are remote managed, so you can simply add them as follows:
+Instead, in this setup a remote signature should be configured that uses something like [Signatory.io](https://signatory.io/) to provide access to a key managed via an HSM. The x4c library will assume that any addresses found in the .tezos-client library that don't have a secret key configured are remote managed, so you can simply add them as follows:
 
 ```
 $ tezos-client add address CustodianOperator tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z

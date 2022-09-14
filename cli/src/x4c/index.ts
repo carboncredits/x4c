@@ -42,7 +42,7 @@ export default class X4CClient {
         node_base_url = "https://rpc.jakartanet.teztnets.xyz",
         indexer_api_base_url = "https://api.jakarta.tzstats.com",
         indexer_base_url = "https://jakarta.tzstats.com",
-        signatory_base_url = 'http://signatory:6732'
+        signatory_base_url = 'http://signatory:6732' // based on docker-compose
     ) {
         return this._instance || (
             this._instance = new X4CClient(node_base_url, indexer_api_base_url, indexer_base_url, signatory_base_url)
@@ -53,7 +53,7 @@ export default class X4CClient {
         node_base_url = "https://rpc.jakartanet.teztnets.xyz",
         indexer_api_base_url = "https://api.tzstats.com",
         indexer_base_url = "https://tzstats.com",
-        signatory_base_url = 'http://signatory:6732'
+        signatory_base_url = 'http://signatory:6732' // based on docker-compose
     ) {
         this.node_base_url = node_base_url;
         this.indexer_api_base_url = indexer_api_base_url;
