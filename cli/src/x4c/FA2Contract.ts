@@ -1,6 +1,6 @@
 
 import { InMemorySigner } from '@taquito/signer';
-import { TezosToolkit, MichelsonMap } from '@taquito/taquito';
+import { TezosToolkit, MichelsonMap, Signer } from '@taquito/taquito';
 import Tzkt from '../tzkt-client/Tzkt';
 
 import Tzstats from '../tzstats-client/Tzstats'
@@ -12,14 +12,14 @@ export default class FA2Contract {
     private readonly indexer_api_base_url: string;    
 
     readonly contract: any;
-    readonly signer?: InMemorySigner;
+    readonly signer?: Signer;
     readonly tezos: TezosToolkit
 
     constructor(
         node_base_url: string,
         index_api_base_url: string,
         contract: any, 
-        signer?: InMemorySigner
+        signer?: Signer
     ) {
         this.node_base_url = node_base_url
         this.indexer_api_base_url = index_api_base_url
