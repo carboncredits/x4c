@@ -1,0 +1,6 @@
+[submodule "ci/flextesa"]
+	path = ci/flextesa
+	url = https://gitlab.com/tezos/flextesa.git
+[submodule "ci/tzkt"]
+	path = ci/tzkt
+	url = https://github.com/baking-bad/tzkt.git

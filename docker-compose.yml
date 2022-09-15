@@ -10,8 +10,9 @@ services:
         profiles: ["setup"]
 
     tezossandbox:
-        image: oxheadalpha/flextesa:20220510
-        command: jakartabox start
+        build:
+            context: ci/flextesa
+        command: kathmandubox start
         profiles: ["setup"]
 
     tzkt-db:
@@ -24,8 +25,10 @@ services:
         profiles: ["setup"]
 
     tzkt-api:
+        build:
+            context: ci/tzkt
+            dockerfile: Tzkt.Api/Dockerfile
         restart: on-failure:5
-        image: bakingbad/tzkt-api:latest
         depends_on:
             - tzkt-sync
         environment:
@@ -33,10 +36,11 @@ services:
             Kestrel__Endpoints__Http__Url: http://0.0.0.0:5000
         profiles: ["test"]
 
-
     tzkt-sync:
+        build:
+            context: ci/tzkt
+            dockerfile: Tzkt.Sync/Dockerfile
         restart: on-failure:5
-        image: bakingbad/tzkt-sync:latest
         depends_on:
             - tezossandbox
             - tzkt-db
