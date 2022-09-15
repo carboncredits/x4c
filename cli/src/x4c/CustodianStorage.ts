@@ -1,3 +1,4 @@
+import Tzstats from '../tzstats-client/Tzstats'
 import {ContractStorage} from '../tzstats-client/types'
 
 import { michelsonBytesToString, GenericClient } from './util'
@@ -54,7 +55,21 @@ export default class CustodianStorage {
 			const info = await this.get_info();
 			// Empty bigmaps seem to have a value of null
 			if (info.ledger !== null) {
-				this._ledger = await this.client.getBigMapValues(info.ledger);
+				const resp = await this.client.getBigMapValues(info.ledger);
+				if (this.client instanceof Tzstats) {
+					this._ledger = resp.map((i : any) => ({
+						...i,
+						key: {
+							kyc: i.key[0],
+							token: {
+								token_address: i.key[1],
+								token_id: i.key[2]
+							}
+						}
+					}))
+				} else {
+					this._ledger = resp;
+				}
 			} else {
 				return []
 			}
@@ -63,9 +78,9 @@ export default class CustodianStorage {
 			const key = item.key;
 			const amount = item.value;
 			return {
-				kyc: michelsonBytesToString(key[0]),
-				minter: key[1],
-				token_id: parseInt(key[2]),
+				kyc: michelsonBytesToString(key.kyc),
+				minter: key.token.token_address,
+				token_id: parseInt(key.token.token_id),
 				amount: parseInt(amount)
 			}
 		});

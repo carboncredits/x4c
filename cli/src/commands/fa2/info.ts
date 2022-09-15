@@ -32,7 +32,7 @@ export default class extends Command {
 		for (const item of ledger) {
 			const key = item.key;
 			const value = item.value;
-			table.push([key[1], key[0], value]);
+			table.push([key.token_id, key.token_owner, value]);
 		}
 		console.log(table.toString());
 

@@ -39,7 +39,18 @@ export default class FA2Storage {
 	async ledger(): Promise<any> {
 		if (this._ledger === null) {
 			const info = await this.get_info();
-			this._ledger = await this.client.getBigMapValues(info.ledger);
+			const resp = await this.client.getBigMapValues(info.ledger);
+			if (this.client instanceof Tzstats) {
+				this._ledger = resp.map((i : any) => ({
+					...i,
+					key: {
+						token_owner: i.key[0],
+						token_id: i.key[1]
+					}
+				}))
+			} else {
+				this._ledger = resp;
+			}
 		}
 		return this._ledger;
 	}
@@ -47,6 +58,8 @@ export default class FA2Storage {
 	async token_metadata(): Promise<any> {
 		if (this._token_metadata === null) {
 			const info = await this.get_info();
+			// The key here is the token_id, so just "nat", and as such the response
+			// from the two indexer types should be the same.
 			this._token_metadata = await this.client.getBigMapValues(info.token_metadata);
 		}
 		return this._token_metadata;
