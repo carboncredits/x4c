@@ -19,7 +19,7 @@ TEST_TARGETS := $(patsubst $(TEST)/%.mligo, $(BUILD)/%.output, $(TESTS))
 build: $(TARGETS)
 
 $(BUILD)/%.tz: $(SRC)/%.mligo
-	$(LIGO) compile contract $< --entry-point main --output-file $@
+	$(LIGO) compile contract -p kathmandu $< --entry-point main --output-file $@
 
 test: $(TEST_TARGETS)
 
