@@ -1,7 +1,7 @@
 ifndef USE_DOCKER
 LIGO = ligo
 else
-LIGO = docker run --rm -v "$(PWD)":"$(PWD)" -w "$(PWD)" ligolang/ligo:0.50.0
+LIGO = docker run --rm -v "$(PWD)":"$(PWD)" -w "$(PWD)" ligolang/ligo:0.51.0
 endif
 
 .PHONY = test build all clean

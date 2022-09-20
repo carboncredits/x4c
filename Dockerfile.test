@@ -1,4 +1,4 @@
-FROM ligolang/ligo:0.50.0 as ligolang
+FROM ligolang/ligo:0.51.0 as ligolang
 
 FROM node:18 AS node
 
