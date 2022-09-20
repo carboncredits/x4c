@@ -24,7 +24,7 @@ $(BUILD)/%.tz: $(SRC)/%.mligo
 test: $(TEST_TARGETS)
 
 $(BUILD)/%.output: $(TEST)/%.mligo tests/common.mligo tests/assert.mligo $(SRC)/*.mligo
-	$(LIGO) run test $< > $@
+	$(LIGO) run test -p kathmandu $< > $@
 
 all: build test
 
