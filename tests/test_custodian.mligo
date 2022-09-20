@@ -4,6 +4,7 @@
 #include "../fa2.mligo"
 type storage_fa2 = storage
 type entrypoint_fa2 = entrypoint
+type retire_tokens_fa2 = retire_tokens
 
 #include "../custodian.mligo"
 type result_custodian = result
@@ -147,9 +148,10 @@ let test_retire =
 		in
 
 	let _test_events =
-		let events: retire_tokens list = Test.get_last_events_from test_fa2.contract "retire" in
-		let event_count = List.length events in
-		assert(event_count = 1n)
+		let events: retire_tokens_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
+			match events with
+			| [_] -> ()
+			| _ -> Test.failwith "not good"
 		in ()
 
 
@@ -194,6 +196,13 @@ let test_others_cannot_retire =
 		match val with
 			| None -> Test.failwith "Should be a ledger entry"
 			| Some val -> assert (val = 1_000n)
+		in
+
+	let _test_events =
+		let events: retire_tokens_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
+			match events with
+			| [_] -> Test.failwith "not good"
+			| _ -> ()
 		in ()
 
 
