@@ -148,7 +148,7 @@ let balance_of (param : balance_of) (storage : storage) : result =
         (
             List.map
             (
-                fun (r : request) ->
+                fun (r : request): callback_data ->
                 { request = r ;
                   balance =
                     match Big_map.find_opt r storage.ledger with | None -> 0n | Some b -> b ; }
