@@ -200,7 +200,12 @@ let mint_tokens (param : mint) (storage : storage) : result =
 
 // retire tokens
 let retire_tokens (param : retire) (storage : storage) : result =
-    ([] : operation list),
+    List.map (
+        fun (p: retire_tokens): operation ->
+            Tezos.emit "%retire" p
+    )
+    param
+    ,
     List.fold
     (fun (s, p : (storage * retire_tokens)) : storage ->
         // check permissions

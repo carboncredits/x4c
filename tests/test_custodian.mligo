@@ -144,6 +144,12 @@ let test_retire =
 		match val with
 			| None -> Test.failwith "Should be a ledger entry"
 			| Some val -> assert (val = 650n)
+		in
+
+	let _test_events =
+		let events: retire_tokens list = Test.get_last_events_from test_fa2.contract "retire" in
+		let event_count = List.length events in
+		assert(event_count = 1n)
 		in ()
 
 
