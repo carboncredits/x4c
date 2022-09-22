@@ -3,6 +3,8 @@
 This repository houses the `v0.0` Tezos smart contracts for the Cambridge
 Centre for Carbon Credits.
 
+Note that this repository includes submodules, and so should be checked out using either `git clone --recursive` or updated with `git submodule update --init --recursive`.
+
 **Warning: The contracts have only been deployed on testnets at present,
 and are still being audited/tested. Not for live deployment until later
 in the year.**
