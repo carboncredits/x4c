@@ -1,7 +1,7 @@
 #import "./assert.mligo" "Assert"
 #import "./common.mligo" "Common"
 
-#include "../fa2.mligo"
+#include "../src/fa2.mligo"
 type owner_fa2 = owner
 type operator_fa2 = operator
 

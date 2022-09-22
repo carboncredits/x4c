@@ -239,7 +239,7 @@ let retire (param : internal_retire list) (storage : storage) : result =
             storage )
         param
         storage in
-    // emit a retire transaction to the FA2 contract
+    // Send a retire transaction to the FA2 contract, and to emit the retirement data for the frontend
     let ops_retire_tokens =
         List.map
         (fun (p : internal_retire) : operation ->
@@ -260,6 +260,12 @@ let retire (param : internal_retire list) (storage : storage) : result =
                 | Some c -> c in
             Tezos.transaction txndata_retire 0tez entrypoint_retire )
         param in
+//    let ops_emit_retirement  =
+  //      List.map
+    //    (fun (p : internal_retire) : operation ->
+      //      Tezos.emit "%retire" p
+        //)
+   // param in
     ops_retire_tokens, storage
 
 

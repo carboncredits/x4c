@@ -6,7 +6,7 @@ endif
 
 .PHONY = test build all clean
 
-SRC := .
+SRC := src
 BUILD := build
 TEST := tests
 
