@@ -43,17 +43,7 @@ export default class Tzkt {
             const params = new URLSearchParams({ active: "true" });
             const request = this.buildEndpoint(`bigmaps/${bigmapID}/keys`, params);
             const response = await fetch(request);
-            const json = await response.json();
-            // We make the keys look like what is returned by Tzstats
-            const res = json.map((i : any) => ({
-                ...i,
-                key: [
-                    i.key.kyc,
-                    i.key.token.token_address,
-                    i.key.token.token_id
-                ]
-            }))
-            return res;
+            return await response.json();
         })
     }
 
