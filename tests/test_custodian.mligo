@@ -1,12 +1,12 @@
 #import "./assert.mligo" "Assert"
 #import "./common.mligo" "Common"
 
-#include "../fa2.mligo"
+#include "../src/fa2.mligo"
 type storage_fa2 = storage
 type entrypoint_fa2 = entrypoint
 type retire_tokens_fa2 = retire_tokens
 
-#include "../custodian.mligo"
+#include "../src/custodian.mligo"
 type result_custodian = result
 type owner_custodian = owner
 type operator_custodian = operator

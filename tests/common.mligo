@@ -1,10 +1,10 @@
-#include "../fa2.mligo"
+#include "../src/fa2.mligo"
 type owner_fa2 = owner
 type operator_fa2 = operator
 type storage_fa2 = storage
 type entrypoint_fa2 = entrypoint
 
-#include "../custodian.mligo"
+#include "../src/custodian.mligo"
 type storage_custodian = storage
 type entrypoint_custodian = entrypoint
 type result_custodian = result
@@ -32,7 +32,7 @@ let fa2_bootstrap(): test_fa2 =
 		metadata = (Big_map.empty : (string, bytes) big_map) ;
 	} in
 	let (addr_fa2, _pgm_fa2, _size_fa2) =
-		Test.originate_from_file "fa2.mligo" "main" [ "view_balance_of" ; "view_get_metadata" ; ] (Test.compile_value init_fa2_storage) 0tez in
+		Test.originate_from_file "../src/fa2.mligo" "main" [ "view_balance_of" ; "view_get_metadata" ; ] (Test.compile_value init_fa2_storage) 0tez in
 
 	let fa2_contract = (Test.cast_address addr_fa2 : (entrypoint_fa2, storage_fa2) typed_address) in
 
@@ -77,7 +77,7 @@ let custodian_bootstrap (): test_custodian =
 		metadata = (Big_map.empty : (string, bytes) big_map);
 	} in
 	let (addr_custodian, _pgm_custodian, _size_custodian) =
-		Test.originate_from_file "custodian.mligo" "main" [ "view_balance_of" ; ] (Test.compile_value init_custodian_storage) 0tez in
+		Test.originate_from_file "../src/custodian.mligo" "main" [ "view_balance_of" ; ] (Test.compile_value init_custodian_storage) 0tez in
 	let typed_addr_custodian = (Test.cast_address addr_custodian : (entrypoint_custodian, storage_custodian) typed_address) in
 
 	({owner = custodian_owner; contract = typed_addr_custodian; contract_address = addr_custodian; })
