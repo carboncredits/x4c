@@ -6,7 +6,7 @@ type owner_fa2 = owner
 type operator_fa2 = operator
 
 let test_add_token_and_mint =
-	let test_fa2 = Common.fa2_bootstrap() in
+	let test_fa2 = Common.fa2_bootstrap(3n) in
 
 	let _ : test_exec_result = Common.fa2_add_token test_fa2 0n in
 	let res = Common.fa2_mint_token test_fa2 0n test_fa2.owner 1_000_000n in
@@ -28,14 +28,14 @@ let test_add_token_and_mint =
 		in ()
 
 let test_mint_without_add_fails =
-	let test_fa2 = Common.fa2_bootstrap() in
+	let test_fa2 = Common.fa2_bootstrap(3n) in
 
 	let res = Common.fa2_mint_token test_fa2 0n test_fa2.owner 1_000_000n in
 	let _ : unit = Assert.failure_code res error_TOKEN_UNDEFINED in ()
 
 
 let test_add_existing_token_id_fails =
-	let test_fa2 = Common.fa2_bootstrap() in
+	let test_fa2 = Common.fa2_bootstrap(3n) in
 	let _ : unit = Test.set_source test_fa2.owner in
 
 	let expected_metadata: token_metadata = {token_id = 42n; token_info = Map.literal[
@@ -76,7 +76,7 @@ let test_add_existing_token_id_fails =
 
 
 let test_non_oracle_add_token_fails =
-	let test_fa2 = Common.fa2_bootstrap() in
+	let test_fa2 = Common.fa2_bootstrap(3n) in
 	let other_wallet = Test.nth_bootstrap_account 1 in
 	let _ : unit = Test.set_source other_wallet in
 
@@ -91,7 +91,7 @@ let test_non_oracle_add_token_fails =
 
 
 let test_non_oracle_mint_fails =
-	let test_fa2 = Common.fa2_bootstrap() in
+	let test_fa2 = Common.fa2_bootstrap(3n) in
 
 	let _ : test_exec_result = Common.fa2_add_token test_fa2 0n in
 
@@ -110,7 +110,7 @@ let test_non_oracle_mint_fails =
 
 
 let test_update_oracle =
-	let test_fa2 = Common.fa2_bootstrap() in
+	let test_fa2 = Common.fa2_bootstrap(3n) in
 	let other_wallet = Test.nth_bootstrap_account 1 in
 	let _ : unit = Test.set_source test_fa2.owner in
 
@@ -130,7 +130,7 @@ let test_update_oracle =
 
 
 let test_non_oracle_update_oracle_fails =
-	let test_fa2 = Common.fa2_bootstrap() in
+	let test_fa2 = Common.fa2_bootstrap(3n) in
 	let other_wallet = Test.nth_bootstrap_account 1 in
 	let _ : unit = Test.set_source other_wallet in
 

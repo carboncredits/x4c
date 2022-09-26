@@ -12,7 +12,7 @@ type owner_custodian = owner
 type operator_custodian = operator
 
 let test_internal_mint_with_tokens =
-	let test_fa2 = Common.fa2_bootstrap() in
+	let test_fa2 = Common.fa2_bootstrap(3n) in
 	let test_custodian = Common.custodian_bootstrap() in
 
 	let _ : test_exec_result = Common.fa2_add_token test_fa2 42n in
@@ -39,7 +39,7 @@ let test_internal_mint_with_tokens =
 
 
 let test_internal_mint_without_tokens =
-	let test_fa2 = Common.fa2_bootstrap() in
+	let test_fa2 = Common.fa2_bootstrap(3n) in
 	let test_custodian = Common.custodian_bootstrap() in
 
 	let _ : test_exec_result = Common.fa2_add_token test_fa2 42n in
@@ -220,7 +220,7 @@ let test_internal_transfer_too_much =
 
 
 let test_add_and_remove_operator =
-	let test_fa2 = Common.fa2_bootstrap() in
+	let test_fa2 = Common.fa2_bootstrap(3n) in
 	let test_custodian = Common.custodian_bootstrap() in
 
 	let current_state = Test.get_storage test_custodian.contract in
@@ -243,7 +243,7 @@ let test_add_and_remove_operator =
 
 
 let test_others_cannot_add_operator =
-	let test_fa2 = Common.fa2_bootstrap() in
+	let test_fa2 = Common.fa2_bootstrap(3n) in
 	let test_custodian = Common.custodian_bootstrap() in
 
 	let current_state = Test.get_storage test_custodian.contract in
@@ -260,7 +260,7 @@ let test_others_cannot_add_operator =
 
 
 let test_retire =
-	let test_fa2 = Common.fa2_bootstrap() in
+	let test_fa2 = Common.fa2_bootstrap(3n) in
 	let test_custodian = Common.custodian_bootstrap() in
 
 	let _ : test_exec_result = Common.fa2_add_token test_fa2 42n in
@@ -310,7 +310,7 @@ let test_retire =
 
 
 let test_others_cannot_retire =
-	let test_fa2 = Common.fa2_bootstrap() in
+	let test_fa2 = Common.fa2_bootstrap(3n) in
 	let test_custodian = Common.custodian_bootstrap() in
 
 	let _ : test_exec_result = Common.fa2_add_token test_fa2 42n in
@@ -361,7 +361,7 @@ let test_others_cannot_retire =
 
 
 let test_operator_can_retire =
-	let test_fa2 = Common.fa2_bootstrap() in
+	let test_fa2 = Common.fa2_bootstrap(3n) in
 	let test_custodian = Common.custodian_bootstrap() in
 
 	let operator_data = { token_owner = (Bytes.pack "self") ; token_operator = test_fa2.owner ; token_id = 42n ; } in
@@ -408,7 +408,7 @@ let test_operator_can_retire =
 
 
 let test_operator_for_other_token_cannot_retire =
-	let test_fa2 = Common.fa2_bootstrap() in
+	let test_fa2 = Common.fa2_bootstrap(3n) in
 	let test_custodian = Common.custodian_bootstrap() in
 
 	let operator_data = { token_owner = (Bytes.pack "self") ; token_operator = test_fa2.owner ; token_id = 43n ; } in
@@ -430,7 +430,7 @@ let test_operator_for_other_token_cannot_retire =
 
 
 let test_operator_for_other_kyc_cannot_retire =
-	let test_fa2 = Common.fa2_bootstrap() in
+	let test_fa2 = Common.fa2_bootstrap(3n) in
 	let test_custodian = Common.custodian_bootstrap() in
 
 	let operator_data = { token_owner = (Bytes.pack "other") ; token_operator = test_fa2.owner ; token_id = 42n ; } in
@@ -452,7 +452,7 @@ let test_operator_for_other_kyc_cannot_retire =
 
 
 let test_cannot_retire_too_much =
-	let test_fa2 = Common.fa2_bootstrap() in
+	let test_fa2 = Common.fa2_bootstrap(3n) in
 	let test_custodian = Common.custodian_bootstrap() in
 
 	let _ : test_exec_result = Common.fa2_add_token test_fa2 42n in
