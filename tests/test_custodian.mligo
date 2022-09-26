@@ -250,6 +250,13 @@ let test_operator_can_retire =
 		match val with
 			| None -> Test.failwith "Should be a ledger entry"
 			| Some val -> assert (val = 650n)
+		in
+
+	let _test_events =
+		let events: retire_tokens_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
+			match events with
+			| [_] -> ()
+			| _ -> Test.failwith "not good"
 		in ()
 
 
@@ -294,7 +301,14 @@ let test_operator_for_other_kyc_cannot_retire =
 	} in
 	let other_operator_actor: Common.test_custodian = {owner = test_fa2.owner; contract = test_custodian.contract; contract_address = test_custodian.contract_address; } in
 	let res = Common.custodian_retire other_operator_actor test_fa2 retire_data in
-	let _ : unit = Assert.failure_code res error_PERMISSIONS_DENIED in ()
+	let _ : unit = Assert.failure_code res error_PERMISSIONS_DENIED in
+
+	let _test_events =
+		let events: retire_tokens_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
+			match events with
+			| [_] -> Test.failwith "not good"
+			| _ -> ()
+		in ()
 
 
 let test_cannot_retire_too_much =
@@ -337,4 +351,11 @@ let test_cannot_retire_too_much =
 		match val with
 			| None -> Test.failwith "Should be a ledger entry"
 			| Some val -> assert (val = 1_000n)
+		in
+
+	let _test_events =
+		let events: retire_tokens_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
+			match events with
+			| [_] -> Test.failwith "not good"
+			| _ -> ()
 		in ()
