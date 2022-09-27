@@ -48,6 +48,21 @@ export default class extends Command {
 		}
 		console.log(optable.toString());
 
+		const events = await contract.getEvents()
+		console.log('Events:')
+		const eventsTable = new Table({
+			head: ['ID', 'Tag', 'Time', 'Payload'],
+			chars: { 'top': '' , 'top-mid': '' , 'top-left': '' , 'top-right': '', 'bottom': '' , 	'bottom-mid': '' , 'bottom-left': '' , 'bottom-right': '',
+				'left': '' , 'left-mid': '' , 'mid': '' , 'mid-mid': '',
+				'right': '' , 'right-mid': '' , 'middle': ' '
+			}
+		});
+		for (const event of events) {
+			const payload = Buffer.from(event.payload ,"hex").toString()
+			eventsTable.push([event.id.toString(), event.tag, event.time.toISOString(), payload]);
+		}
+		console.log(eventsTable.toString());
+
 		return '';
 	}
 }
