@@ -84,7 +84,7 @@ done
 x4c custodian info CustodianContract
 
 # Have department retire credits
-x4c custodian retire CustodianOperator CustodianContract 4CTokenContract compsci 123 20 flights
+x4c custodian retire CustodianOperator CustodianContract 4CTokenContract compsci 123 20 retire1
 
 # Check that the balances on both the custodian contract and the root contract are now adjusted
 
@@ -94,10 +94,22 @@ do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
+c=0
+until x4c custodian info CustodianContract | grep -q "retire1";
+do
+  ((c++)) && ((c==20)) && exit 1
+  sleep 1;
+done
 x4c custodian info CustodianContract
 
 c=0
 until x4c fa2 info | grep -q "9980";
+do
+  ((c++)) && ((c==20)) && exit 1
+  sleep 1;
+done
+c=0
+until x4c fa2 info | grep -q "retire1";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
@@ -111,10 +123,16 @@ x4c custodian retire CustodianOperator CustodianContract 4CTokenContract compsci
 # It's hard to test that the above didn't work, as we might just have the indexer being slow. So to
 # confirm that the above didn't work, retire some more credits and check that we get the expected
 # result, as we know that operations should happen in the right order at least.
-x4c custodian retire OffChainCustodian CustodianContract 4CTokenContract compsci 123 5 flights
+x4c custodian retire OffChainCustodian CustodianContract 4CTokenContract compsci 123 5 retire2
 
 c=0
 until x4c fa2 info | grep -q "9975";
+do
+  ((c++)) && ((c==20)) && exit 1
+  sleep 1;
+done
+c=0
+until x4c fa2 info | grep -q "retire2";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;

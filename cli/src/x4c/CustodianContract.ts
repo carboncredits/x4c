@@ -5,6 +5,7 @@ import { GenericClient, stringToMichelsonBytes } from "./util"
 import Tzstats from '../tzstats-client/Tzstats'
 import CustodianStorage from './CustodianStorage'
 import Tzkt from '../tzkt-client/Tzkt';
+import { EmitEvent } from '../tzstats-client/types';
 
 export default class  CustodianContract {
     private readonly node_base_url: string;
@@ -155,4 +156,14 @@ export default class  CustodianContract {
         }
         return new CustodianStorage(client, this.contract.address);
     }
+
+	async getEvents(): Promise<EmitEvent[]> {
+        let client: GenericClient;
+        if (this.indexer_api_base_url.includes("tzstats")) {
+            client = new Tzstats(this.indexer_api_base_url);
+        } else {
+            client = new Tzkt(this.indexer_api_base_url);
+        }
+		return client.getEvents(this.contract.address);
+	}
 }

@@ -6,7 +6,7 @@ export interface IndexerStatus {
   progress: number;
 }
 
-type ContractFeature = "ccount_factory" | "contract_factory" | "set_delegate" | "lambda" | "transfer_tokens" | "chain_id" | "ticket" | "sapling" | "view" | "global_constant" | "timelock" 
+type ContractFeature = "ccount_factory" | "contract_factory" | "set_delegate" | "lambda" | "transfer_tokens" | "chain_id" | "ticket" | "sapling" | "view" | "global_constant" | "timelock"
 
 export interface Contract {
   account_id: number,
@@ -112,4 +112,17 @@ export interface Operation {
   sender: string
   receiver: string
   parameters: { entrypoint: string, value: any[] }
+}
+
+export interface EmitEvent {
+  id: number
+  level: number
+  time: Date
+  contract: object
+  codeHash: number
+  tag: string
+  payload: any
+  transactionId: number
+  type?: any
+  rawPayload?: any
 }
