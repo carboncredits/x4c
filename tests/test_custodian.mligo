@@ -268,11 +268,13 @@ let test_retire =
 	let _ : test_exec_result = Common.fa2_mint_token test_fa2 42n test_custodian.contract_address 1_000n in
 	let _ : test_exec_result = Common.custodian_internal_mint test_custodian test_fa2 42n in
 
+	let retiring_data = (Bytes.pack "this is for testing") in
+
 	let retire_data = {
 		retiring_party_kyc = (Bytes.pack "self") ;
 		token_id = 42n ;
 		amount = 350n ;
-		retiring_data = (Bytes.pack "this is for testing") ;
+		retiring_data = retiring_data ;
 	} in
 	let res = Common.custodian_retire test_custodian test_fa2 retire_data in
 	let _ : unit = Assert.tx_success(res) in
@@ -303,18 +305,20 @@ let test_retire =
 		in
 
 	// There should be events both on the custodian contract and the fa2 contract
-	let _test_events =
+	let _test_custodian_events =
 		let events: retire_tokens_event_custodian list = Test.get_last_events_from test_custodian.contract "retire" in
 			match events with
-			| [_] -> ()
-			| _ -> Test.failwith "not good"
+			| [ val ] -> assert (val = retiring_data)
+			| [] -> Test.failwith "no data found"
+			| _ -> Test.failwith "got wrong data"
 		in
 
-	let _test_events =
+	let _test_fa2_events =
 		let events: retire_tokens_event_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
 			match events with
-			| [_] -> ()
-			| _ -> Test.failwith "not good"
+			| [ val ] -> assert (val = retiring_data)
+			| [] -> Test.failwith "no data found"
+			| _ -> Test.failwith "got wrong data"
 		in ()
 
 
@@ -326,11 +330,13 @@ let test_others_cannot_retire =
 	let _ : test_exec_result = Common.fa2_mint_token test_fa2 42n test_custodian.contract_address 1_000n in
 	let _ : test_exec_result = Common.custodian_internal_mint test_custodian test_fa2 42n in
 
+	let retiring_data = (Bytes.pack "this is for testing") in
+
 	let retire_data = {
 		retiring_party_kyc = (Bytes.pack "self") ;
 		token_id = 42n ;
 		amount = 350n ;
-		retiring_data = (Bytes.pack "this is for testing") ;
+		retiring_data = retiring_data ;
 	} in
 	let malicious_actor: Common.test_custodian = {owner = test_fa2.owner; contract = test_custodian.contract; contract_address = test_custodian.contract_address; } in
 	let res = Common.custodian_retire malicious_actor test_fa2 retire_data in
@@ -361,18 +367,18 @@ let test_others_cannot_retire =
 			| Some val -> assert (val = 1_000n)
 		in
 
-	let _test_events =
+	let _test_custodian_events =
 		let events: retire_tokens_event_custodian list = Test.get_last_events_from test_custodian.contract "retire" in
 			match events with
-			| [_] -> Test.failwith "not good"
-			| _ -> ()
+			| [] -> ()
+			| _ -> Test.failwith "got unexpected data"
 		in
 
-	let _test_events =
+	let _test_fa2_events =
 		let events: retire_tokens_event_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
 			match events with
-			| [_] -> Test.failwith "not good"
-			| _ -> ()
+			| [] -> ()
+			| _ -> Test.failwith "got unexpected data"
 		in ()
 
 
@@ -387,11 +393,13 @@ let test_operator_can_retire =
 	let _ : test_exec_result = Common.fa2_mint_token test_fa2 42n test_custodian.contract_address 1_000n in
 	let _ : test_exec_result = Common.custodian_internal_mint test_custodian test_fa2 42n in
 
+	let retiring_data = (Bytes.pack "this is for testing") in
+
 	let retire_data = {
 		retiring_party_kyc = (Bytes.pack "self") ;
 		token_id = 42n ;
 		amount = 350n ;
-		retiring_data = (Bytes.pack "this is for testing") ;
+		retiring_data = retiring_data ;
 	} in
 	let operator_actor: Common.test_custodian = {owner = test_fa2.owner; contract = test_custodian.contract; contract_address = test_custodian.contract_address; } in
 	let res = Common.custodian_retire operator_actor test_fa2 retire_data in
@@ -422,18 +430,20 @@ let test_operator_can_retire =
 			| Some val -> assert (val = 650n)
 		in
 
-	let _test_events =
+	let _test_custodian_events =
 		let events: retire_tokens_event_custodian list = Test.get_last_events_from test_custodian.contract "retire" in
 			match events with
-			| [_] -> ()
-			| _ -> Test.failwith "not good"
+			| [ val ] -> assert (val = retiring_data)
+			| [] -> Test.failwith "no data found"
+			| _ -> Test.failwith "got wrong data"
 		in
 
-	let _test_events =
+	let _test_fa2_events =
 		let events: retire_tokens_event_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
 			match events with
-			| [_] -> ()
-			| _ -> Test.failwith "not good"
+			| [ val ] -> assert (val = retiring_data)
+			| [] -> Test.failwith "no data found"
+			| _ -> Test.failwith "got wrong data"
 		in ()
 
 
@@ -448,11 +458,13 @@ let test_operator_for_other_token_cannot_retire =
 	let _ : test_exec_result = Common.fa2_mint_token test_fa2 42n test_custodian.contract_address 1_000n in
 	let _ : test_exec_result = Common.custodian_internal_mint test_custodian test_fa2 42n in
 
+	let retiring_data = (Bytes.pack "this is for testing") in
+
 	let retire_data = {
 		retiring_party_kyc = (Bytes.pack "self") ;
 		token_id = 42n ;
 		amount = 350n ;
-		retiring_data = (Bytes.pack "this is for testing") ;
+		retiring_data = retiring_data ;
 	} in
 	let other_operator_actor: Common.test_custodian = {owner = test_fa2.owner; contract = test_custodian.contract; contract_address = test_custodian.contract_address; } in
 	let res = Common.custodian_retire other_operator_actor test_fa2 retire_data in
@@ -470,28 +482,30 @@ let test_operator_for_other_kyc_cannot_retire =
 	let _ : test_exec_result = Common.fa2_mint_token test_fa2 42n test_custodian.contract_address 1_000n in
 	let _ : test_exec_result = Common.custodian_internal_mint test_custodian test_fa2 42n in
 
+	let retiring_data = (Bytes.pack "this is for testing") in
+
 	let retire_data = {
 		retiring_party_kyc = (Bytes.pack "self") ;
 		token_id = 42n ;
 		amount = 350n ;
-		retiring_data = (Bytes.pack "this is for testing") ;
+		retiring_data = retiring_data ;
 	} in
 	let other_operator_actor: Common.test_custodian = {owner = test_fa2.owner; contract = test_custodian.contract; contract_address = test_custodian.contract_address; } in
 	let res = Common.custodian_retire other_operator_actor test_fa2 retire_data in
 	let _ : unit = Assert.failure_code res error_PERMISSIONS_DENIED in
 
-	let _test_events =
+	let _test_custodian_events =
 		let events: retire_tokens_event_custodian list = Test.get_last_events_from test_custodian.contract "retire" in
 			match events with
-			| [_] -> Test.failwith "not good"
-			| _ -> ()
+			| [] -> ()
+			| _ -> Test.failwith "got unexpected data"
 		in
 
-	let _test_events =
+	let _test_fa2_events =
 		let events: retire_tokens_event_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
 			match events with
-			| [_] -> Test.failwith "not good"
-			| _ -> ()
+			| [] -> ()
+			| _ -> Test.failwith "got unexpected data"
 		in ()
 
 
@@ -503,11 +517,13 @@ let test_cannot_retire_too_much =
 	let _ : test_exec_result = Common.fa2_mint_token test_fa2 42n test_custodian.contract_address 1_000n in
 	let _ : test_exec_result = Common.custodian_internal_mint test_custodian test_fa2 42n in
 
+	let retiring_data = (Bytes.pack "this is for testing") in
+
 	let retire_data = {
 		retiring_party_kyc = (Bytes.pack "self") ;
 		token_id = 42n ;
 		amount = 1_001n ;
-		retiring_data = (Bytes.pack "this is for testing") ;
+		retiring_data = retiring_data ;
 	} in
 	let res = Common.custodian_retire test_custodian test_fa2 retire_data in
 	let _ : unit = Assert.failure_code res error_INSUFFICIENT_BALANCE in
@@ -537,16 +553,16 @@ let test_cannot_retire_too_much =
 			| Some val -> assert (val = 1_000n)
 		in
 
-	let _test_events =
+	let _test_custodian_events =
 		let events: retire_tokens_event_custodian list = Test.get_last_events_from test_custodian.contract "retire" in
 			match events with
-			| [_] -> Test.failwith "not good"
-			| _ -> ()
+			| [] -> ()
+			| _ -> Test.failwith "got unexpected data"
 		in
 
-	let _test_events =
+	let _test_fa2_events =
 		let events: retire_tokens_event_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
 			match events with
-			| [_] -> Test.failwith "not good"
-			| _ -> ()
+			| [] -> ()
+			| _ -> Test.failwith "got unexpected data"
 		in ()
