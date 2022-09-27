@@ -64,6 +64,160 @@ let test_internal_mint_without_tokens =
 		in ()
 
 
+let test_internal_transfer =
+	let test_fa2 = Common.fa2_bootstrap() in
+	let test_custodian = Common.custodian_bootstrap() in
+
+	let _ : test_exec_result = Common.fa2_add_token test_fa2 42n in
+	let _ : test_exec_result = Common.fa2_mint_token test_fa2 42n test_custodian.contract_address 1_000n in
+	let _ : test_exec_result = Common.custodian_internal_mint test_custodian test_fa2 42n in
+
+	let tok = { token_id = 42n; token_address = test_fa2.contract_address; } in
+
+	let kyc_default = (Bytes.pack "self") in
+	let kyc_target = (Bytes.pack "target") in
+
+	let before_state = Test.get_storage test_custodian.contract in
+	let _test_ledger =
+		let owner = { kyc = kyc_default; token = tok; } in
+		let val = Big_map.find_opt owner before_state.ledger in
+		match val with
+			| None ->  Test.failwith "Should be ledger entry"
+			| Some val -> assert (val = 1_000n)
+ 		in
+	let _test_ext_ledger =
+		let val = Big_map.find_opt tok before_state.external_ledger in
+		match val with
+			| None -> Test.failwith "Should be external ledger entry"
+			| Some val -> assert (val = 1_000n)
+		in
+
+	let res = Common.custodian_internal_transfer test_custodian kyc_default kyc_target tok 500n in
+	let _ : unit = Assert.tx_success(res) in
+
+	let after_state = Test.get_storage test_custodian.contract in
+	let _test_ledger_owner =
+		let owner = { kyc = kyc_default; token = tok; } in
+		let val = Big_map.find_opt owner after_state.ledger in
+		match val with
+			| None ->  Test.failwith "Should be ledger entry"
+			| Some val -> assert (val = 500n)
+ 		in
+	let _test_ledger_target =
+		let owner = { kyc = kyc_target; token = tok; } in
+		let val = Big_map.find_opt owner after_state.ledger in
+		match val with
+			| None ->  Test.failwith "Should be ledger entry"
+			| Some val -> assert (val = 500n)
+ 		in
+	let _test_ext_ledger =
+		let val = Big_map.find_opt tok after_state.external_ledger in
+		match val with
+			| None -> Test.failwith "Should be external ledger entry"
+			| Some val -> assert (val = 1_000n)
+		in ()
+
+
+let test_internal_transfer_to_self =
+	let test_fa2 = Common.fa2_bootstrap() in
+	let test_custodian = Common.custodian_bootstrap() in
+
+	let _ : test_exec_result = Common.fa2_add_token test_fa2 42n in
+	let _ : test_exec_result = Common.fa2_mint_token test_fa2 42n test_custodian.contract_address 1_000n in
+	let _ : test_exec_result = Common.custodian_internal_mint test_custodian test_fa2 42n in
+
+	let tok = { token_id = 42n; token_address = test_fa2.contract_address; } in
+
+	let kyc_default = (Bytes.pack "self") in
+
+	let before_state = Test.get_storage test_custodian.contract in
+	let _test_ledger =
+		let owner = { kyc = kyc_default; token = tok; } in
+		let val = Big_map.find_opt owner before_state.ledger in
+		match val with
+			| None ->  Test.failwith "Should be ledger entry"
+			| Some val -> assert (val = 1_000n)
+ 		in
+	let _test_ext_ledger =
+		let val = Big_map.find_opt tok before_state.external_ledger in
+		match val with
+			| None -> Test.failwith "Should be external ledger entry"
+			| Some val -> assert (val = 1_000n)
+		in
+
+	let res = Common.custodian_internal_transfer test_custodian kyc_default kyc_default tok 500n in
+	let _ : unit = Assert.tx_success(res) in
+
+	let after_state = Test.get_storage test_custodian.contract in
+	let _test_ledger =
+		let owner = { kyc = kyc_default; token = tok; } in
+		let val = Big_map.find_opt owner after_state.ledger in
+		match val with
+			| None ->  Test.failwith "Should be ledger entry"
+			| Some val -> assert (val = 1_000n)
+ 		in
+	let _test_ext_ledger =
+		let val = Big_map.find_opt tok after_state.external_ledger in
+		match val with
+			| None -> Test.failwith "Should be external ledger entry"
+			| Some val -> assert (val = 1_000n)
+		in ()
+
+
+let test_internal_transfer_too_much =
+	let test_fa2 = Common.fa2_bootstrap() in
+	let test_custodian = Common.custodian_bootstrap() in
+
+	let _ : test_exec_result = Common.fa2_add_token test_fa2 42n in
+	let _ : test_exec_result = Common.fa2_mint_token test_fa2 42n test_custodian.contract_address 1_000n in
+	let _ : test_exec_result = Common.custodian_internal_mint test_custodian test_fa2 42n in
+
+	let tok = { token_id = 42n; token_address = test_fa2.contract_address; } in
+
+	let kyc_default = (Bytes.pack "self") in
+	let kyc_target = (Bytes.pack "target") in
+
+	let before_state = Test.get_storage test_custodian.contract in
+	let _test_ledger =
+		let owner = { kyc = kyc_default; token = tok; } in
+		let val = Big_map.find_opt owner before_state.ledger in
+		match val with
+			| None ->  Test.failwith "Should be ledger entry"
+			| Some val -> assert (val = 1_000n)
+ 		in
+	let _test_ext_ledger =
+		let val = Big_map.find_opt tok before_state.external_ledger in
+		match val with
+			| None -> Test.failwith "Should be external ledger entry"
+			| Some val -> assert (val = 1_000n)
+		in
+
+	let res = Common.custodian_internal_transfer test_custodian kyc_default kyc_target tok 1_001n in
+	let _ : unit = Assert.failure_code res error_INSUFFICIENT_BALANCE in
+
+	let after_state = Test.get_storage test_custodian.contract in
+	let _test_ledger =
+		let owner = { kyc = kyc_default; token = tok; } in
+		let val = Big_map.find_opt owner before_state.ledger in
+		match val with
+			| None ->  Test.failwith "Should be ledger entry"
+			| Some val -> assert (val = 1_000n)
+ 		in
+	let _test_ledger_target =
+		let owner = { kyc = kyc_target; token = tok; } in
+		let val = Big_map.find_opt owner after_state.ledger in
+		match val with
+			| None ->  ()
+			| _ -> Test.failwith "Unexpected ledger entry for target"
+ 		in
+	let _test_ext_ledger =
+		let val = Big_map.find_opt tok before_state.external_ledger in
+		match val with
+			| None -> Test.failwith "Should be external ledger entry"
+			| Some val -> assert (val = 1_000n)
+		in ()
+
+
 let test_add_and_remove_operator =
 	let test_fa2 = Common.fa2_bootstrap() in
 	let test_custodian = Common.custodian_bootstrap() in
