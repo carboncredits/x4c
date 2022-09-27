@@ -15,6 +15,9 @@ router.get('/credit/sources/:custodianID', controller.getCreditSources);
 // Get information about an operation
 router.get('/operation/:opHash', controller.getOperation);
 
+// Get information about an operation
+router.get('/operation/events/:opHash', controller.getEvents);
+
 // <><><> POST <><><>
 
 // Retiring a credit using it's ID

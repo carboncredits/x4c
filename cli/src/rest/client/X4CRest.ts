@@ -42,6 +42,15 @@ export default class X4CRest {
         })
     }
 
+    public getEvents(opHash: string) {
+        return withPromise(async () => {
+            const request = this.buildEndpoint("operation/events/" + opHash);
+            const response = await fetch(request);
+            const json = await response.json();
+            return json.data;
+        })
+    }
+
     public retireCredit(
         contractPublichHash: string,
         tokenId: number,

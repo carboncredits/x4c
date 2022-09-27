@@ -33,7 +33,7 @@ const retireCredit = async (req: Request, res: Response, next: NextFunction) => 
         
         const x4c = X4CClient.getInstance();
         const indexerUrl = x4c.getIndexerUrl();
-        const custodian = await x4c.getCustodianContract(req.params.custodianID, "UoCCustodian")
+        const custodian = await x4c.getCustodianContract(req.params.custodianID, "CustodianOperator")
         const updateHash = await custodian.retire(data.minter, data.tokenId, data.amount, data.kyc, data.reason)
 
         const retireResponse: CreditRetireResponse = {
@@ -63,8 +63,24 @@ const getOperation = async (req: Request, res: Response, next: NextFunction) => 
     }
 }
 
+const getEvents = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const x4c = X4CClient.getInstance();
+        const apiClient = x4c.getApiClient();
+        const op = await apiClient.getEvents(req.params.opHash);
+        const response: OperationInfo = {
+            data: op
+        }
+        return res.status(200).json(response);
+    } catch (error) {
+        console.error(error);
+        return res.status(404).send('Not found')
+    }
+}
+
 export {
     getCreditSources,
     getOperation,
+    getEvents,
     retireCredit,
 }
