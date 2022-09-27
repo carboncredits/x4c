@@ -63,8 +63,22 @@ const getOperation = async (req: Request, res: Response, next: NextFunction) => 
     }
 }
 
+const getIndexerUrl = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const x4c = X4CClient.getInstance();
+        const response: { data : string } = {
+            data: x4c.getIndexerUrl()
+        }
+        return res.status(200).json(response);
+    } catch (error) {
+        console.error(error);
+        return res.status(404).send('Not found')
+    }
+}
+
 export {
     getCreditSources,
     getOperation,
     retireCredit,
+    getIndexerUrl
 }

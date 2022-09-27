@@ -42,6 +42,15 @@ export default class X4CRest {
         })
     }
 
+    public getIndexerUrl() {
+        return withPromise(async () => {
+            const request = this.buildEndpoint("info/indexer-url");
+            const response = await fetch(request);
+            const json = await response.json();
+            return json.data as string;
+        })
+    }
+
     public retireCredit(
         contractPublichHash: string,
         tokenId: number,
