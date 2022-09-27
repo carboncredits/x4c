@@ -4,12 +4,13 @@
 #include "../src/fa2.mligo"
 type storage_fa2 = storage
 type entrypoint_fa2 = entrypoint
-type retire_tokens_fa2 = retire_tokens
+type retire_tokens_event_fa2 = bytes
 
 #include "../src/custodian.mligo"
 type result_custodian = result
 type owner_custodian = owner
 type operator_custodian = operator
+type retire_tokens_event_custodian = bytes
 
 let test_internal_mint_with_tokens =
 	let test_fa2 = Common.fa2_bootstrap(3n) in
@@ -301,8 +302,16 @@ let test_retire =
 			| Some val -> assert (val = 650n)
 		in
 
+	// There should be events both on the custodian contract and the fa2 contract
 	let _test_events =
-		let events: retire_tokens_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
+		let events: retire_tokens_event_custodian list = Test.get_last_events_from test_custodian.contract "retire" in
+			match events with
+			| [_] -> ()
+			| _ -> Test.failwith "not good"
+		in
+
+	let _test_events =
+		let events: retire_tokens_event_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
 			match events with
 			| [_] -> ()
 			| _ -> Test.failwith "not good"
@@ -353,7 +362,14 @@ let test_others_cannot_retire =
 		in
 
 	let _test_events =
-		let events: retire_tokens_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
+		let events: retire_tokens_event_custodian list = Test.get_last_events_from test_custodian.contract "retire" in
+			match events with
+			| [_] -> Test.failwith "not good"
+			| _ -> ()
+		in
+
+	let _test_events =
+		let events: retire_tokens_event_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
 			match events with
 			| [_] -> Test.failwith "not good"
 			| _ -> ()
@@ -407,7 +423,14 @@ let test_operator_can_retire =
 		in
 
 	let _test_events =
-		let events: retire_tokens_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
+		let events: retire_tokens_event_custodian list = Test.get_last_events_from test_custodian.contract "retire" in
+			match events with
+			| [_] -> ()
+			| _ -> Test.failwith "not good"
+		in
+
+	let _test_events =
+		let events: retire_tokens_event_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
 			match events with
 			| [_] -> ()
 			| _ -> Test.failwith "not good"
@@ -458,7 +481,14 @@ let test_operator_for_other_kyc_cannot_retire =
 	let _ : unit = Assert.failure_code res error_PERMISSIONS_DENIED in
 
 	let _test_events =
-		let events: retire_tokens_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
+		let events: retire_tokens_event_custodian list = Test.get_last_events_from test_custodian.contract "retire" in
+			match events with
+			| [_] -> Test.failwith "not good"
+			| _ -> ()
+		in
+
+	let _test_events =
+		let events: retire_tokens_event_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
 			match events with
 			| [_] -> Test.failwith "not good"
 			| _ -> ()
@@ -508,7 +538,14 @@ let test_cannot_retire_too_much =
 		in
 
 	let _test_events =
-		let events: retire_tokens_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
+		let events: retire_tokens_event_custodian list = Test.get_last_events_from test_custodian.contract "retire" in
+			match events with
+			| [_] -> Test.failwith "not good"
+			| _ -> ()
+		in
+
+	let _test_events =
+		let events: retire_tokens_event_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
 			match events with
 			| [_] -> Test.failwith "not good"
 			| _ -> ()
