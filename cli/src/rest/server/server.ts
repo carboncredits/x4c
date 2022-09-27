@@ -5,9 +5,9 @@ import X4CClient from '../../x4c'
 
 // Change the URLs to use Tzkt or Tzstats APIs
 const x4cClient = X4CClient.getInstance(
-    "https://rpc.jakartanet.teztnets.xyz",
-    "https://api.jakartanet.tzkt.io",
-    "https://jakartanet.tzkt.io"
+    "https://rpc.kathmandunet.teztnets.xyz",
+    "https://api.kathmandunet.tzkt.io",
+    "https://kathmandunet.tzkt.io"
 )
 
 x4cClient.loadClientState().then(() => {
