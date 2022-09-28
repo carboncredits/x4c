@@ -12,6 +12,12 @@ type owner_custodian = owner
 type operator_custodian = operator
 type retire_tokens_event_custodian = bytes
 
+type custodian_mint_event =  {
+    token : token;
+    amount : int;
+    new_total : nat;
+}
+
 let test_internal_mint_with_tokens =
 	let test_fa2 = Common.fa2_bootstrap(3n) in
 	let test_custodian = Common.custodian_bootstrap() in
@@ -36,6 +42,15 @@ let test_internal_mint_with_tokens =
 		match val with
 			| None -> Test.failwith "Should be external ledger entry"
 			| Some val -> assert (val = 1_000n)
+		in
+
+	let _test_custodian_events: unit =
+		let events: custodian_mint_event list = Test.get_last_events_from test_custodian.contract "internal_mint" in
+			let expected: custodian_mint_event = {token = tok; amount = 1000; new_total = 1000n} in
+			match events with
+				| x :: [] -> assert (x = expected)
+				| [] -> Test.failwith "empty list"
+				| _ -> Test.failwith  "unexpected data"
 		in ()
 
 

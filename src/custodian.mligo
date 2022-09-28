@@ -138,27 +138,51 @@ let internal_transfer (param : internal_transfer list) (storage : storage) : res
     param
     storage
 
-let internal_mint (param : internal_mint list) (storage : storage) : result =
-    if (Tezos.get_sender ()) <> storage.custodian then (failwith error_PERMISSIONS_DENIED : result) else
-    // port in tokens
-    ([] : operation list),
-    List.fold
-    (fun (storage, p : storage * internal_mint) : storage ->
-        let external_internal_diff =
-            let external_balance =
-                match (Tezos.call_view "view_balance_of" ({ token_owner = (Tezos.get_self_address ()) ; token_id = p.token_id ; } : external_owner) p.token_address : nat option) with
-                | None -> (failwith error_CALL_VIEW_FAILED : nat) | Some b -> b in
-            let internal_balance =
-                match Big_map.find_opt p storage.external_ledger with
-                | None -> 0n | Some b -> b in
-            external_balance - internal_balance in
-        if external_internal_diff < 0 then (failwith error_INSUFFICIENT_BALANCE : storage) else
-        { storage with
-            ledger = update_balance { kyc = (Bytes.pack "self") ; token = p ; } external_internal_diff storage.ledger ;
-            external_ledger = update_balance p external_internal_diff storage.external_ledger ;
-        } )
-    param
-    storage
+
+let internal_mint (params : internal_mint list) (storage : storage) : result =
+    if (Tezos.get_sender ()) <> storage.custodian then
+        (failwith error_PERMISSIONS_DENIED : result)
+    else
+        type internal_update = {
+            token : token;
+            amount : int;
+            new_total : nat;
+        } in
+        let update_list : internal_update list = List.map
+            (fun (token : internal_mint) : internal_update ->
+                let external_balance : nat =
+                    match (Tezos.call_view "view_balance_of" ({ token_owner = (Tezos.get_self_address ()) ; token_id = token.token_id ; } : external_owner) token.token_address : nat option) with
+                    | None -> (failwith error_CALL_VIEW_FAILED : nat)
+                    | Some b -> b in
+                let internal_balance : nat =
+                    match Big_map.find_opt token storage.external_ledger with
+                    | None -> 0n
+                    | Some b -> b in
+                let external_internal_diff : int = external_balance - internal_balance in
+                if external_internal_diff < 0 then
+                    (failwith error_INSUFFICIENT_BALANCE : internal_update)
+                else
+                    {
+                        token = token;
+                        amount = external_internal_diff;
+                        new_total = external_balance;
+                    }
+            ) params
+        in
+        let updated_storage: storage = List.fold
+            (fun (storage, update : storage * internal_update) : storage ->
+                { storage with
+                    ledger = update_balance { kyc = (Bytes.pack "self") ; token = update.token ; } update.amount storage.ledger ;
+                    external_ledger = update_balance update.token update.amount storage.external_ledger ;
+                }
+            ) update_list storage
+        in
+        let emit_operations: operation list = List.map
+            (fun (update : internal_update) : operation ->
+                Tezos.emit "%internal_mint" update
+            ) update_list
+        in
+        emit_operations, updated_storage
 
 // triggers a transfer in the FA2 contract
 let external_transfer (param : external_transfer list) (storage : storage) : result =

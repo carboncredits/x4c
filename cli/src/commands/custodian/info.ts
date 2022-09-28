@@ -58,8 +58,16 @@ export default class extends Command {
 			}
 		});
 		for (const event of events) {
-			const payload = Buffer.from(event.payload ,"hex").toString()
-			eventsTable.push([event.id.toString(), event.tag, event.time.toISOString(), payload]);
+			switch(event.tag) {
+			case "retire":
+				const retirement_data = Buffer.from(event.payload ,"hex").toString();
+				eventsTable.push([event.id.toString(), event.tag, event.time.toISOString(), retirement_data]);
+				break;
+			case "internal_mint":
+				const report = `token: ${event.payload.token.token_address}:${event.payload.token.token_id} added ${event.payload.amount}`;
+				eventsTable.push([event.id.toString(), event.tag, event.time.toISOString(), report]);
+				break;
+			}
 		}
 		console.log(eventsTable.toString());
 
