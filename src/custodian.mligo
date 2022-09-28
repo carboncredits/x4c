@@ -3,6 +3,8 @@
     This records who we are holding on behalf of, what balances, emits txns to buy etc
  *****)
 
+#include "../lib/list.mligo"
+
 (* =============================================================================
  * Storage
  * ============================================================================= *)
@@ -239,7 +241,7 @@ let retire (param : internal_retire list) (storage : storage) : result =
             storage )
         param
         storage in
-    // emit a retire transaction to the FA2 contract
+    // Send a retire transaction to the FA2 contract, and to emit the retirement data for the frontend
     let ops_retire_tokens =
         List.map
         (fun (p : internal_retire) : operation ->
@@ -260,8 +262,13 @@ let retire (param : internal_retire list) (storage : storage) : result =
                 | Some c -> c in
             Tezos.transaction txndata_retire 0tez entrypoint_retire )
         param in
-    ops_retire_tokens, storage
-
+    let ops_emit_retirement =
+        flat_map
+        (fun (p : internal_retire) : operation list ->
+            List.map (fun (d: internal_retire_data) : operation -> Tezos.emit "%retire" d.retiring_data) p.txs
+        )
+        param in
+   concat (ops_retire_tokens, ops_emit_retirement) , storage
 
 (* =============================================================================
  * Contract Views

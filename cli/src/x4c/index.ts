@@ -39,9 +39,9 @@ export default class X4CClient {
     // possible to pass objects around, so this is the quickest way to get a
     // global instance
     static getInstance(
-        node_base_url = "https://rpc.jakartanet.teztnets.xyz",
-        indexer_api_base_url = "https://api.jakarta.tzstats.com",
-        indexer_base_url = "https://jakarta.tzstats.com",
+        node_base_url = "https://rpc.kathmandunet.teztnets.xyz",
+        indexer_api_base_url = "https://api.kathmandunet.tzkt.io",
+        indexer_base_url = "https://kathmandunet.tzkt.io",
         signatory_base_url = 'http://signatory:6732' // based on docker-compose
     ) {
         return this._instance || (
@@ -50,9 +50,9 @@ export default class X4CClient {
     }
 
     private constructor (
-        node_base_url = "https://rpc.jakartanet.teztnets.xyz",
-        indexer_api_base_url = "https://api.tzstats.com",
-        indexer_base_url = "https://tzstats.com",
+        node_base_url = "https://rpc.kathmandunet.teztnets.xyz",
+        indexer_api_base_url = "https://api.tzkt.io",
+        indexer_base_url = "https://tzkt.io",
         signatory_base_url = 'http://signatory:6732' // based on docker-compose
     ) {
         this.node_base_url = node_base_url;
@@ -104,6 +104,8 @@ export default class X4CClient {
 
         // if there's one and only one FA2 contract, note it as a default
         const fa2s: Contract[] = []
+
+        console.log("Loading client state...")
 
         try {
             const contract_data = await readFile(Path.join(this.tezos_client_file_location, 'contracts'), 'utf8');
@@ -176,7 +178,7 @@ export default class X4CClient {
     async getCustodianContract(contract_str: string, signer_str?: string): Promise<CustodianContract> {
         const contract = this.contractForArg(contract_str);
         if (contract === undefined) {
-            throw new Error('Contract name not recognised');
+            throw new Error(`Contract name not recognised: ${contract_str}`);
         }
         const signer = signer_str ? await this.signerForArg(signer_str) : undefined;
         return new CustodianContract(this.node_base_url, this.indexer_api_base_url, contract, signer);

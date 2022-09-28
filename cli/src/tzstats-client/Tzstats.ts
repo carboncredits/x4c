@@ -1,6 +1,6 @@
 import fetch from "node-fetch";
 
-import { Account, Contract, ContractCalls, ContractStorage, IndexerStatus, Operation } from "./types";
+import { Account, Contract, ContractCalls, ContractStorage, IndexerStatus, Operation, EmitEvent } from "./types";
 
 function withPromise<T>(fn: (v: void) => Promise<T>): Promise<T> {
     return new Promise(async (resolve, reject) => {
@@ -72,7 +72,7 @@ export default class Tzstats {
             return json as ContractCalls;
         })
     }
-    
+
     public getBigMapValues(bigmapID: number, prim?: boolean): Promise<any> {
         return withPromise(async () => {
             const params = prim ? new URLSearchParams({ prim: "1" }) : undefined
@@ -117,5 +117,12 @@ export default class Tzstats {
 
             return res;
         });
+    }
+
+    public getEvents(_contractHash: string): Promise<EmitEvent[]> {
+        // Placeholder as tzindex hasn't published their events API yet
+        return new Promise((_resolve, reject) =>
+            reject(new Error('No events API from tzindex yet.'))
+        )
     }
 }

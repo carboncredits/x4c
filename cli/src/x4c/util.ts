@@ -1,5 +1,5 @@
 import { char2Bytes, bytes2Char } from '@taquito/utils';
-import { ContractStorage, Operation } from '../tzstats-client/types';
+import { ContractStorage, Operation, EmitEvent } from '../tzstats-client/types';
 
 function stringToMichelsonBytes(arg: string): string {
     const bytes = char2Bytes(arg);
@@ -20,6 +20,7 @@ export interface GenericClient {
     getContractStorage(hash: string): Promise<ContractStorage>
     getOperation(opHash: string): Promise<Operation[]>
     getBigMapValues(id: number): any
+    getEvents(hash: string): Promise<EmitEvent[]>
 }
 
 export {

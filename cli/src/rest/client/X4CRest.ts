@@ -51,6 +51,15 @@ export default class X4CRest {
         })
     }
 
+    public getEvents(opHash: string) {
+        return withPromise(async () => {
+            const request = this.buildEndpoint("operation/events/" + opHash);
+            const response = await fetch(request);
+            const json = await response.json();
+            return json.data;
+        })
+    }
+
     public retireCredit(
         contractPublichHash: string,
         tokenId: number,
@@ -66,13 +75,13 @@ export default class X4CRest {
             amount: amount,
             kyc: kyc
         }
-        
+
         return withPromise(async () => {
             const request = this.buildEndpoint(`retire/${contractPublichHash}`);
-            const response = await fetch(request, { 
+            const response = await fetch(request, {
                 method: "POST",
                 body: JSON.stringify(body),
-                headers: { "Content-Type": "application/json" } 
+                headers: { "Content-Type": "application/json" }
             });
             const json = await response.json();
             return json.data as CreditRetireResponse;

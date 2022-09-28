@@ -1,6 +1,6 @@
 import fetch from "node-fetch";
 
-import { ContractStorage, Operation } from "../tzstats-client/types";
+import { ContractStorage, Operation, EmitEvent } from "../tzstats-client/types";
 
 function withPromise<T>(fn: (v: void) => Promise<T>): Promise<T> {
     return new Promise(async (resolve, reject) => {
@@ -59,6 +59,24 @@ export default class Tzkt {
                 ...j,
                 time: new Date(j.timestamp)
                 } as Operation;
+            });
+
+            return res;
+        });
+    }
+
+    public getEvents(contractHash: string): Promise<EmitEvent[]> {
+        return withPromise(async () => {
+            const params = new URLSearchParams({ contract: contractHash });
+            const request = this.buildEndpoint(`contracts/events`, params);
+            const response = await fetch(request);
+            const json = await response.json();
+
+            const res = json.map((j: any) => {
+                return {
+                ...j,
+                time: new Date(j.timestamp)
+                } as Event;
             });
 
             return res;

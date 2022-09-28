@@ -7,7 +7,7 @@ const router = express.Router();
  * There is no checking of authorisation to perform any of the
  * REST calls for now. */
 
-// <><><> GET <><><> 
+// <><><> GET <><><>
 
 // Sources of credits
 router.get('/credit/sources/:custodianID', controller.getCreditSources);
@@ -17,6 +17,9 @@ router.get('/operation/:opHash', controller.getOperation);
 
 // Get the URL of the indexer that the server is using
 router.get('/info/indexer-url', controller.getIndexerUrl)
+
+// Get information about an operation
+router.get('/operation/events/:opHash', controller.getEvents);
 
 // <><><> POST <><><>
 
