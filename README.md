@@ -94,9 +94,9 @@ This should give you fa2.tz and custodian.tz in the build/ directory.
 
 Finally you'll want to select a [test network](https://teztnets.xyz) on which to instantiate the contracts. For the 4C end-to-end experience you'll need to ensure you have the following endpoints available on the test network:
 
-* An Tezos node RPC endpoint - e.g., https://rpc.jakartanet.teztnets.xyz
-* An Indexer RPC endpoint - e.g., https://api.jakarta.tzstats.com
-* An Indexer human frontend - e.g., https://jakarta.tzstats.com
+* An Tezos node RPC endpoint - e.g., https://rpc.kathmandunet.teztnets.xyz
+* An Indexer RPC endpoint - e.g., https://api.kathmandu.tzstats.com
+* An Indexer human frontend - e.g., https://kathmandu.tzstats.com
 
 When using a test net tezos-client will report that you're not on mainnet on every command invocation, so you may wish to set the following environmental variable to prevent that:
 
@@ -108,9 +108,9 @@ $ export TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER=yes
 
 ### Set up an admin wallet
 
-Not strictly necessary, but I find it makes testing easier - you should create a wallet for you as the admin and ensure it has some tez associated with it. In this example we're using [Jakartanet](https://teztnets.xyz/jakartanet-about).
+Not strictly necessary, but I find it makes testing easier - you should create a wallet for you as the admin and ensure it has some tez associated with it. In this example we're using [Kathmanduanet](https://teztnets.xyz/kathmandunet-about).
 
-If you have an old tezos-client state, you may wish to backup your ~/.tezos-client folder. You can then reset the state there if you're not already on jakartanet using:
+If you have an old tezos-client state, you may wish to backup your ~/.tezos-client folder. You can then reset the state there if you're not already on kathmandunet using:
 
 ```
 $ tezos-client config reset
@@ -119,7 +119,7 @@ $ tezos-client config reset
 Set tezos-client to use the right test network:
 
 ```
-$ tezos-client --endpoint https://rpc.jakartanet.teztnets.xyz config update
+$ tezos-client --endpoint https://rpc.kathmandunet.teztnets.xyz config update
 
 ```
 
@@ -134,7 +134,7 @@ Alias           Hash                                   Contract type   Default
  facetwallet    tz1cyDKwRw1CAT1dw7B95eBPqUq456rW6Gsw   Wallet
 ```
 
-Then go to https://faucet.jakartanet.teztnets.xyz and request tez for the wallet’s hash. Once you've done that you should hopefully find you now have some tez:
+Then go to https://faucet.kathmandunet.teztnets.xyz and request tez for the wallet’s hash. Once you've done that you should hopefully find you now have some tez:
 
 ```
 $ tezos-client get balance for facetwallet
@@ -195,12 +195,12 @@ Now we need to add a token definition and then mint some actual tokens. There wo
 $ x4c fa2 add_token FA2Owner 123 "My project" "http://project.url" FA2Contract
 Adding token...
 Awaiting for onwEvkpVH19BPzoZdgHNqLQnD5k3AreZchXw5HSXdadDcEEUdBb to be confirmed...
-Operation injected: https://rpc.jakartanet.teztnets.xyz/onwEvkpVH19BPzoZdgHNqLQnD5k3AreZchXw5HSXdadDcEEUdBb
+Operation injected: https://rpc.kathmandunet.teztnets.xyz/onwEvkpVH19BPzoZdgHNqLQnD5k3AreZchXw5HSXdadDcEEUdBb
 
 $ x4c fa2 mint FA2Owner CustodianContract 123 1000 FA2Contract
 Minting tokens...
 Awaiting for ooowBFJwhYMLcBCTeycxa9w7BWE3fbUPMraEAsrVW2LgxStqQ2P to be confirmed...
-Operation injected: https://rpc.jakartanet.teztnets.xyz/ooowBFJwhYMLcBCTeycxa9w7BWE3fbUPMraEAsrVW2LgxStqQ2P
+Operation injected: https://rpc.kathmandunet.teztnets.xyz/ooowBFJwhYMLcBCTeycxa9w7BWE3fbUPMraEAsrVW2LgxStqQ2P
 ```
 
 We need then to sync the custodian contract with the FA2 contract:
@@ -209,7 +209,7 @@ We need then to sync the custodian contract with the FA2 contract:
 $ x4c custodian internal_mint CustodianOwner CustodianContract FA2Contract 123
 Syncing tokens...
 Awaiting for opViJhWJz3HBzS2K5x3hf5BaXWpbmrD5yLkYd2y55YxcCznZAbJ to be confirmed...
-Operation injected: https://rpc.jakartanet.teztnets.xyz/opViJhWJz3HBzS2K5x3hf5BaXWpbmrD5yLkYd2y55YxcCznZAbJ
+Operation injected: https://rpc.kathmandunet.teztnets.xyz/opViJhWJz3HBzS2K5x3hf5BaXWpbmrD5yLkYd2y55YxcCznZAbJ
 ```
 
 Finally, the custodian is holding tokens for off-chain entities that aren't expected to hold their own wallets. By default the internal_mint call to the custodian has "self" holding the tokens, but in practice you'd then assign them to others:
@@ -218,12 +218,12 @@ Finally, the custodian is holding tokens for off-chain entities that aren't expe
 $ x4c custodian internal_transfer CustodianOwner CustodianContract FA2Contract 123 500 "self" "example corp"
 Syncing tokens...
 Awaiting for opCPgnfteYVeKNL2gNo75h9WzGJaS2MAmPbK9DepPegu7FDsXxH to be confirmed...
-Operation injected: https://rpc.jakartanet.teztnets.xyz/opCPgnfteYVeKNL2gNo75h9WzGJaS2MAmPbK9DepPegu7FDsXxH```
+Operation injected: https://rpc.kathmandunet.teztnets.xyz/opCPgnfteYVeKNL2gNo75h9WzGJaS2MAmPbK9DepPegu7FDsXxH```
 
 $ x4c custodian internal_transfer CustodianOwner CustodianContract FA2Contract 123 500 "self" "other org"
 Syncing tokens...
 Awaiting for ooatdoMAwHRNwTJ7trxd5G8m391yDFaWkHSddpT8JwCXmeZu7HY to be confirmed...
-Operation injected: https://rpc.jakartanet.teztnets.xyz/ooatdoMAwHRNwTJ7trxd5G8m391yDFaWkHSddpT8JwCXmeZu7HY
+Operation injected: https://rpc.kathmandunet.teztnets.xyz/ooatdoMAwHRNwTJ7trxd5G8m391yDFaWkHSddpT8JwCXmeZu7HY
 ```
 
 ### Delegate retirement authority
@@ -234,7 +234,7 @@ To avoid having the custodian contract's owner's wallet online, we should delega
 $ x4c custodian add_operator CustodianOwner CustodianContract CustodianOperator 123 "other org"
 Adding operator...
 Awaiting for oow5qgodszwHSo17eXN2XdcumDpMMsbDeSuYVCVCnDEyDAghVK5 to be confirmed...
-Operation injected: https://rpc.jakartanet.teztnets.xyz/oow5qgodszwHSo17eXN2XdcumDpMMsbDeSuYVCVCnDEyDAghVK5
+Operation injected: https://rpc.kathmandunet.teztnets.xyz/oow5qgodszwHSo17eXN2XdcumDpMMsbDeSuYVCVCnDEyDAghVK5
 ```
 
 Once this is done the CustodianOperator wallet can only call retire or internal_transfer on the CustodianContract for the tokens of ID 123 that have been assigned to "other org".
