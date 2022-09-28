@@ -67,7 +67,7 @@ let test_internal_mint_without_tokens =
 
 
 let test_internal_transfer =
-	let test_fa2 = Common.fa2_bootstrap() in
+	let test_fa2 = Common.fa2_bootstrap(3n) in
 	let test_custodian = Common.custodian_bootstrap() in
 
 	let _ : test_exec_result = Common.fa2_add_token test_fa2 42n in
@@ -121,7 +121,7 @@ let test_internal_transfer =
 
 
 let test_internal_transfer_to_self =
-	let test_fa2 = Common.fa2_bootstrap() in
+	let test_fa2 = Common.fa2_bootstrap(3n) in
 	let test_custodian = Common.custodian_bootstrap() in
 
 	let _ : test_exec_result = Common.fa2_add_token test_fa2 42n in
@@ -167,7 +167,7 @@ let test_internal_transfer_to_self =
 
 
 let test_internal_transfer_too_much =
-	let test_fa2 = Common.fa2_bootstrap() in
+	let test_fa2 = Common.fa2_bootstrap(3n) in
 	let test_custodian = Common.custodian_bootstrap() in
 
 	let _ : test_exec_result = Common.fa2_add_token test_fa2 42n in
