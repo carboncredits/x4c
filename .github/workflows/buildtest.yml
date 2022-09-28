@@ -17,7 +17,7 @@ jobs:
 
       # Runs a single command using the runners shell
       - name: Install ligo
-        run: wget --quiet "https://gitlab.com/ligolang/ligo/-/jobs/3043602309/artifacts/raw/ligo.deb" && sudo dpkg -i ./ligo.deb
+        run: wget --quiet "https://gitlab.com/ligolang/ligo/-/jobs/3095952199/artifacts/raw/ligo.deb" && sudo dpkg -i ./ligo.deb
 
       - name: Build and test
         run: make all
