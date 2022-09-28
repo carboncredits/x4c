@@ -48,8 +48,16 @@ type result = operation list * storage
  * Entrypoint Type Definition
  * ============================================================================= *)
 
-type internal_transfer_to = [@layout:comb]{ to_ : bytes ; token_id : nat ; amount : nat ; }
-type internal_transfer = [@layout:comb]{ from_ : bytes ; token_address : address ; txs : internal_transfer_to list; }
+type internal_transfer_to = [@layout:comb]{
+    to_ : bytes ;
+    token_id : nat ;
+    amount : nat ;
+}
+type internal_transfer = [@layout:comb]{
+    from_ : bytes ;
+    token_address : address ;
+    txs : internal_transfer_to list;
+}
 
 type external_transfer_to = [@layout:comb]{ to_ : address ; token_id : nat ; amount : nat ; }
 type external_transfer_batch = [@layout:comb]{ from_ : bytes ; txs : external_transfer_to list; }
@@ -88,6 +96,26 @@ type entrypoint =
 | Update_internal_operators of update_internal_operators // change operators for some address
 | Retire of internal_retire list
 
+
+(* =============================================================================
+ * Event types
+ * ============================================================================= *)
+
+type emit_internal_transfer = {
+    from : bytes;
+    to : bytes;
+    token: token;
+    amount: nat;
+}
+
+type emit_internal_mint = {
+    token : token;
+    amount : int;
+    new_total : nat;
+}
+
+type emit_retire = bytes
+
 (* =============================================================================
  * Error Codes
  * ============================================================================= *)
@@ -115,41 +143,53 @@ let is_operator (operator : operator) (operators : operator set) : bool =
  * Entrypoint Functions
  * ============================================================================= *)
 
-let internal_transfer (param : internal_transfer list) (storage : storage) : result =
-    ([] : operation list),
-    List.fold
-    (fun (storage, p_1 : storage * internal_transfer) : storage ->
-        List.fold
-        (fun (storage, p_2 : storage * internal_transfer_to) : storage ->
-            // check permissions
-            if (Tezos.get_sender ()) <> storage.custodian && not is_operator { token_owner = p_1.from_ ; token_operator = (Tezos.get_sender ()) ; token_id = p_2.token_id ; } storage.operators
-                        then (failwith error_PERMISSIONS_DENIED : storage) else
-            // update the ledger
-            let token : token = { token_address = p_1.token_address ; token_id = p_2.token_id ; } in
-            { storage with
-                ledger =
-                    update_balance { kyc = p_1.from_ ; token = token ; } (-p_2.amount) (
-                    update_balance { kyc = p_2.to_   ; token = token ; } (int (p_2.amount)) storage.ledger ) ;
-            }
-        )
-        p_1.txs
-        storage
-    )
-    param
-    storage
+let internal_transfer (params : internal_transfer list) (storage : storage) : result =
+    let updated_storage: storage = List.fold
+        (fun (storage, transfer : storage * internal_transfer) : storage ->
+            List.fold
+            (fun (storage, destination : storage * internal_transfer_to) : storage ->
+                // check permissions
+                if
+                    (Tezos.get_sender ()) <> storage.custodian &&
+                    not is_operator { token_owner = transfer.from_ ; token_operator = (Tezos.get_sender ()) ; token_id = destination.token_id ; } storage.operators
+                then
+                    (failwith error_PERMISSIONS_DENIED : storage)
+                else
+                    // update the ledger
+                    let token : token = { token_address = transfer.token_address ; token_id = destination.token_id ; } in
+                    { storage with
+                        ledger =
+                            update_balance { kyc = transfer.from_ ; token = token ; } (-destination.amount) (
+                            update_balance { kyc = destination.to_  ; token = token ; } (int (destination.amount)) storage.ledger ) ;
+                    }
+            ) transfer.txs storage
+        ) params storage
+    in
+    let emit_operations: operation list =
+        flat_map
+        (fun (transfer : internal_transfer) : operation list ->
+            List.map
+            (fun (destination: internal_transfer_to) : operation ->
+                let token : token = { token_address = transfer.token_address ; token_id = destination.token_id ; } in
+                let payload: emit_internal_transfer = {
+                    from = transfer.from_;
+                    to = destination.to_;
+                    token = token;
+                    amount = destination.amount;
+                } in
+                Tezos.emit "%internal_transfer" payload
+            ) transfer.txs
+        ) params
+    in
+    emit_operations, updated_storage
 
 
 let internal_mint (params : internal_mint list) (storage : storage) : result =
     if (Tezos.get_sender ()) <> storage.custodian then
         (failwith error_PERMISSIONS_DENIED : result)
     else
-        type internal_update = {
-            token : token;
-            amount : int;
-            new_total : nat;
-        } in
-        let update_list : internal_update list = List.map
-            (fun (token : internal_mint) : internal_update ->
+        let update_list : emit_internal_mint list = List.map
+            (fun (token : internal_mint) : emit_internal_mint ->
                 let external_balance : nat =
                     match (Tezos.call_view "view_balance_of" ({ token_owner = (Tezos.get_self_address ()) ; token_id = token.token_id ; } : external_owner) token.token_address : nat option) with
                     | None -> (failwith error_CALL_VIEW_FAILED : nat)
@@ -160,7 +200,7 @@ let internal_mint (params : internal_mint list) (storage : storage) : result =
                     | Some b -> b in
                 let external_internal_diff : int = external_balance - internal_balance in
                 if external_internal_diff < 0 then
-                    (failwith error_INSUFFICIENT_BALANCE : internal_update)
+                    (failwith error_INSUFFICIENT_BALANCE : emit_internal_mint)
                 else
                     {
                         token = token;
@@ -170,19 +210,24 @@ let internal_mint (params : internal_mint list) (storage : storage) : result =
             ) params
         in
         let updated_storage: storage = List.fold
-            (fun (storage, update : storage * internal_update) : storage ->
+            (fun (storage, update : storage * emit_internal_mint) : storage ->
                 { storage with
                     ledger = update_balance { kyc = (Bytes.pack "self") ; token = update.token ; } update.amount storage.ledger ;
                     external_ledger = update_balance update.token update.amount storage.external_ledger ;
                 }
             ) update_list storage
         in
-        let emit_operations: operation list = List.map
-            (fun (update : internal_update) : operation ->
-                Tezos.emit "%internal_mint" update
+        let emit_operations: operation list = compact_map
+            (fun (update : emit_internal_mint) : operation option ->
+                if update.amount <> 0 then
+                    let op = Tezos.emit "%internal_mint" update in
+                        Some op
+                else
+                    None
             ) update_list
         in
         emit_operations, updated_storage
+
 
 // triggers a transfer in the FA2 contract
 let external_transfer (param : external_transfer list) (storage : storage) : result =
