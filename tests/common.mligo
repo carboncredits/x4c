@@ -123,8 +123,8 @@ let custodian_remove_operator (test_custodian: test_custodian) (operator_data: o
 let custodian_internal_transfer (test_custodian: test_custodian) (from: bytes) (to: bytes) (token: token) (amount: nat) : test_exec_result =
 	let _ : unit = Test.set_source test_custodian.owner in
     let txndata_internal_transfer : internal_transfer list =
-        let txs = [ { to_ = to ; token_id = token.token_id ; amount = amount } ; ] in
-        [ { from_ = from ; token_address = token.token_address ; txs = txs ; } ; ] in
+        let destinations = [ { to_ = to ; token_id = token.token_id ; amount = amount } ; ] in
+        [ { from_ = from ; token_address = token.token_address ; txs = destinations ; } ; ] in
     let entrypoint_internal_transfer : internal_transfer list contract =
         Test.to_entrypoint "internal_transfer" test_custodian.contract in
     Test.transfer_to_contract entrypoint_internal_transfer txndata_internal_transfer 0tez

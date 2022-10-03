@@ -12,6 +12,7 @@ type owner_custodian = owner
 type operator_custodian = operator
 type retire_tokens_event_custodian = bytes
 
+
 let test_internal_mint_with_tokens =
 	let test_fa2 = Common.fa2_bootstrap(3n) in
 	let test_custodian = Common.custodian_bootstrap() in
@@ -36,6 +37,15 @@ let test_internal_mint_with_tokens =
 		match val with
 			| None -> Test.failwith "Should be external ledger entry"
 			| Some val -> assert (val = 1_000n)
+		in
+
+	let _test_custodian_events: unit =
+		let events: emit_internal_mint list = Test.get_last_events_from test_custodian.contract "internal_mint" in
+			let expected: emit_internal_mint = {token = tok; amount = 1000; new_total = 1000n} in
+			match events with
+				| x :: [] -> assert (x = expected)
+				| [] -> Test.failwith "empty list"
+				| _ -> Test.failwith  "unexpected data"
 		in ()
 
 
@@ -63,6 +73,13 @@ let test_internal_mint_without_tokens =
 		match val with
 			| None -> ()
 			| Some _ -> Test.failwith "Did not expect external_ledger entry"
+		in
+
+	let _test_custodian_events: unit =
+		let events: emit_internal_mint list = Test.get_last_events_from test_custodian.contract "internal_mint" in
+			match events with
+				| [] -> ()
+				| _ -> Test.failwith  "unexpected data"
 		in ()
 
 
@@ -94,7 +111,7 @@ let test_internal_transfer =
 			| Some val -> assert (val = 1_000n)
 		in
 
-	let res = Common.custodian_internal_transfer test_custodian kyc_default kyc_target tok 500n in
+	let res = Common.custodian_internal_transfer test_custodian kyc_default kyc_target tok 300n in
 	let _ : unit = Assert.tx_success(res) in
 
 	let after_state = Test.get_storage test_custodian.contract in
@@ -103,20 +120,34 @@ let test_internal_transfer =
 		let val = Big_map.find_opt owner after_state.ledger in
 		match val with
 			| None ->  Test.failwith "Should be ledger entry"
-			| Some val -> assert (val = 500n)
+			| Some val -> assert (val = 700n)
  		in
 	let _test_ledger_target =
 		let owner = { kyc = kyc_target; token = tok; } in
 		let val = Big_map.find_opt owner after_state.ledger in
 		match val with
 			| None ->  Test.failwith "Should be ledger entry"
-			| Some val -> assert (val = 500n)
+			| Some val -> assert (val = 300n)
  		in
 	let _test_ext_ledger =
 		let val = Big_map.find_opt tok after_state.external_ledger in
 		match val with
 			| None -> Test.failwith "Should be external ledger entry"
 			| Some val -> assert (val = 1_000n)
+		in
+
+	let _test_custodian_events: unit =
+		let events: emit_internal_transfer list = Test.get_last_events_from test_custodian.contract "internal_transfer" in
+			let expected: emit_internal_transfer = {
+				source = kyc_default;
+				destination = kyc_target;
+				token = tok;
+				amount = 300n;
+			} in
+			match events with
+				| x :: [] -> assert (x = expected)
+				| [] -> Test.failwith "empty list"
+				| _ -> Test.failwith  "unexpected data"
 		in ()
 
 
@@ -217,6 +248,13 @@ let test_internal_transfer_too_much =
 		match val with
 			| None -> Test.failwith "Should be external ledger entry"
 			| Some val -> assert (val = 1_000n)
+		in
+
+	let _test_custodian_events: unit =
+		let events: emit_internal_transfer list = Test.get_last_events_from test_custodian.contract "internal_transfer" in
+			match events with
+				| [] -> ()
+				| _ -> Test.failwith  "unexpected data"
 		in ()
 
 

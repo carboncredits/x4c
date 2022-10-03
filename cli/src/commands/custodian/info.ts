@@ -2,6 +2,7 @@ import {Command, command, param} from 'clime';
 import Table from 'cli-table3';
 
 import X4CClient from '../../x4c';
+import { michelsonBytesToString } from "../../x4c/util"
 
 @command({
 description: 'Fetch custodian contract storage',
@@ -58,8 +59,22 @@ export default class extends Command {
 			}
 		});
 		for (const event of events) {
-			const payload = Buffer.from(event.payload ,"hex").toString()
-			eventsTable.push([event.id.toString(), event.tag, event.time.toISOString(), payload]);
+			switch(event.tag) {
+			case "retire":
+				const retirement_data = Buffer.from(event.payload, "hex").toString();
+				eventsTable.push([event.id.toString(), event.tag, event.time.toISOString(), retirement_data]);
+				break;
+			case "internal_mint":
+				const mint_info = `token: ${event.payload.token.token_address}:${event.payload.token.token_id} added ${event.payload.amount}`;
+				eventsTable.push([event.id.toString(), event.tag, event.time.toISOString(), mint_info]);
+				break;
+			case "internal_transfer":
+				const from = michelsonBytesToString(event.payload.from);
+				const to = michelsonBytesToString(event.payload.to);
+				const transfer_report = `token: ${event.payload.token.token_address}:${event.payload.token.token_id} moved from ${from} to ${to}`;
+				eventsTable.push([event.id.toString(), event.tag, event.time.toISOString(), transfer_report]);
+				break;
+			}
 		}
 		console.log(eventsTable.toString());
 

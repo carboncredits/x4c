@@ -31,3 +31,36 @@ let test_flat_map_layer_two =
 		)
 		input in
 	assert (res = [2n; 3n; 4n; 5n;])
+
+let test_compact_list_simple =
+	let input: nat option list = [Some 1n; None; Some 3n; ] in
+	let res = compact_list input in
+	assert (res = [1n; 3n;])
+
+let test_compact_list_empty =
+	let input: nat option list = [] in
+	let res = compact_list input in
+	assert (res = [])
+
+let test_comapct_list_all_none =
+	let input: nat option list = [None; None;] in
+	let res = compact_list input in
+	assert (res = [])
+
+let test_filter_map_simple =
+	let input: int list = [1; 2; 3; 4;] in
+	let res = filter_map
+		(fun (a: int) : int option ->
+			if a = 3 then None else Some a
+		) input
+	in
+	assert (res = [1; 2; 4;])
+
+let test_filter_map_empty =
+	let input: int list = [] in
+	let res = filter_map
+		(fun (a: int) : int option ->
+			if a = 3 then None else Some a
+		) input
+	in
+	assert (res = [])
