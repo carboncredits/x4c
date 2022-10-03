@@ -10,9 +10,9 @@ let compact_list (type a) (l : a option list) : a list =
     (fun (val, lst : a option * a list ) : a list ->
         match val with
         | None -> lst
-        | b -> Option.unopt(b) :: lst
+        | Some b -> b :: lst
     ) l []
 
-let compact_map (type a b) (f : (a -> b option)) (src : a list) : b list =
+let filter_map (type a b) (f : (a -> b option)) (src : a list) : b list =
     let option_list: b option list = List.map f src in
         compact_list option_list

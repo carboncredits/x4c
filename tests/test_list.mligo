@@ -47,18 +47,18 @@ let test_comapct_list_all_none =
 	let res = compact_list input in
 	assert (res = [])
 
-let test_compact_map_simple =
+let test_filter_map_simple =
 	let input: int list = [1; 2; 3; 4;] in
-	let res = compact_map
+	let res = filter_map
 		(fun (a: int) : int option ->
 			if a = 3 then None else Some a
 		) input
 	in
 	assert (res = [1; 2; 4;])
 
-let test_compact_map_empty =
+let test_filter_map_empty =
 	let input: int list = [] in
-	let res = compact_map
+	let res = filter_map
 		(fun (a: int) : int option ->
 			if a = 3 then None else Some a
 		) input

@@ -139,8 +139,8 @@ let test_internal_transfer =
 	let _test_custodian_events: unit =
 		let events: emit_internal_transfer list = Test.get_last_events_from test_custodian.contract "internal_transfer" in
 			let expected: emit_internal_transfer = {
-				from = kyc_default;
-				to = kyc_target;
+				source = kyc_default;
+				destination = kyc_target;
 				token = tok;
 				amount = 300n;
 			} in

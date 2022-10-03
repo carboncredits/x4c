@@ -102,8 +102,8 @@ type entrypoint =
  * ============================================================================= *)
 
 type emit_internal_transfer = {
-    from : bytes;
-    to : bytes;
+    source : bytes;
+    destination : bytes;
     token: token;
     amount: nat;
 }
@@ -172,8 +172,8 @@ let internal_transfer (params : internal_transfer list) (storage : storage) : re
             (fun (destination: internal_transfer_to) : operation ->
                 let token : token = { token_address = transfer.token_address ; token_id = destination.token_id ; } in
                 let payload: emit_internal_transfer = {
-                    from = transfer.from_;
-                    to = destination.to_;
+                    source = transfer.from_;
+                    destination = destination.to_;
                     token = token;
                     amount = destination.amount;
                 } in
@@ -217,7 +217,7 @@ let internal_mint (params : internal_mint list) (storage : storage) : result =
                 }
             ) update_list storage
         in
-        let emit_operations: operation list = compact_map
+        let emit_operations: operation list = filter_map
             (fun (update : emit_internal_mint) : operation option ->
                 if update.amount <> 0 then
                     let op = Tezos.emit "%internal_mint" update in
