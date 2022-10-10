@@ -9,11 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"quantify.earth/x4c/pkg/tzkt"
-
 	"blockwatch.cc/tzgo/micheline"
 	"blockwatch.cc/tzgo/rpc"
 	"blockwatch.cc/tzgo/tezos"
+
+	"quantify.earth/x4c/pkg/tzkt"
 )
 
 // public types
@@ -33,6 +33,7 @@ type Contract struct {
 type TezosClient interface {
 	GetContractStorage(address string, ctx context.Context, storage interface{}) error
 	GetBigMapContents(ctx context.Context, identifier int64) ([]tzkt.BigMapItem, error)
+	GetOperationInformation(ctx context.Context, hash string) ([]tzkt.Operation, error)
 }
 
 type Client struct {
@@ -229,4 +230,12 @@ func (c Client) GetBigMapContents(ctx context.Context, identifier int64) ([]tzkt
 		return nil, fmt.Errorf("Failed to make indexer: %w", err)
 	}
 	return indexer.GetBigMapContents(ctx, identifier)
+}
+
+func (c Client) GetOperationInformation(ctx context.Context, hash string) ([]tzkt.Operation, error) {
+	indexer, err := tzkt.NewClient(c.IndexerRPCURL)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to make indexer: %w", err)
+	}
+	return indexer.GetOperationInformation(ctx, hash)
 }

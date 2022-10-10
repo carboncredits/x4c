@@ -45,6 +45,13 @@ func (c mockClient) GetBigMapContents(ctx context.Context, identifier int64) ([]
 	}
 }
 
+func (c mockClient) GetOperationInformation(ctx context.Context, hash string) ([]tzkt.Operation, error) {
+	if c.ShouldError {
+		return nil, fmt.Errorf("Test should fail")
+	}
+	return nil, nil
+}
+
 func TestLedgerLoadFail(t *testing.T) {
 	client := mockClient{
 		ShouldError: true,
