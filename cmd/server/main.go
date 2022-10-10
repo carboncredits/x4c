@@ -22,6 +22,7 @@ func SetupMyHandlers(client tzclient.Client) server {
 	}
 
 	router.GET("/credit/sources/:custodianID", server.getCreditSources)
+	router.GET("/info/indexer-url", server.getIndexerURL)
 
 	// // Sources of credits
 	// router.get('/credit/sources/:custodianID', controller.getCreditSources);
