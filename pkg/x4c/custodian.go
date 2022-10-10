@@ -30,7 +30,7 @@ type CustodianStorage struct {
 	ExternalLedger int64    `json:"external_ledger"`
 }
 
-func (storage *CustodianStorage) GetLedger(ctx context.Context, client tzclient.Client) (Ledger, error) {
+func (storage *CustodianStorage) GetLedger(ctx context.Context, client tzclient.TezosClient) (Ledger, error) {
 	bigmap, err := client.GetBigMapContents(ctx, storage.Ledger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ledger big map: %w", err)
@@ -61,7 +61,7 @@ func (storage *CustodianStorage) GetLedger(ctx context.Context, client tzclient.
 	return result, nil
 }
 
-func (storage *CustodianStorage) GetExternalLedger(ctx context.Context, client tzclient.Client) (ExternalLedger, error) {
+func (storage *CustodianStorage) GetExternalLedger(ctx context.Context, client tzclient.TezosClient) (ExternalLedger, error) {
 	bigmap, err := client.GetBigMapContents(ctx, storage.ExternalLedger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ledger big map: %w", err)

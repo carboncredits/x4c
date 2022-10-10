@@ -12,7 +12,7 @@ x4cli server:
 
 test: tzclient x4c tzkt
 
-tzclient x4c:
+tzclient x4c tzkt:
 	go test ${MKFILE_DIR}pkg/$@/
 
 vet:

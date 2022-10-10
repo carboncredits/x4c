@@ -29,6 +29,12 @@ type Contract struct {
 	Address string
 }
 
+// TezosClient is a generic interface that lets us mock out the backend for testing
+type TezosClient interface {
+	GetContractStorage(address string, ctx context.Context, storage interface{}) error
+	GetBigMapContents(ctx context.Context, identifier int64) ([]tzkt.BigMapItem, error)
+}
+
 type Client struct {
 	Path       string
 	RPCURL     string
@@ -200,7 +206,7 @@ func (c *Client) DirectGetContractStorage(address string, ctx context.Context) (
 	return m, nil
 }
 
-func (c *Client) GetContractStorage(address string, ctx context.Context, storage interface{}) error {
+func (c Client) GetContractStorage(address string, ctx context.Context, storage interface{}) error {
 	indexer, err := tzkt.NewClient(c.IndexerURL)
 	if err != nil {
 		return fmt.Errorf("Failed to make indexer: %w", err)
@@ -213,7 +219,7 @@ func (c *Client) GetContractStorage(address string, ctx context.Context, storage
 	return nil
 }
 
-func (c *Client) GetBigMapContents(ctx context.Context, identifier int64) ([]tzkt.BigMapItem, error) {
+func (c Client) GetBigMapContents(ctx context.Context, identifier int64) ([]tzkt.BigMapItem, error) {
 	indexer, err := tzkt.NewClient(c.IndexerURL)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to make indexer: %w", err)

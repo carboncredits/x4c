@@ -12,7 +12,6 @@ var application = &subcommands.DefaultApplication{
 	Commands: []*subcommands.Command{
 		cmdInfo,
 		cmdContract,
-		cmdBigmap,
 	},
 }
 
