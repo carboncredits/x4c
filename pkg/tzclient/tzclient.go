@@ -7,10 +7,13 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
-	"blockwatch.cc/tzgo/tezos"
+	"quantify.earth/x4c/pkg/tzkt"
+
 	"blockwatch.cc/tzgo/micheline"
 	"blockwatch.cc/tzgo/rpc"
+	"blockwatch.cc/tzgo/tezos"
 )
 
 // public types
@@ -27,10 +30,11 @@ type Contract struct {
 }
 
 type Client struct {
-	Path    string
-	RPCURL  string
-	Wallets map[string]Wallet
-	Contracts map[string]Contract
+	Path       string
+	RPCURL     string
+	IndexerURL string
+	Wallets    map[string]Wallet
+	Contracts  map[string]Contract
 }
 
 // internal types
@@ -86,6 +90,14 @@ func LoadClient(path string) (Client, error) {
 		return Client{}, fmt.Errorf("failed to decode tezos-client config: %w", err)
     }
 	client.RPCURL = config.Endpoint
+
+	if strings.Contains(client.RPCURL, "kathmandunet") {
+		client.IndexerURL = "https://api.kathmandunet.tzkt.io/"
+	} else if strings.Contains(client.RPCURL, "ghostnet") {
+		client.IndexerURL = "https://api.ghostnet.tzkt.io/"
+	} else {
+		client.IndexerURL = "https://api.mainnet.tzkt.io/"
+	}
 
 	content, err = ioutil.ReadFile(filepath.Join(path, "public_key_hashs"))
     if err != nil {
@@ -162,7 +174,7 @@ func LoadDefaultClient() (Client, error) {
 	return LoadClient(default_path)
 }
 
-func (c *Client) GetContractStorage(address string, ctx context.Context) (interface{}, error) {
+func (c *Client) DirectGetContractStorage(address string, ctx context.Context) (interface{}, error) {
 	addr := tezos.MustParseAddress(address)
 	rpcClient, err := rpc.NewClient(c.RPCURL, nil)
 	if err != nil {
@@ -184,37 +196,70 @@ func (c *Client) GetContractStorage(address string, ctx context.Context) (interf
 	return m, nil
 }
 
-func (c *Client) GetBigMap(identifier int64, ctx context.Context) (interface{}, error) {
-	rpcClient, err := rpc.NewClient(c.RPCURL, nil)
+
+func (c *Client) GetContractStorage(address string, ctx context.Context, storage interface{}) error {
+	indexer, err := tzkt.NewClient(c.IndexerURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create client: %w", err)
+		return fmt.Errorf("Failed to make indexer: %w", err)
 	}
-
-	biginfo, err := rpcClient.GetActiveBigmapInfo(ctx, identifier)
+	err = indexer.GetContractStorage(ctx, address, storage)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get big map info: %w", err)
+		return fmt.Errorf("Failed to make indexer: %w", err)
 	}
 
-	// list all bigmap keys - we should use an indexer here, as this can be slow
-	bigkeys, err := rpcClient.ListActiveBigmapKeys(ctx, identifier)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get big map keys: %w", err)
-	}
-
-	// visit each value
-	for _, key := range bigkeys {
-		fmt.Printf("%T %v\n", key, key)
-		bigval, _ := rpcClient.GetActiveBigmapValue(ctx, identifier, key)
-
-		// unfold Micheline type into human readable form
-		val := micheline.NewValue(micheline.NewType(biginfo.ValueType), bigval)
-		m, _ := val.Map()
-		buf, _ := json.MarshalIndent(m, "", "  ")
-		fmt.Println(string(buf))
-	}
-
-	return nil, nil
+	return nil
 }
+
+func (c *Client) GetBigMapContents(ctx context.Context, identifier tzkt.BigMapIdentifier) ([]tzkt.BigMapItem, error) {
+	indexer, err := tzkt.NewClient(c.IndexerURL)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to make indexer: %w", err)
+	}
+	return indexer.GetBigMapContents(ctx, identifier)
+}
+
+//
+// func (c *Client) GetBigMap(identifier int64, ctx context.Context) (interface{}, error) {
+//
+// 	indexer, err := tzkt.NewClient("https://api.kathmandunet.tzkt.io/")
+// 	if err != nil {
+// 		fmt.Fprintf(os.Stderr, "Failed to make indexer")
+// 	}
+//
+// 	storage, err := indexer.GetContractStorage(ctx, )
+// //
+// // 	rpcClient, err := rpc.NewClient(c.RPCURL, nil)
+// // 	if err != nil {
+// // 		return nil, fmt.Errorf("failed to create client: %w", err)
+// // 	}
+// //
+// // 	biginfo, err := rpcClient.GetActiveBigmapInfo(ctx, identifier)
+// // 	if err != nil {
+// // 		return nil, fmt.Errorf("failed to get big map info: %w", err)
+// // 	}
+// //
+// // 	// list all bigmap keys - we should use an indexer here, as this can be slow
+// // 	bigkeys, err := rpcClient.ListActiveBigmapKeys(ctx, identifier)
+// // 	if err != nil {
+// // 		return nil, fmt.Errorf("failed to get big map keys: %w", err)
+// // 	}
+// //
+// // 	rpcClient.
+// //
+// // 	// visit each value
+// // 	for _, key := range bigkeys {
+// // 		fmt.Printf("%T %v\n", key, key.)
+// // 		bigval, _ := rpcClient.GetActiveBigmapValue(ctx, identifier, key)
+// //
+// // 		// unfold Micheline type into human readable form
+// // 		val := micheline.NewValue(micheline.NewType(biginfo.ValueType), bigval)
+// // 		m, _ := val.Map()
+// // 		buf, _ := json.MarshalIndent(m, "", "  ")
+// // 		fmt.Println(string(buf))
+// // 	}
+//
+// 	return nil, nil
+// }
 
 
 

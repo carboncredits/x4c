@@ -9,6 +9,8 @@ import (
 	"github.com/maruel/subcommands"
 
 	"quantify.earth/x4c/pkg/tzclient"
+	"quantify.earth/x4c/pkg/tzkt"
+	"quantify.earth/x4c/pkg/x4c"
 )
 
 var cmdContract = &subcommands.Command{
@@ -32,7 +34,7 @@ func (c *contractRun) Run(a subcommands.Application, args []string, env subcomma
 
 	client, err := tzclient.LoadClient("/Users/michael/.tezos-client")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to find info: %w.\n", err)
+		fmt.Fprintf(os.Stderr, "Failed to find info: %v.\n", err)
 		return 1
 	}
 
@@ -43,14 +45,42 @@ func (c *contractRun) Run(a subcommands.Application, args []string, env subcomma
 	}
 
 	ctx := context.Background()
-	storage, err := client.GetContractStorage(address, ctx)
+	var storage x4c.CustodianStorage
+	err = client.GetContractStorage(address, ctx, &storage)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to get contract storage: %w.\n", err)
+		fmt.Fprintf(os.Stderr, "Failed to get contract storage: %v.\n", err)
 		return 1
 	}
 
+	bigmap, err := client.GetBigMapContents(ctx, tzkt.BigMapIdentifier(storage.Ledger))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to get ledger contents: %v.\n", err)
+		return 1
+	}
+
+
 	buf, _ := json.MarshalIndent(storage, "", "  ")
 	fmt.Println(string(buf))
+
+	fmt.Printf("Ledger:\n")
+	for _, item := range bigmap {
+
+		var key x4c.LedgerKey
+		err := json.Unmarshal(item.Key, &key)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to decode ledger key %v: %v", item.Key, err)
+			return 1
+		}
+		var value json.Number
+		err = json.Unmarshal(item.Value, &value)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to decode ledger value: %v", err)
+			return 1
+		}
+
+		fmt.Printf("%v: %v\n", key, value)
+	}
+
 
 	return 0
 }

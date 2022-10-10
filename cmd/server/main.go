@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
-    "github.com/julienschmidt/httprouter"
+	"github.com/julienschmidt/httprouter"
 
 	"quantify.earth/x4c/pkg/tzclient"
+	"quantify.earth/x4c/pkg/x4c"
 )
 
 type server struct {
@@ -23,32 +24,33 @@ func (s *server) getCreditSources(w http.ResponseWriter, r *http.Request, ps htt
 		return
 	}
 
-	storage, err := s.tezosClient.GetContractStorage(contract.Address, r.Context())
+	var storage x4c.CustodianStorage
+	err := s.tezosClient.GetContractStorage(contract.Address, r.Context(), &storage)
 	if err != nil {
 		http.Error(w, "Failed to get contract storage", http.StatusFailedDependency)
 		return
 	}
 
 	var ledger_id int64 = 0
-
-	switch s := storage.(type) {
-	case map[string]interface{}:
-		if ledger_raw, ok := s["ledger"]; ok {
-			switch ledger := ledger_raw.(type) {
-			case int64:
-				ledger_id = ledger
-			default:
-				http.Error(w, "Ledger had wrong type", http.StatusInternalServerError)
-				return
-			}
-		} else {
-			http.Error(w, "Failed to find ledger in storage", http.StatusInternalServerError)
-			return
-		}
-	default:
-		http.Error(w, "Failed to decode storage", http.StatusInternalServerError)
-		return
-	}
+//
+// 	switch s := storage.(type) {
+// 	case map[string]interface{}:
+// 		if ledger_raw, ok := s["ledger"]; ok {
+// 			switch ledger := ledger_raw.(type) {
+// 			case int64:
+// 				ledger_id = ledger
+// 			default:
+// 				http.Error(w, "Ledger had wrong type", http.StatusInternalServerError)
+// 				return
+// 			}
+// 		} else {
+// 			http.Error(w, "Failed to find ledger in storage", http.StatusInternalServerError)
+// 			return
+// 		}
+// 	default:
+// 		http.Error(w, "Failed to decode storage", http.StatusInternalServerError)
+// 		return
+// 	}
 
 
 
