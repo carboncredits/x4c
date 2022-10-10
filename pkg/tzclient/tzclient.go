@@ -18,7 +18,7 @@ import (
 
 // public types
 type Wallet struct {
-	Name	  string
+	Name      string
 	Address   string
 	SecretKey string
 	PublicKey string
@@ -75,20 +75,20 @@ func (t tezosClientPublicKey) Key() (string, error) {
 
 func LoadClient(path string) (Client, error) {
 	client := Client{
-		Path: path,
-		Wallets: make(map[string]Wallet),
+		Path:      path,
+		Wallets:   make(map[string]Wallet),
 		Contracts: make(map[string]Contract),
 	}
 
 	content, err := ioutil.ReadFile(filepath.Join(path, "config"))
-    if err != nil {
-        return Client{}, fmt.Errorf("failed to open tezos-client config: %w", err)
-    }
-    var config tezosClientConfig
-    err = json.Unmarshal(content, &config)
-    if err != nil {
+	if err != nil {
+		return Client{}, fmt.Errorf("failed to open tezos-client config: %w", err)
+	}
+	var config tezosClientConfig
+	err = json.Unmarshal(content, &config)
+	if err != nil {
 		return Client{}, fmt.Errorf("failed to decode tezos-client config: %w", err)
-    }
+	}
 	client.RPCURL = config.Endpoint
 
 	if strings.Contains(client.RPCURL, "kathmandunet") {
@@ -100,31 +100,31 @@ func LoadClient(path string) (Client, error) {
 	}
 
 	content, err = ioutil.ReadFile(filepath.Join(path, "public_key_hashs"))
-    if err != nil {
-        return Client{}, fmt.Errorf("failed to open tezos-client hashes: %w", err)
-    }
-    var hashes []tezosClientValue
-    err = json.Unmarshal(content, &hashes)
-    if err != nil {
+	if err != nil {
+		return Client{}, fmt.Errorf("failed to open tezos-client hashes: %w", err)
+	}
+	var hashes []tezosClientValue
+	err = json.Unmarshal(content, &hashes)
+	if err != nil {
 		return Client{}, fmt.Errorf("failed to decode tezos-client hashes: %w", err)
-    }
+	}
 	for _, hash := range hashes {
-		wallet := Wallet {
-			Name: hash.Name,
+		wallet := Wallet{
+			Name:    hash.Name,
 			Address: hash.Value,
 		}
 		client.Wallets[hash.Name] = wallet
 	}
 
 	content, err = ioutil.ReadFile(filepath.Join(path, "public_keys"))
-    if err != nil {
-        return Client{}, fmt.Errorf("failed to open tezos-client public keys: %w", err)
-    }
-    var public_keys []tezosClientPublicKey
-    err = json.Unmarshal(content, &public_keys)
-    if err != nil {
+	if err != nil {
+		return Client{}, fmt.Errorf("failed to open tezos-client public keys: %w", err)
+	}
+	var public_keys []tezosClientPublicKey
+	err = json.Unmarshal(content, &public_keys)
+	if err != nil {
 		return Client{}, fmt.Errorf("failed to decode tezos-client public keys: %w", err)
-    }
+	}
 	for _, key := range public_keys {
 		if wallet, ok := client.Wallets[key.Name]; ok {
 			wallet.PublicKey, err = key.Key()
@@ -135,14 +135,14 @@ func LoadClient(path string) (Client, error) {
 	}
 
 	content, err = ioutil.ReadFile(filepath.Join(path, "secret_keys"))
-    if err != nil {
-        return Client{}, fmt.Errorf("failed to open tezos-client secret keys: %w", err)
-    }
-    var secret_keys []tezosClientValue
-    err = json.Unmarshal(content, &secret_keys)
-    if err != nil {
+	if err != nil {
+		return Client{}, fmt.Errorf("failed to open tezos-client secret keys: %w", err)
+	}
+	var secret_keys []tezosClientValue
+	err = json.Unmarshal(content, &secret_keys)
+	if err != nil {
 		return Client{}, fmt.Errorf("failed to decode tezos-client secret kets: %w", err)
-    }
+	}
 	for _, key := range secret_keys {
 		if wallet, ok := client.Wallets[key.Name]; ok {
 			wallet.SecretKey = key.Value
@@ -150,17 +150,17 @@ func LoadClient(path string) (Client, error) {
 	}
 
 	content, err = ioutil.ReadFile(filepath.Join(path, "contracts"))
-    if err != nil {
-        return Client{}, fmt.Errorf("failed to open tezos-client contracts: %w", err)
-    }
-    var contracts []tezosClientValue
-    err = json.Unmarshal(content, &contracts)
-    if err != nil {
+	if err != nil {
+		return Client{}, fmt.Errorf("failed to open tezos-client contracts: %w", err)
+	}
+	var contracts []tezosClientValue
+	err = json.Unmarshal(content, &contracts)
+	if err != nil {
 		return Client{}, fmt.Errorf("failed to decode tezos-client secret kets: %w", err)
-    }
+	}
 	for _, contract_info := range contracts {
 		contract := Contract{
-			Name: contract_info.Name,
+			Name:    contract_info.Name,
 			Address: contract_info.Value,
 		}
 		client.Contracts[contract_info.Name] = contract
@@ -195,7 +195,6 @@ func (c *Client) DirectGetContractStorage(address string, ctx context.Context) (
 	}
 	return m, nil
 }
-
 
 func (c *Client) GetContractStorage(address string, ctx context.Context, storage interface{}) error {
 	indexer, err := tzkt.NewClient(c.IndexerURL)
@@ -260,7 +259,3 @@ func (c *Client) GetBigMapContents(ctx context.Context, identifier tzkt.BigMapId
 //
 // 	return nil, nil
 // }
-
-
-
-

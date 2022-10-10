@@ -28,7 +28,7 @@ func NewClient(address string) (TzKTClient, error) {
 	}
 
 	return TzKTClient{
-		client: http.Client{},
+		client:  http.Client{},
 		BaseURL: base_url,
 	}, nil
 }

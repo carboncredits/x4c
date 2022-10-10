@@ -58,7 +58,6 @@ func (c *contractRun) Run(a subcommands.Application, args []string, env subcomma
 		return 1
 	}
 
-
 	buf, _ := json.MarshalIndent(storage, "", "  ")
 	fmt.Println(string(buf))
 
@@ -80,7 +79,6 @@ func (c *contractRun) Run(a subcommands.Application, args []string, env subcomma
 
 		fmt.Printf("%v: %v\n", key, value)
 	}
-
 
 	return 0
 }

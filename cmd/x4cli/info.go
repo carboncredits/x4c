@@ -26,7 +26,7 @@ func (c *infoRun) Run(a subcommands.Application, args []string, env subcommands.
 	// at some point we could take the location as an optional arg...
 	client, err := tzclient.LoadClient("/Users/michael/.tezos-client")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to find info: %w.\n", err)
+		fmt.Fprintf(os.Stderr, "Failed to find info: %v.\n", err)
 		return 1
 	}
 

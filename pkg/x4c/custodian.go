@@ -9,8 +9,8 @@ type CustodianContract struct {
 }
 
 type TokenID struct {
-	TokenID json.Number  `json:"token_id"`
-	Address string `json:"token_address"`
+	TokenID json.Number `json:"token_id"`
+	Address string      `json:"token_address"`
 }
 
 type LedgerKey struct {
