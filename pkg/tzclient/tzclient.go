@@ -175,7 +175,11 @@ func LoadDefaultClient() (Client, error) {
 }
 
 func (c *Client) DirectGetContractStorage(address string, ctx context.Context) (interface{}, error) {
-	addr := tezos.MustParseAddress(address)
+	addr, err := tezos.ParseAddress(address)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse address: %w", err)
+	}
+
 	rpcClient, err := rpc.NewClient(c.RPCURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create client: %w", err)
@@ -209,53 +213,10 @@ func (c *Client) GetContractStorage(address string, ctx context.Context, storage
 	return nil
 }
 
-func (c *Client) GetBigMapContents(ctx context.Context, identifier tzkt.BigMapIdentifier) ([]tzkt.BigMapItem, error) {
+func (c *Client) GetBigMapContents(ctx context.Context, identifier int64) ([]tzkt.BigMapItem, error) {
 	indexer, err := tzkt.NewClient(c.IndexerURL)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to make indexer: %w", err)
 	}
 	return indexer.GetBigMapContents(ctx, identifier)
 }
-
-//
-// func (c *Client) GetBigMap(identifier int64, ctx context.Context) (interface{}, error) {
-//
-// 	indexer, err := tzkt.NewClient("https://api.kathmandunet.tzkt.io/")
-// 	if err != nil {
-// 		fmt.Fprintf(os.Stderr, "Failed to make indexer")
-// 	}
-//
-// 	storage, err := indexer.GetContractStorage(ctx, )
-// //
-// // 	rpcClient, err := rpc.NewClient(c.RPCURL, nil)
-// // 	if err != nil {
-// // 		return nil, fmt.Errorf("failed to create client: %w", err)
-// // 	}
-// //
-// // 	biginfo, err := rpcClient.GetActiveBigmapInfo(ctx, identifier)
-// // 	if err != nil {
-// // 		return nil, fmt.Errorf("failed to get big map info: %w", err)
-// // 	}
-// //
-// // 	// list all bigmap keys - we should use an indexer here, as this can be slow
-// // 	bigkeys, err := rpcClient.ListActiveBigmapKeys(ctx, identifier)
-// // 	if err != nil {
-// // 		return nil, fmt.Errorf("failed to get big map keys: %w", err)
-// // 	}
-// //
-// // 	rpcClient.
-// //
-// // 	// visit each value
-// // 	for _, key := range bigkeys {
-// // 		fmt.Printf("%T %v\n", key, key.)
-// // 		bigval, _ := rpcClient.GetActiveBigmapValue(ctx, identifier, key)
-// //
-// // 		// unfold Micheline type into human readable form
-// // 		val := micheline.NewValue(micheline.NewType(biginfo.ValueType), bigval)
-// // 		m, _ := val.Map()
-// // 		buf, _ := json.MarshalIndent(m, "", "  ")
-// // 		fmt.Println(string(buf))
-// // 	}
-//
-// 	return nil, nil
-// }
