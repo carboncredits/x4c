@@ -15,7 +15,7 @@ type mockClient struct {
 }
 
 func newmockClient() mockClient {
-	return mockClient {
+	return mockClient{
 		Items: make(map[int64][]tzkt.BigMapItem),
 	}
 }
@@ -81,60 +81,60 @@ func TestBasicLedgerLoad(t *testing.T) {
 
 	bigMapID := int64(314)
 
-	testcases := []struct{
+	testcases := []struct {
 		IsActive    bool
 		BigMapID    int64
 		KeyJSON     string
 		ValueJSON   string
 		ExpectError bool
 		ExpectItem  bool
-	} {
+	}{
 		{
-			IsActive: false,
-			BigMapID: bigMapID,
-			KeyJSON: `{"token": {"token_id": 42, "token_address": "tz1deC7DBmyTU7DtfV7f4YmpbW3xQkBYEwVB"}, "kyc": "0501000000096f74686572206f7267"}`,
-			ValueJSON: "1234",
+			IsActive:    false,
+			BigMapID:    bigMapID,
+			KeyJSON:     `{"token": {"token_id": 42, "token_address": "tz1deC7DBmyTU7DtfV7f4YmpbW3xQkBYEwVB"}, "kyc": "0501000000096f74686572206f7267"}`,
+			ValueJSON:   "1234",
 			ExpectError: false,
-			ExpectItem: false,
+			ExpectItem:  false,
 		},
 		{
-			IsActive: true,
-			BigMapID: bigMapID,
-			KeyJSON: `{"token": {"token_id": 42, "token_address": "tz1deC7DBmyTU7DtfV7f4YmpbW3xQkBYEwVB"}, "kyc": "0501000000096f74686572206f7267"}`,
-			ValueJSON: "1234",
+			IsActive:    true,
+			BigMapID:    bigMapID,
+			KeyJSON:     `{"token": {"token_id": 42, "token_address": "tz1deC7DBmyTU7DtfV7f4YmpbW3xQkBYEwVB"}, "kyc": "0501000000096f74686572206f7267"}`,
+			ValueJSON:   "1234",
 			ExpectError: false,
-			ExpectItem: true,
+			ExpectItem:  true,
 		},
 		{
-			IsActive: true,
-			BigMapID: bigMapID,
-			KeyJSON: `{"token": {"token_id": 42, "token_address": "tz1deC7DBmyTU7DtfV7f4YmpbW3xQkBYEwVB"}, "kyc": "0501000000096f74686572206f7267"}`,
-			ValueJSON: "invalid",
+			IsActive:    true,
+			BigMapID:    bigMapID,
+			KeyJSON:     `{"token": {"token_id": 42, "token_address": "tz1deC7DBmyTU7DtfV7f4YmpbW3xQkBYEwVB"}, "kyc": "0501000000096f74686572206f7267"}`,
+			ValueJSON:   "invalid",
 			ExpectError: true,
-			ExpectItem: false,
+			ExpectItem:  false,
 		},
 		{
-			IsActive: true,
-			BigMapID: bigMapID,
-			KeyJSON: `{"token": "invalid", "kyc": "0501000000096f74686572206f7267"}`,
-			ValueJSON: "invalid",
+			IsActive:    true,
+			BigMapID:    bigMapID,
+			KeyJSON:     `{"token": "invalid", "kyc": "0501000000096f74686572206f7267"}`,
+			ValueJSON:   "invalid",
 			ExpectError: true,
-			ExpectItem: false,
+			ExpectItem:  false,
 		},
 		{
-			IsActive: true,
-			BigMapID: bigMapID,
-			KeyJSON: `{"token": "invalid", "kyc": "0501000000096f74686572206f7267"}`,
-			ValueJSON: "invalid",
+			IsActive:    true,
+			BigMapID:    bigMapID,
+			KeyJSON:     `{"token": "invalid", "kyc": "0501000000096f74686572206f7267"}`,
+			ValueJSON:   "invalid",
 			ExpectError: true,
-			ExpectItem: false,
+			ExpectItem:  false,
 		},
 		{
-			IsActive: true,
-			BigMapID: bigMapID  + 1,
-			KeyJSON: `{"token": {"token_id": 42, "token_address": "tz1deC7DBmyTU7DtfV7f4YmpbW3xQkBYEwVB"}, "kyc": "0501000000096f74686572206f7267"}`,
+			IsActive:    true,
+			BigMapID:    bigMapID + 1,
+			KeyJSON:     `{"token": {"token_id": 42, "token_address": "tz1deC7DBmyTU7DtfV7f4YmpbW3xQkBYEwVB"}, "kyc": "0501000000096f74686572206f7267"}`,
 			ExpectError: false,
-			ExpectItem: false,
+			ExpectItem:  false,
 		},
 	}
 
@@ -142,8 +142,8 @@ func TestBasicLedgerLoad(t *testing.T) {
 
 		item := tzkt.BigMapItem{
 			Active: testcase.IsActive,
-			Key: json.RawMessage(testcase.KeyJSON),
-			Value: json.RawMessage(testcase.ValueJSON),
+			Key:    json.RawMessage(testcase.KeyJSON),
+			Value:  json.RawMessage(testcase.ValueJSON),
 		}
 
 		items := make([]tzkt.BigMapItem, 1)

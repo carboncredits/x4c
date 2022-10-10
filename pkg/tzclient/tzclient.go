@@ -36,11 +36,12 @@ type TezosClient interface {
 }
 
 type Client struct {
-	Path       string
-	RPCURL     string
-	IndexerURL string
-	Wallets    map[string]Wallet
-	Contracts  map[string]Contract
+	Path          string
+	RPCURL        string
+	IndexerRPCURL string
+	IndexerWebURL string
+	Wallets       map[string]Wallet
+	Contracts     map[string]Contract
 }
 
 // internal types
@@ -98,11 +99,14 @@ func LoadClient(path string) (Client, error) {
 	client.RPCURL = config.Endpoint
 
 	if strings.Contains(client.RPCURL, "kathmandunet") {
-		client.IndexerURL = "https://api.kathmandunet.tzkt.io/"
+		client.IndexerRPCURL = "https://api.kathmandunet.tzkt.io/"
+		client.IndexerWebURL = "https://kathmandunet.tzkt.io/"
 	} else if strings.Contains(client.RPCURL, "ghostnet") {
-		client.IndexerURL = "https://api.ghostnet.tzkt.io/"
+		client.IndexerRPCURL = "https://api.ghostnet.tzkt.io/"
+		client.IndexerWebURL = "https://ghostnet.tzkt.io/"
 	} else {
-		client.IndexerURL = "https://api.mainnet.tzkt.io/"
+		client.IndexerRPCURL = "https://api.mainnet.tzkt.io/"
+		client.IndexerWebURL = "https://mainnet.tzkt.io/"
 	}
 
 	content, err = ioutil.ReadFile(filepath.Join(path, "public_key_hashs"))
@@ -207,7 +211,7 @@ func (c *Client) DirectGetContractStorage(address string, ctx context.Context) (
 }
 
 func (c Client) GetContractStorage(address string, ctx context.Context, storage interface{}) error {
-	indexer, err := tzkt.NewClient(c.IndexerURL)
+	indexer, err := tzkt.NewClient(c.IndexerRPCURL)
 	if err != nil {
 		return fmt.Errorf("Failed to make indexer: %w", err)
 	}
@@ -220,7 +224,7 @@ func (c Client) GetContractStorage(address string, ctx context.Context, storage 
 }
 
 func (c Client) GetBigMapContents(ctx context.Context, identifier int64) ([]tzkt.BigMapItem, error) {
-	indexer, err := tzkt.NewClient(c.IndexerURL)
+	indexer, err := tzkt.NewClient(c.IndexerRPCURL)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to make indexer: %w", err)
 	}
