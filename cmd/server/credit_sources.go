@@ -33,7 +33,7 @@ func (s *server) getCreditSources(w http.ResponseWriter, r *http.Request, ps htt
 	}
 
 	var storage x4c.CustodianStorage
-	err := s.tezosClient.GetContractStorage(contract.Address, r.Context(), &storage)
+	err := s.tezosClient.GetContractStorage(contract, r.Context(), &storage)
 	if err != nil {
 		http.Error(w, "Failed to get contract storage", http.StatusFailedDependency)
 		return
@@ -57,7 +57,7 @@ func (s *server) getCreditSources(w http.ResponseWriter, r *http.Request, ps htt
 			TokenID:      token_id,
 			MinterURL:    fmt.Sprintf("%s%s", s.tezosClient.IndexerWebURL, key.Token.Address),
 			KYC:          key.KYC,
-			CustodainURL: fmt.Sprintf("%s%s", s.tezosClient.IndexerWebURL, contract.Address),
+			CustodainURL: fmt.Sprintf("%s%s", s.tezosClient.IndexerWebURL, contract.Address.String()),
 			Amount:       value,
 			Minter:       key.Token.Address,
 		}

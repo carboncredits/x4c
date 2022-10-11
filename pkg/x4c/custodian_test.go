@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"testing"
 
+	"quantify.earth/x4c/pkg/tzclient"
 	"quantify.earth/x4c/pkg/tzkt"
 )
 
@@ -24,7 +25,7 @@ func (c *mockClient) addBigMap(identifier int64, items []tzkt.BigMapItem) {
 	c.Items[identifier] = items
 }
 
-func (c mockClient) GetContractStorage(address string, ctx context.Context, storage interface{}) error {
+func (c mockClient) GetContractStorage(target tzclient.Contract, ctx context.Context, storage interface{}) error {
 	if c.ShouldError {
 		return fmt.Errorf("Test should fail")
 	}

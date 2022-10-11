@@ -37,15 +37,18 @@ func (c *contractRun) Run(a subcommands.Application, args []string, env subcomma
 		return 1
 	}
 
-	address := args[0]
-	// if this is a name, look it up, otherwise assume it's just an address
-	if contract, ok := client.Contracts[address]; ok {
-		address = contract.Address
+	contract, ok := client.Contracts[args[0]]
+	if !ok {
+		contract, err = tzclient.NewContractWithAddress(args[0], args[0])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Contract address is not valid: %v", err)
+			return 1
+		}
 	}
 
 	ctx := context.Background()
 	var storage x4c.CustodianStorage
-	err = client.GetContractStorage(address, ctx, &storage)
+	err = client.GetContractStorage(contract, ctx, &storage)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to get contract storage: %v.\n", err)
 		return 1
