@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"blockwatch.cc/tzgo/codec"
 	"blockwatch.cc/tzgo/contract"
 	"blockwatch.cc/tzgo/micheline"
 	"blockwatch.cc/tzgo/rpc"
@@ -25,6 +26,7 @@ type TezosClient interface {
 	GetContractStorage(target Contract, ctx context.Context, storage interface{}) error
 	GetBigMapContents(ctx context.Context, identifier int64) ([]tzkt.BigMapItem, error)
 	GetOperationInformation(ctx context.Context, hash string) ([]tzkt.Operation, error)
+	CallContract(ctx context.Context, signedBy Wallet, target Contract, parameters micheline.Parameters) error
 }
 
 type Client struct {
@@ -115,7 +117,14 @@ func LoadClient(path string) (Client, error) {
 		return Client{}, fmt.Errorf("failed to decode tezos-client secret keys: %w", err)
 	}
 	for _, key := range secret_keys {
-		wallet, err := NewWalletWithPrivateKey(key.Name, key.Value)
+		// In the tezos client the keys have a prefix to indicate how they're stored. For now
+		// just deal with the unencrypted default
+		if !strings.HasPrefix(key.Value, "unencrypted:") {
+			return Client{}, fmt.Errorf("Key for %s has unexpected secret key format.", key.Name)
+		}
+		value := strings.TrimPrefix(key.Value, "unencrypted:")
+
+		wallet, err := NewWalletWithPrivateKey(key.Name, value)
 		if err != nil {
 			return Client{}, fmt.Errorf("failed to parse key for %s: %w", key.Name, err)
 		}
@@ -198,7 +207,37 @@ func (c *Client) DirectGetContractStorage(address string, ctx context.Context) (
 	return m, nil
 }
 
+
 func (c Client) CallContract(ctx context.Context, signedBy Wallet, target Contract, parameters micheline.Parameters) error {
+
+	rpcClient, err := rpc.NewClient(c.RPCURL, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create client: %w", err)
+	}
+	rpcClient.Init(ctx)
+	rpcClient.Listen()
+
+	if signedBy.Key == nil {
+		return fmt.Errorf("Signer wallet %s has no private key", signedBy.Name)
+	}
+
+    rpcClient.Signer = signer.NewFromKey(*signedBy.Key)
+
+    op := codec.NewOp().WithSource(signedBy.Address)
+	op.WithCall(target.Address, parameters)
+
+    // send operation with default options
+    result, err := modifiedSend(rpcClient, ctx, op, nil)
+    if err != nil {
+        return err
+    }
+
+	fmt.Printf("%v\n", result.Hash().String())
+	return nil
+}
+
+
+func (c Client) CallContractLocked(ctx context.Context, signedBy Wallet, target Contract, parameters micheline.Parameters) error {
 
 	if signedBy.Key == nil {
 		return fmt.Errorf("Signer wallet %s has no private key", signedBy.Name)
@@ -206,11 +245,15 @@ func (c Client) CallContract(ctx context.Context, signedBy Wallet, target Contra
 
 	opts := rpc.DefaultOptions
 	opts.Signer = signer.NewFromKey(*signedBy.Key)
+	opts.Confirmations = 0
+	opts.TTL = 0
 
 	rpcClient, err := rpc.NewClient(c.RPCURL, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create client: %w", err)
 	}
+	rpcClient.Init(ctx)
+	rpcClient.Listen()
 
 	tezos_contract := contract.NewContract(target.Address, rpcClient)
 	if err := tezos_contract.Resolve(ctx); err != nil {
@@ -228,9 +271,127 @@ func (c Client) CallContract(ctx context.Context, signedBy Wallet, target Contra
 	if err != nil {
 		return fmt.Errorf("failed to call contract: %w", err)
 	}
-	fmt.Printf("%v", receipt)
+	fmt.Printf("receipt: %v", receipt)
 	return nil
 }
+
+
+// Send is a convenience wrapper for sending operations. It auto-completes gas and storage limit,
+// ensures minimum fees are set, protects against fee overpayment, signs and broadcasts the final
+// operation and waits for a defined number of confirmations.
+func modifiedSend(c *rpc.Client, ctx context.Context, op *codec.Op, opts *rpc.CallOptions) (*rpc.Result, error) {
+	if opts == nil {
+		opts = &rpc.DefaultOptions
+	}
+
+	signer := c.Signer
+	if opts.Signer != nil {
+		signer = opts.Signer
+	}
+
+	// identify the sender address for signing the message
+	addr := opts.Sender
+	if !addr.IsValid() {
+		addrs, err := signer.ListAddresses(ctx)
+		if err != nil {
+			return nil, err
+		}
+		addr = addrs[0]
+	}
+
+	key, err := signer.GetKey(ctx, addr)
+	if err != nil {
+		return nil, err
+	}
+
+	// set source on all ops
+	op.WithSource(key.Address())
+
+	// auto-complete op with branch/ttl, source counter, reveal
+	err = c.Complete(ctx, op, key)
+	if err != nil {
+		return nil, err
+	}
+
+	// simulate to check tx validity and estimate cost
+	sim, err := c.Simulate(ctx, op, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	// fail with Tezos error when simulation failed
+	if !sim.IsSuccess() {
+		return nil, sim.Error()
+	}
+
+	// apply simulated cost as limits to tx list
+	if !opts.IgnoreLimits {
+		op.WithLimits(sim.MinLimits(), rpc.GasSafetyMargin)
+	}
+
+	// // log info about tx costs
+	// logDebug(func() {
+	// 	costs := sim.Costs()
+	// 	for i, v := range op.Contents {
+	// 		verb := "used"
+	// 		if opts.IgnoreLimits {
+	// 			verb = "forced"
+	// 		}
+	// 		limits := v.Limits()
+	// 		log.Debugf("OP#%03d: %s gas_used(sim)=%d storage_used(sim)=%d storage_burn(sim)=%d alloc_burn(sim)=%d fee(%s)=%d gas_limit(%s)=%d storage_limit(%s)=%d ",
+	// 			i, v.Kind(), costs[i].GasUsed, costs[i].StorageUsed, costs[i].StorageBurn, costs[i].AllocationBurn,
+	// 			verb, limits.Fee, verb, limits.GasLimit, verb, limits.StorageLimit,
+	// 		)
+	// 	}
+	// })
+
+	// check minFee calc against maxFee if set
+	if opts.MaxFee > 0 {
+		if l := op.Limits(); l.Fee > opts.MaxFee {
+			return nil, fmt.Errorf("estimated cost %d > max %d", l.Fee, opts.MaxFee)
+		}
+	}
+
+	// sign digest
+	sig, err := signer.SignOperation(ctx, addr, op)
+	if err != nil {
+		return nil, err
+	}
+	op.WithSignature(sig)
+
+	// broadcast
+	hash, err := c.Broadcast(ctx, op)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("Hash: %v\n", hash)
+
+	// wait for confirmations
+	res := rpc.NewResult(hash).WithTTL(op.TTL).WithConfirmations(opts.Confirmations)
+	fmt.Printf("a %v\n", res)
+
+	// use custom observer when provided
+	// mon := c.BlockObserver
+	// if opts.Observer != nil {
+	// 	mon = opts.Observer
+	// }
+
+	// fmt.Printf("%v\n", mon)
+	// // wait for confirmations
+	// res.Listen(mon)
+	// fmt.Println("b")
+	// res.WaitContext(ctx)
+	// fmt.Println("c")
+	// if err := res.Err(); err != nil {
+	// 	return nil, err
+	// }
+
+	fmt.Println("d")
+	// return receipt
+	return res, nil
+}
+
+
 
 // These just call through to the indexer
 func (c Client) GetContractStorage(target Contract, ctx context.Context, storage interface{}) error {

@@ -11,6 +11,8 @@ var application = &subcommands.DefaultApplication{
 	Title: "x4c command line tool.",
 	Commands: []*subcommands.Command{
 		cmdInfo,
+		cmdFA2,
+		cmdFA2Mint,
 		cmdContract,
 	},
 }

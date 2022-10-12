@@ -23,9 +23,9 @@ type Ledger map[LedgerKey]int64
 type ExternalLedger map[TokenID]int64
 
 type CustodianStorage struct {
+	Custodian      string   `json:"custodian"`
 	Ledger         int64    `json:"ledger"`
 	Metadata       int64    `json:"metadata"`
-	Custodian      string   `json:"custodian"`
 	Operators      []string `json:"operators"`
 	ExternalLedger int64    `json:"external_ledger"`
 }

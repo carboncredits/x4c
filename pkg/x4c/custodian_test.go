@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"testing"
 
+	"blockwatch.cc/tzgo/micheline"
+
 	"quantify.earth/x4c/pkg/tzclient"
 	"quantify.earth/x4c/pkg/tzkt"
 )
@@ -51,6 +53,13 @@ func (c mockClient) GetOperationInformation(ctx context.Context, hash string) ([
 		return nil, fmt.Errorf("Test should fail")
 	}
 	return nil, nil
+}
+
+func (c mockClient) CallContract(ctx context.Context, signedBy tzclient.Wallet, target tzclient.Contract, parameters micheline.Parameters) error {
+	if c.ShouldError {
+		return fmt.Errorf("Test should fail")
+	}
+	return nil
 }
 
 func TestLedgerLoadFail(t *testing.T) {
