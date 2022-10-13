@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"blockwatch.cc/tzgo/codec"
-	"blockwatch.cc/tzgo/contract"
 	"blockwatch.cc/tzgo/micheline"
 	"blockwatch.cc/tzgo/rpc"
 	"blockwatch.cc/tzgo/signer"
@@ -26,7 +25,7 @@ type TezosClient interface {
 	GetContractStorage(target Contract, ctx context.Context, storage interface{}) error
 	GetBigMapContents(ctx context.Context, identifier int64) ([]tzkt.BigMapItem, error)
 	GetOperationInformation(ctx context.Context, hash string) ([]tzkt.Operation, error)
-	CallContract(ctx context.Context, signedBy Wallet, target Contract, parameters micheline.Parameters) error
+	CallContract(ctx context.Context, signedBy Wallet, target Contract, parameters micheline.Parameters) (string, error)
 }
 
 type Client struct {
@@ -207,78 +206,37 @@ func (c *Client) DirectGetContractStorage(address string, ctx context.Context) (
 	return m, nil
 }
 
-
-func (c Client) CallContract(ctx context.Context, signedBy Wallet, target Contract, parameters micheline.Parameters) error {
+func (c Client) CallContract(ctx context.Context, signedBy Wallet, target Contract, parameters micheline.Parameters) (string, error) {
 
 	rpcClient, err := rpc.NewClient(c.RPCURL, nil)
 	if err != nil {
-		return fmt.Errorf("failed to create client: %w", err)
+		return "", fmt.Errorf("failed to create client: %w", err)
 	}
 	rpcClient.Init(ctx)
 	rpcClient.Listen()
 
 	if signedBy.Key == nil {
-		return fmt.Errorf("Signer wallet %s has no private key", signedBy.Name)
+		return "", fmt.Errorf("Signer wallet %s has no private key", signedBy.Name)
 	}
 
-    rpcClient.Signer = signer.NewFromKey(*signedBy.Key)
+	rpcClient.Signer = signer.NewFromKey(*signedBy.Key)
 
-    op := codec.NewOp().WithSource(signedBy.Address)
+	op := codec.NewOp().WithSource(signedBy.Address)
 	op.WithCall(target.Address, parameters)
 
-    // send operation with default options
-    result, err := modifiedSend(rpcClient, ctx, op, nil)
-    if err != nil {
-        return err
-    }
+	// send operation with default options
+	result, err := modifiedSend(rpcClient, ctx, op, nil)
+	if err != nil {
+		return "", err
+	}
 
-	fmt.Printf("%v\n", result.Hash().String())
-	return nil
+	// return just the operation hash
+	return result.Hash().String(), nil
 }
 
-
-func (c Client) CallContractLocked(ctx context.Context, signedBy Wallet, target Contract, parameters micheline.Parameters) error {
-
-	if signedBy.Key == nil {
-		return fmt.Errorf("Signer wallet %s has no private key", signedBy.Name)
-	}
-
-	opts := rpc.DefaultOptions
-	opts.Signer = signer.NewFromKey(*signedBy.Key)
-	opts.Confirmations = 0
-	opts.TTL = 0
-
-	rpcClient, err := rpc.NewClient(c.RPCURL, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create client: %w", err)
-	}
-	rpcClient.Init(ctx)
-	rpcClient.Listen()
-
-	tezos_contract := contract.NewContract(target.Address, rpcClient)
-	if err := tezos_contract.Resolve(ctx); err != nil {
-		return fmt.Errorf("failed to resolve contract: %w", err)
-	}
-
-	args := contract.TxArgs{
-		Source:      signedBy.Address,
-		Destination: target.Address,
-		Amount:      0.0,
-		Params:      parameters,
-	}
-
-	receipt, err := tezos_contract.Call(ctx, &args, &opts)
-	if err != nil {
-		return fmt.Errorf("failed to call contract: %w", err)
-	}
-	fmt.Printf("receipt: %v", receipt)
-	return nil
-}
-
-
-// Send is a convenience wrapper for sending operations. It auto-completes gas and storage limit,
-// ensures minimum fees are set, protects against fee overpayment, signs and broadcasts the final
-// operation and waits for a defined number of confirmations.
+// modifiedSend is a version of the tzgo rpcclient Send function, but we don't wait for a confirmation of the
+// the block. In an ideal world I'd be able to use a custom block observer to do that, but I can't quite see
+// how, and just to get a proof-of-concept working, I've done a bit of a copy and paste and then delete.
 func modifiedSend(c *rpc.Client, ctx context.Context, op *codec.Op, opts *rpc.CallOptions) (*rpc.Result, error) {
 	if opts == nil {
 		opts = &rpc.DefaultOptions
@@ -329,22 +287,6 @@ func modifiedSend(c *rpc.Client, ctx context.Context, op *codec.Op, opts *rpc.Ca
 		op.WithLimits(sim.MinLimits(), rpc.GasSafetyMargin)
 	}
 
-	// // log info about tx costs
-	// logDebug(func() {
-	// 	costs := sim.Costs()
-	// 	for i, v := range op.Contents {
-	// 		verb := "used"
-	// 		if opts.IgnoreLimits {
-	// 			verb = "forced"
-	// 		}
-	// 		limits := v.Limits()
-	// 		log.Debugf("OP#%03d: %s gas_used(sim)=%d storage_used(sim)=%d storage_burn(sim)=%d alloc_burn(sim)=%d fee(%s)=%d gas_limit(%s)=%d storage_limit(%s)=%d ",
-	// 			i, v.Kind(), costs[i].GasUsed, costs[i].StorageUsed, costs[i].StorageBurn, costs[i].AllocationBurn,
-	// 			verb, limits.Fee, verb, limits.GasLimit, verb, limits.StorageLimit,
-	// 		)
-	// 	}
-	// })
-
 	// check minFee calc against maxFee if set
 	if opts.MaxFee > 0 {
 		if l := op.Limits(); l.Fee > opts.MaxFee {
@@ -364,34 +306,13 @@ func modifiedSend(c *rpc.Client, ctx context.Context, op *codec.Op, opts *rpc.Ca
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("Hash: %v\n", hash)
 
-	// wait for confirmations
 	res := rpc.NewResult(hash).WithTTL(op.TTL).WithConfirmations(opts.Confirmations)
-	fmt.Printf("a %v\n", res)
 
-	// use custom observer when provided
-	// mon := c.BlockObserver
-	// if opts.Observer != nil {
-	// 	mon = opts.Observer
-	// }
+	// This is where in the tzgo code they wait for confirmations, we do not
 
-	// fmt.Printf("%v\n", mon)
-	// // wait for confirmations
-	// res.Listen(mon)
-	// fmt.Println("b")
-	// res.WaitContext(ctx)
-	// fmt.Println("c")
-	// if err := res.Err(); err != nil {
-	// 	return nil, err
-	// }
-
-	fmt.Println("d")
-	// return receipt
 	return res, nil
 }
-
-
 
 // These just call through to the indexer
 func (c Client) GetContractStorage(target Contract, ctx context.Context, storage interface{}) error {

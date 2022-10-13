@@ -13,6 +13,7 @@ var application = &subcommands.DefaultApplication{
 		cmdInfo,
 		cmdFA2,
 		cmdFA2Mint,
+		cmdFA2AddToken,
 		cmdContract,
 	},
 }
