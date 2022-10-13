@@ -28,7 +28,7 @@ func (c *TzKTClient) GetOperationInformation(ctx context.Context, hash string) (
 	err := c.makeRequest(ctx, path, &results)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to make request: %w", err)
+		return nil, fmt.Errorf("failed to make operation request: %w", err)
 	}
 	return results, nil
 }

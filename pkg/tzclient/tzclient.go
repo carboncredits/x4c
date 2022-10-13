@@ -343,3 +343,11 @@ func (c Client) GetOperationInformation(ctx context.Context, hash string) ([]tzk
 	}
 	return indexer.GetOperationInformation(ctx, hash)
 }
+
+func (c Client) GetContractEvents(ctx context.Context, contractAddress string, tag string) ([]tzkt.Event, error) {
+	indexer, err := tzkt.NewClient(c.IndexerRPCURL)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to make indexer: %w", err)
+	}
+	return indexer.GetContractEvents(ctx, contractAddress, tag)
+}

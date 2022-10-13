@@ -24,6 +24,7 @@ func SetupMyHandlers(client tzclient.Client) server {
 	router.GET("/credit/sources/:custodianID", server.getCreditSources)
 	router.GET("/operation/:opHash", server.getOperation)
 	router.GET("/info/indexer-url", server.getIndexerURL)
+	router.GET("/contract/:contractHash/events/:tag", server.getEvents)
 
 	// // Sources of credits
 	// router.get('/credit/sources/:custodianID', controller.getCreditSources);
