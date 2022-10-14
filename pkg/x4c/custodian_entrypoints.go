@@ -57,23 +57,26 @@ func CustodianUpdateOperators(
 ) (string, error) {
 	operator_list := make([]micheline.Prim, 0, len(update_list))
 	for index, operator := range update_list {
-		var update_type string
+		var update_type micheline.OpCode
 		switch operator.UpdateType {
 		case AddOperator:
-			update_type = "%add_operator"
+			update_type = micheline.D_LEFT
 		case RemoveOperator:
-			update_type = "%remove_operator"
+			update_type = micheline.D_RIGHT
 		default:
 			return "", fmt.Errorf("update %d had unexpected update type %d", index, operator.UpdateType)
 		}
 		bigToken := big.NewInt(operator.TokenID)
-		update := micheline.NewPair(
-			micheline.NewBytes([]byte(operator.Owner)),
+		update := micheline.NewCode(
+			update_type,
 			micheline.NewPair(
-				micheline.NewString(operator.Operator.String()),
-				micheline.NewNat(bigToken),
+				micheline.NewBytes([]byte(operator.Owner)),
+				micheline.NewPair(
+					micheline.NewString(operator.Operator.String()),
+					micheline.NewNat(bigToken),
+				),
 			),
-		).WithAnno(update_type)
+		)
 		operator_list = append(operator_list, update)
 	}
 	fmt.Printf("ops: %v\n", operator_list)
