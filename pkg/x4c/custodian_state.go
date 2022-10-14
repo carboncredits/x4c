@@ -4,9 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/big"
-
-	"blockwatch.cc/tzgo/micheline"
 
 	"quantify.earth/x4c/pkg/tzclient"
 )
@@ -25,12 +22,18 @@ type Ledger map[LedgerKey]int64
 
 type ExternalLedger map[TokenID]int64
 
+type OperatorInformation struct {
+	Owner    string      `json:"token_owner"`
+	Operator string      `json:"token_operator"`
+	TokenID  json.Number `json:"token_id"`
+}
+
 type CustodianStorage struct {
-	Custodian      string   `json:"custodian"`
-	Ledger         int64    `json:"ledger"`
-	Metadata       int64    `json:"metadata"`
-	Operators      []string `json:"operators"`
-	ExternalLedger int64    `json:"external_ledger"`
+	Custodian      string                `json:"custodian"`
+	Ledger         int64                 `json:"ledger"`
+	Metadata       int64                 `json:"metadata"`
+	Operators      []OperatorInformation `json:"operators"`
+	ExternalLedger int64                 `json:"external_ledger"`
 }
 
 func (storage *CustodianStorage) GetLedger(ctx context.Context, client tzclient.TezosClient) (Ledger, error) {
@@ -89,46 +92,4 @@ func (storage *CustodianStorage) GetExternalLedger(ctx context.Context, client t
 	}
 
 	return result, nil
-}
-
-func CustodianRetire(
-	ctx context.Context,
-	client tzclient.TezosClient,
-	target tzclient.Contract,
-	signer tzclient.Wallet,
-	token_address tzclient.Contract,
-	token_id int64,
-	kyc string,
-	amount int64,
-	reason string,
-) (string, error) {
-	bigAmount := big.NewInt(amount)
-	bigToken := big.NewInt(token_id)
-
-	// Michelson type:
-	// (list %retire (pair (address %token_address)
-	//                	(list %txs (pair (pair (nat %amount) (bytes %retiring_data))
-	//                                	(pair (bytes %retiring_party_kyc) (nat %token_id))))))
-	parameters := micheline.Parameters{
-		Entrypoint: "retire",
-		Value: micheline.NewSeq(
-			micheline.NewPair(
-				micheline.NewString(token_address.Address.String()),
-				micheline.NewSeq(
-					micheline.NewPair(
-						micheline.NewPair(
-							micheline.NewNat(bigAmount),
-							micheline.NewBytes([]byte(reason)),
-						),
-						micheline.NewPair(
-							micheline.NewBytes([]byte(kyc)),
-							micheline.NewNat(bigToken),
-						),
-					),
-				),
-			),
-		),
-	}
-
-	return client.CallContract(ctx, signer, target, parameters)
 }

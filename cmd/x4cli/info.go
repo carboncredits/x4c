@@ -4,25 +4,26 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/maruel/subcommands"
+	"github.com/mitchellh/cli"
 
 	"quantify.earth/x4c/pkg/tzclient"
 )
 
-var cmdInfo = &subcommands.Command{
-	UsageLine: "info",
-	ShortDesc: "Shows known addresses",
-	LongDesc:  "Shows known addresses.",
-	CommandRun: func() subcommands.CommandRun {
-		return &infoRun{}
-	},
+type infoCommand struct{}
+
+func NewInfoCommand() (cli.Command, error) {
+	return infoCommand{}, nil
 }
 
-type infoRun struct {
-	subcommands.CommandRunBase
+func (c infoCommand) Help() string {
+	return "Shows information about known wallets and contracts, as read from $HOME/.tezos-client/"
 }
 
-func (c *infoRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
+func (c infoCommand) Synopsis() string {
+	return "Shows information about known wallets and contracts."
+}
+
+func (c infoCommand) Run(args []string) int {
 	// at some point we could take the location as an optional arg...
 	client, err := tzclient.LoadClient("/Users/michael/.tezos-client")
 	if err != nil {

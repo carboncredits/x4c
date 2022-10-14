@@ -6,26 +6,27 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/maruel/subcommands"
+	"github.com/mitchellh/cli"
 
 	"quantify.earth/x4c/pkg/tzclient"
 	"quantify.earth/x4c/pkg/x4c"
 )
 
-var cmdFA2AddToken = &subcommands.Command{
-	UsageLine: "fa2addtoken",
-	ShortDesc: "Add a new token",
-	LongDesc:  "Add a new token",
-	CommandRun: func() subcommands.CommandRun {
-		return &fa2addTokenRun{}
-	},
+type addTokenCommand struct{}
+
+func NewAddTokenCommand() (cli.Command, error) {
+	return addTokenCommand{}, nil
 }
 
-type fa2addTokenRun struct {
-	subcommands.CommandRunBase
+func (c addTokenCommand) Help() string {
+	return "Add a new token."
 }
 
-func (c *fa2addTokenRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
+func (c addTokenCommand) Synopsis() string {
+	return "Add a new token."
+}
+
+func (c addTokenCommand) Run(args []string) int {
 	if len(args) != 5 {
 		fmt.Fprintf(os.Stderr, "Expected: contract oracle token_id token_owner amount\n")
 		return 1

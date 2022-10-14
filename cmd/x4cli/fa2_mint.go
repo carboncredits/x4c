@@ -7,26 +7,27 @@ import (
 	"strconv"
 
 	"blockwatch.cc/tzgo/tezos"
-	"github.com/maruel/subcommands"
+	"github.com/mitchellh/cli"
 
 	"quantify.earth/x4c/pkg/tzclient"
 	"quantify.earth/x4c/pkg/x4c"
 )
 
-var cmdFA2Mint = &subcommands.Command{
-	UsageLine: "fa2mint",
-	ShortDesc: "Mint more of a token",
-	LongDesc:  "Mint more of a token. Must have already been added",
-	CommandRun: func() subcommands.CommandRun {
-		return &fa2mintRun{}
-	},
+type mintCommand struct{}
+
+func NewFA2MintCommand() (cli.Command, error) {
+	return mintCommand{}, nil
 }
 
-type fa2mintRun struct {
-	subcommands.CommandRunBase
+func (c mintCommand) Help() string {
+	return "Mint more of an existing token. Must have already been added to the contract."
 }
 
-func (c *fa2mintRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
+func (c mintCommand) Synopsis() string {
+	return "Mint more of an existing token."
+}
+
+func (c mintCommand) Run(args []string) int {
 	if len(args) != 5 {
 		fmt.Fprintf(os.Stderr, "Expected: contract oracle token_id token_owner amount\n")
 		return 1

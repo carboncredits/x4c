@@ -6,26 +6,27 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/maruel/subcommands"
+	"github.com/mitchellh/cli"
 
 	"quantify.earth/x4c/pkg/tzclient"
 	"quantify.earth/x4c/pkg/x4c"
 )
 
-var cmdContract = &subcommands.Command{
-	UsageLine: "contract",
-	ShortDesc: "Shows information about a contract",
-	LongDesc:  "Shows information about a contract.",
-	CommandRun: func() subcommands.CommandRun {
-		return &contractRun{}
-	},
+type custodianInfoCommand struct{}
+
+func NewCustodianInfoCommand() (cli.Command, error) {
+	return custodianInfoCommand{}, nil
 }
 
-type contractRun struct {
-	subcommands.CommandRunBase
+func (c custodianInfoCommand) Help() string {
+	return "Shows information about a contract."
 }
 
-func (c *contractRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
+func (c custodianInfoCommand) Synopsis() string {
+	return "Shows information about a contract."
+}
+
+func (c custodianInfoCommand) Run(args []string) int {
 	if len(args) != 1 {
 		fmt.Fprintf(os.Stderr, "Expected a contract name or address\n")
 		return 1

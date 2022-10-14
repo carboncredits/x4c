@@ -1,23 +1,31 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
-	"github.com/maruel/subcommands"
+	"github.com/mitchellh/cli"
 )
 
-var application = &subcommands.DefaultApplication{
-	Name:  "x4cli",
-	Title: "x4c command line tool.",
-	Commands: []*subcommands.Command{
-		cmdInfo,
-		cmdFA2,
-		cmdFA2Mint,
-		cmdFA2AddToken,
-		cmdContract,
-	},
-}
-
 func main() {
-	os.Exit(subcommands.Run(application, nil))
+	c := cli.NewCLI("x4cli", "0.0.1")
+	c.Args = os.Args[1:]
+	c.Commands = map[string]cli.CommandFactory{
+		"info": NewInfoCommand,
+
+		"fa2 info":      NewFA2InfoCommand,
+		"fa2 add_token": NewAddTokenCommand,
+		"fa2 mint":      NewFA2MintCommand,
+
+		"custodian info":            NewCustodianInfoCommand,
+		"custodian add_operator":    NewCustodianAddOperator,
+		"custodian remove_operator": NewCustodianRemoveOperator,
+		// "custodian retire": custodianRetireCommand,
+	}
+
+	exit_status, err := c.Run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v", err)
+	}
+	os.Exit(exit_status)
 }
