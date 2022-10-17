@@ -13,8 +13,13 @@ const (
 	mediaType = "application/json"
 )
 
+// Use an interface here to let us mock this in testing
+type HTTPClient interface {
+	Do(*http.Request) (*http.Response, error)
+}
+
 type TzKTClient struct {
-	client  http.Client
+	client  HTTPClient
 	BaseURL *url.URL
 }
 
@@ -28,7 +33,7 @@ func NewClient(address string) (TzKTClient, error) {
 	}
 
 	return TzKTClient{
-		client:  http.Client{},
+		client:  &http.Client{},
 		BaseURL: base_url,
 	}, nil
 }
@@ -65,7 +70,9 @@ func (c *TzKTClient) makeRequest(ctx context.Context, path string, result interf
 	}
 
 	if result != nil {
-		err = json.NewDecoder(resp.Body).Decode(result)
+		decoder := json.NewDecoder(resp.Body)
+		decoder.DisallowUnknownFields()
+		err = decoder.Decode(result)
 		if err != nil {
 			return fmt.Errorf("failed to decode response: %w", err)
 		}

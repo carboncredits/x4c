@@ -26,5 +26,17 @@ func (c *TzKTClient) GetBigMapContents(ctx context.Context, identifier int64) ([
 	if err != nil {
 		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
+
+	// Until we get some json schema action in here, and given there is no "required" validation in golang's
+	// json library, so a quick sanitation check
+	for index, item := range results {
+		if item.Identifier == 0 {
+			return nil, fmt.Errorf("item %d had invalid identifier %d", index, item.Identifier)
+		}
+		if item.Hash == "" {
+			return nil, fmt.Errorf("item %d had empty hash", index)
+		}
+	}
+
 	return results, nil
 }
