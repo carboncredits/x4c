@@ -16,13 +16,13 @@ type custodianUpdateOperator struct {
 	OperationType int
 }
 
-func NewCustodianAddOperator() (cli.Command, error) {
+func NewCustodianAddOperatorCommand() (cli.Command, error) {
 	return custodianUpdateOperator{
 		OperationType: x4c.AddOperator,
 	}, nil
 }
 
-func NewCustodianRemoveOperator() (cli.Command, error) {
+func NewCustodianRemoveOperatorCommand() (cli.Command, error) {
 	return custodianUpdateOperator{
 		OperationType: x4c.RemoveOperator,
 	}, nil

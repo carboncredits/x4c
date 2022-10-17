@@ -18,9 +18,10 @@ func main() {
 		"fa2 mint":      NewFA2MintCommand,
 
 		"custodian info":            NewCustodianInfoCommand,
-		"custodian add_operator":    NewCustodianAddOperator,
-		"custodian remove_operator": NewCustodianRemoveOperator,
-		// "custodian retire": custodianRetireCommand,
+		"custodian internal_mint":   NewCustodianInternalMintCommand,
+		"custodian add_operator":    NewCustodianAddOperatorCommand,
+		"custodian remove_operator": NewCustodianRemoveOperatorCommand,
+		"custodian retire":          NewCustodianRetireCommand,
 	}
 
 	exit_status, err := c.Run()
