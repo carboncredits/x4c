@@ -14,6 +14,7 @@ func main() {
 		"info": NewInfoCommand,
 
 		"fa2 info":      NewFA2InfoCommand,
+		"fa2 originate": NewFA2OriginateCommand,
 		"fa2 add_token": NewAddTokenCommand,
 		"fa2 mint":      NewFA2MintCommand,
 

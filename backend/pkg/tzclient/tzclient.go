@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"blockwatch.cc/tzgo/codec"
+	"blockwatch.cc/tzgo/contract"
 	"blockwatch.cc/tzgo/micheline"
 	"blockwatch.cc/tzgo/rpc"
 	"blockwatch.cc/tzgo/signer"
@@ -26,6 +27,7 @@ type TezosClient interface {
 	GetBigMapContents(ctx context.Context, identifier int64) ([]tzkt.BigMapItem, error)
 	GetOperationInformation(ctx context.Context, hash string) ([]tzkt.Operation, error)
 	CallContract(ctx context.Context, signedBy Wallet, target Contract, parameters micheline.Parameters) (string, error)
+	Originate(ctx context.Context, signedBy Wallet, code []byte, initial_storage micheline.Prim) (Contract, error)
 }
 
 type Client struct {
@@ -177,6 +179,36 @@ func LoadDefaultClient() (Client, error) {
 	return LoadClient(default_path)
 }
 
+func (c *Client) SaveContract(contract Contract) error {
+
+	if _, ok := c.Contracts[contract.Name]; ok {
+		return fmt.Errorf("contract with name %s alread exists", contract.Name)
+	}
+
+	c.Contracts[contract.Name] = contract
+
+	new_file_contents := make([]tezosClientValue, 0, len(c.Contracts))
+	for _, info := range c.Contracts {
+		new_file_value := tezosClientValue{
+			Name: info.Name,
+			Value: info.Address.String(),
+		}
+		new_file_contents = append(new_file_contents, new_file_value)
+	}
+
+	data, err := json.MarshalIndent(new_file_contents, "", "    ")
+	if err != nil {
+		return fmt.Errorf("failed to marshall new contract file: %w", err)
+	}
+
+	err = ioutil.WriteFile(filepath.Join(c.Path, "contracts"), data, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write new contract file: %w", err)
+	}
+
+	return nil
+}
+
 func (c *Client) DirectGetContractStorage(address string, ctx context.Context) (interface{}, error) {
 	addr, err := tezos.ParseAddress(address)
 	if err != nil {
@@ -225,94 +257,15 @@ func (c Client) CallContract(ctx context.Context, signedBy Wallet, target Contra
 	op.WithCall(target.Address, parameters)
 
 	// send operation with default options
-	result, err := modifiedSend(rpcClient, ctx, op, nil)
+	result, err := rpcClient.Send(ctx, op, nil)
 	if err != nil {
 		return "", err
 	}
 
 	// return just the operation hash
-	return result.Hash().String(), nil
+	return result.Op.Hash.String(), nil
 }
 
-// modifiedSend is a version of the tzgo rpcclient Send function, but we don't wait for a confirmation of the
-// the block. In an ideal world I'd be able to use a custom block observer to do that, but I can't quite see
-// how, and just to get a proof-of-concept working, I've done a bit of a copy and paste and then delete.
-func modifiedSend(c *rpc.Client, ctx context.Context, op *codec.Op, opts *rpc.CallOptions) (*rpc.Result, error) {
-	if opts == nil {
-		opts = &rpc.DefaultOptions
-	}
-
-	signer := c.Signer
-	if opts.Signer != nil {
-		signer = opts.Signer
-	}
-
-	// identify the sender address for signing the message
-	addr := opts.Sender
-	if !addr.IsValid() {
-		addrs, err := signer.ListAddresses(ctx)
-		if err != nil {
-			return nil, err
-		}
-		addr = addrs[0]
-	}
-
-	key, err := signer.GetKey(ctx, addr)
-	if err != nil {
-		return nil, err
-	}
-
-	// set source on all ops
-	op.WithSource(key.Address())
-
-	// auto-complete op with branch/ttl, source counter, reveal
-	err = c.Complete(ctx, op, key)
-	if err != nil {
-		return nil, err
-	}
-
-	// simulate to check tx validity and estimate cost
-	sim, err := c.Simulate(ctx, op, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	// fail with Tezos error when simulation failed
-	if !sim.IsSuccess() {
-		return nil, sim.Error()
-	}
-
-	// apply simulated cost as limits to tx list
-	if !opts.IgnoreLimits {
-		op.WithLimits(sim.MinLimits(), rpc.GasSafetyMargin)
-	}
-
-	// check minFee calc against maxFee if set
-	if opts.MaxFee > 0 {
-		if l := op.Limits(); l.Fee > opts.MaxFee {
-			return nil, fmt.Errorf("estimated cost %d > max %d", l.Fee, opts.MaxFee)
-		}
-	}
-
-	// sign digest
-	sig, err := signer.SignOperation(ctx, addr, op)
-	if err != nil {
-		return nil, err
-	}
-	op.WithSignature(sig)
-
-	// broadcast
-	hash, err := c.Broadcast(ctx, op)
-	if err != nil {
-		return nil, err
-	}
-
-	res := rpc.NewResult(hash).WithTTL(op.TTL).WithConfirmations(opts.Confirmations)
-
-	// This is where in the tzgo code they wait for confirmations, we do not
-
-	return res, nil
-}
 
 // These just call through to the indexer
 func (c Client) GetContractStorage(target Contract, ctx context.Context, storage interface{}) error {
@@ -350,4 +303,45 @@ func (c Client) GetContractEvents(ctx context.Context, contractAddress string, t
 		return nil, fmt.Errorf("Failed to make indexer: %w", err)
 	}
 	return indexer.GetContractEvents(ctx, contractAddress, tag)
+}
+
+func (c Client) Originate(ctx context.Context, signedBy Wallet, codedata []byte, initial_storage micheline.Prim) (Contract, error) {
+
+	rpcClient, err := rpc.NewClient(c.RPCURL, nil)
+	if err != nil {
+		return Contract{}, fmt.Errorf("failed to create client: %w", err)
+	}
+
+	if signedBy.Key == nil {
+		return Contract{}, fmt.Errorf("Signer wallet %s has no private key", signedBy.Name)
+	}
+	rpcClient.Signer = signer.NewFromKey(*signedBy.Key)
+
+	rpcClient.Init(ctx)
+	rpcClient.Listen()
+
+	contract := contract.NewEmptyContract(rpcClient)
+	code := micheline.Code{}
+	err = code.UnmarshalJSON(codedata)
+	if err != nil {
+		return Contract{}, fmt.Errorf("failed to decode contract: %v", err)
+	}
+	script := micheline.Script{
+		Code: code,
+		Storage: initial_storage,
+	}
+	contract.WithScript(&script)
+
+	receipt, err := contract.Deploy(ctx, nil)
+	if err != nil {
+		return Contract{}, fmt.Errorf("failed to deploy: %v", err)
+	}
+
+	contract_address, err := NewContractWithAddress("new", contract.Address().String())
+	if err != nil {
+		return Contract{}, fmt.Errorf("Contract address %s of operation %s is invalid: %v",
+			contract.Address(), receipt.Op.Hash.String(), err)
+	}
+
+	return contract_address, nil
 }

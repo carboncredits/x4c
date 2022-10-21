@@ -62,6 +62,13 @@ func (c mockClient) CallContract(ctx context.Context, signedBy tzclient.Wallet, 
 	return "", nil
 }
 
+func (c mockClient) Originate(ctx context.Context, signedBy tzclient.Wallet, code []byte, initial_storage micheline.Prim) (tzclient.Contract, error) {
+	if c.ShouldError {
+		return tzclient.Contract{}, fmt.Errorf("Test should fail")
+	}
+	return tzclient.Contract{}, nil
+}
+
 func TestLedgerLoadFail(t *testing.T) {
 	client := mockClient{
 		ShouldError: true,
