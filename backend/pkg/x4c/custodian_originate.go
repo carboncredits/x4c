@@ -9,22 +9,24 @@ import (
 	"quantify.earth/x4c/pkg/tzclient"
 )
 
-func FA2Originate(
+func CustodianOriginate(
 	ctx context.Context,
 	client tzclient.TezosClient,
 	contractBytes []byte,
 	signer tzclient.Wallet,
-	oracle tezos.Address,
+	owner tezos.Address,
 ) (tzclient.Contract, error) {
+
+	// (Pair (Pair (Pair "tz1YYBnLs471SKKReLn8nV47Tqh9VDgPoE7F" {}) {} {}) {})
 
 	storage := micheline.NewPair(
 		micheline.NewCode(micheline.D_PAIR,
 			micheline.NewPair(
-				micheline.NewSeq(),
+				micheline.NewString(owner.String()),
 				micheline.NewSeq(),
 			),
 			micheline.NewSeq(),
-			micheline.NewString(oracle.String()),
+			micheline.NewSeq(),
 		),
 		micheline.NewSeq(),
 	)

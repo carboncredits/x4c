@@ -190,7 +190,7 @@ func (c *Client) SaveContract(contract Contract) error {
 	new_file_contents := make([]tezosClientValue, 0, len(c.Contracts))
 	for _, info := range c.Contracts {
 		new_file_value := tezosClientValue{
-			Name: info.Name,
+			Name:  info.Name,
 			Value: info.Address.String(),
 		}
 		new_file_contents = append(new_file_contents, new_file_value)
@@ -266,7 +266,6 @@ func (c Client) CallContract(ctx context.Context, signedBy Wallet, target Contra
 	return result.Op.Hash.String(), nil
 }
 
-
 // These just call through to the indexer
 func (c Client) GetContractStorage(target Contract, ctx context.Context, storage interface{}) error {
 	indexer, err := tzkt.NewClient(c.IndexerRPCURL)
@@ -327,7 +326,7 @@ func (c Client) Originate(ctx context.Context, signedBy Wallet, codedata []byte,
 		return Contract{}, fmt.Errorf("failed to decode contract: %v", err)
 	}
 	script := micheline.Script{
-		Code: code,
+		Code:    code,
 		Storage: initial_storage,
 	}
 	contract.WithScript(&script)

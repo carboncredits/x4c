@@ -19,6 +19,7 @@ func main() {
 		"fa2 mint":      NewFA2MintCommand,
 
 		"custodian info":            NewCustodianInfoCommand,
+		"custodian originate":       NewCustodianOriginateCommand,
 		"custodian internal_mint":   NewCustodianInternalMintCommand,
 		"custodian add_operator":    NewCustodianAddOperatorCommand,
 		"custodian remove_operator": NewCustodianRemoveOperatorCommand,
