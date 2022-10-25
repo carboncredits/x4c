@@ -1,29 +1,36 @@
-FROM ligolang/ligo:0.51.0 as ligolang
+FROM ligolang/ligo:0.53.0 as ligolang
 
-FROM node:18 AS node
+FROM golang:1.19 as x4clibuild
+COPY backend backend
+WORKDIR backend
+RUN make build
+
+FROM debian:latest as tests
 
 # node is based on debian (libev-dev needed for ligo compiler)
 RUN apt-get update -qqy \
-	&& apt-get install -qy wget libev-dev \
+	&& apt-get install -qy \
+		make \
+		libev-dev \
+		wget \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& rm -rf /var/cache/apt/*
 
 RUN arch=$(arch | sed s/aarch64/-arm64/ | sed s/x86_64//) && \
-	wget -O tezos-client "https://github.com/serokell/tezos-packaging/releases/download/v14.0-1/tezos-client${arch}"
+	wget -O tezos-client "https://github.com/serokell/tezos-packaging/releases/download/v14.1-1/tezos-client${arch}"
 RUN chmod 755 tezos-client
 RUN mv tezos-client /bin/tezos-client
 RUN tezos-client config reset
 
 COPY --from=ligolang /root/ligo /bin/ligo
+COPY --from=x4clibuild /go/backend/bin/x4cli /bin/x4c
 
 WORKDIR /app
 COPY . .
 
-WORKDIR /app/cli
-RUN npm install -g typescript && npm install
-RUN tsc
-RUN npm link
-RUN chmod 755 /app/cli/integration_tests.sh
+RUN chmod 755 /app/backend/integration_tests.sh
 
 WORKDIR /app
+
+# build the contracts
 RUN make build

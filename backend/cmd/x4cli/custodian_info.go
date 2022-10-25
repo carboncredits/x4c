@@ -32,7 +32,7 @@ func (c custodianInfoCommand) Run(args []string) int {
 		return 1
 	}
 
-	client, err := tzclient.LoadClient("/Users/michael/.tezos-client")
+	client, err := tzclient.LoadDefaultClient()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to find info: %v.\n", err)
 		return 1

@@ -39,12 +39,12 @@ x4c custodian originate CustodianContract build/custodian.tz OffChainCustodian
 x4c info
 
 # Mint some tokens for the custodian contract
-x4c fa2 add_token 4CTokenOracle 123 "Test project" "http://blah.com/" 4CTokenContract
-x4c fa2 mint 4CTokenOracle CustodianContract 123 10000 4CTokenContract
+x4c fa2 add_token 4CTokenContract 4CTokenOracle 123 "Test project" "http://blah.com/"
+x4c fa2 mint 4CTokenContract 4CTokenOracle 123 CustodianContract 10000
 
 # Display some info about the contract (this will need the indexer)
 c=0
-until x4c fa2 info | grep -q "123";
+until x4c fa2 info 4CTokenContract | grep -q "123";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
@@ -52,7 +52,7 @@ done
 x4c fa2 info
 
 # now transfer tokens to custodian
-x4c custodian internal_mint OffChainCustodian CustodianContract 4CTokenContract 123
+x4c custodian internal_mint CustodianContract OffChainCustodian 4CTokenContract 123
 
 # Display some info about the contract (this will need the indexer)
 c=0
@@ -64,7 +64,7 @@ done
 x4c custodian info CustodianContract
 
 # Assign some tokens to a department and make sure the operator can access them
-x4c custodian internal_transfer OffChainCustodian CustodianContract 4CTokenContract 123 500 self compsci
+x4c custodian internal_transfer CustodianContract OffChainCustodian 4CTokenContract 123 500 self compsci
 
 c=0
 until x4c custodian info CustodianContract | grep -q "compsci";

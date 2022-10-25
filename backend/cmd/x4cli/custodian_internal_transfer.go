@@ -12,24 +12,24 @@ import (
 	"quantify.earth/x4c/pkg/x4c"
 )
 
-type custodianInternalMint struct{}
+type custodianInternalTransfer struct{}
 
-func NewCustodianInternalMintCommand() (cli.Command, error) {
-	return custodianInternalMint{}, nil
+func NewCustodianInternalTransferCommand() (cli.Command, error) {
+	return custodianInternalTransfer{}, nil
 }
 
-func (c custodianInternalMint) Help() string {
-	return `usage: x4cli custodian internal_mint CONTRACT SIGNER FA2_CONTRACT TOKEN_ID
+func (c custodianInternalTransfer) Help() string {
+	return `usage: x4cli custodian internal_transfer CONTRACT SIGNER FA2_CONTRACT TOKEN_ID AMOUNT CURRENT_KYC NEW_KYC
 
-Updates this ledger with tokens from the source FA2 contract.`
+Updates the internal ledger as to who the tokens belong off-chain.`
 }
 
-func (c custodianInternalMint) Synopsis() string {
-	return "Updates this ledger with tokens from the source FA2 contract."
+func (c custodianInternalTransfer) Synopsis() string {
+	return "Updates the internal ledger as to who the tokens belong off-chain."
 }
 
-func (c custodianInternalMint) Run(args []string) int {
-	if len(args) != 4 {
+func (c custodianInternalTransfer) Run(args []string) int {
+	if len(args) != 7 {
 		fmt.Fprintf(os.Stderr, "Incorrect number of arguments.\n\n%s", c.Help())
 		return 1
 	}
@@ -77,9 +77,22 @@ func (c custodianInternalMint) Run(args []string) int {
 		return 1
 	}
 
+	// arg4 - amount
+	amount, err := strconv.ParseInt(args[4], 10, 64)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to parse amount %v: %v", args[4], err)
+		return 1
+	}
+
+	// arg5 - current kyc
+	current_kyc := args[5]
+
+	// arg6 - new kyc
+	new_kyc := args[6]
+
 	ctx := context.Background()
 
-	operation_hash, err := x4c.CustodianInternalMint(ctx, client, contract, signer, fa2, token_id)
+	operation_hash, err := x4c.CustodianInternalTransfer(ctx, client, contract, signer, fa2, token_id, amount, current_kyc, new_kyc)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to update operators: %v", err)
 		return 1

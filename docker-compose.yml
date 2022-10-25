@@ -63,5 +63,5 @@ services:
             - tezossandbox
             - tzkt-api
             - tzkt-sync
-        command: /app/cli/integration_tests.sh
+        command: /app/backend/integration_tests.sh
         profiles: ["test"]

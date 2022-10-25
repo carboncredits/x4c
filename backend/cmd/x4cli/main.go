@@ -18,12 +18,13 @@ func main() {
 		"fa2 add_token": NewAddTokenCommand,
 		"fa2 mint":      NewFA2MintCommand,
 
-		"custodian info":            NewCustodianInfoCommand,
-		"custodian originate":       NewCustodianOriginateCommand,
-		"custodian internal_mint":   NewCustodianInternalMintCommand,
-		"custodian add_operator":    NewCustodianAddOperatorCommand,
-		"custodian remove_operator": NewCustodianRemoveOperatorCommand,
-		"custodian retire":          NewCustodianRetireCommand,
+		"custodian info":              NewCustodianInfoCommand,
+		"custodian originate":         NewCustodianOriginateCommand,
+		"custodian internal_mint":     NewCustodianInternalMintCommand,
+		"custodian internal_trasnfer": NewCustodianInternalTransferCommand,
+		"custodian add_operator":      NewCustodianAddOperatorCommand,
+		"custodian remove_operator":   NewCustodianRemoveOperatorCommand,
+		"custodian retire":            NewCustodianRetireCommand,
 	}
 
 	exit_status, err := c.Run()

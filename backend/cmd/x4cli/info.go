@@ -25,7 +25,7 @@ func (c infoCommand) Synopsis() string {
 
 func (c infoCommand) Run(args []string) int {
 	// at some point we could take the location as an optional arg...
-	client, err := tzclient.LoadClient("/Users/michael/.tezos-client")
+	client, err := tzclient.LoadDefaultClient()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to find info: %v.\n", err)
 		return 1

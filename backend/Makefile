@@ -28,3 +28,6 @@ fmt:
 	go fmt ${MKFILE_DIR}pkg/x4c
 	go fmt ${MKFILE_DIR}cmd/server
 	go fmt ${MKFILE_DIR}cmd/x4cli
+
+docker: Dockerfile server
+	docker build .

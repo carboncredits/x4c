@@ -36,6 +36,48 @@ func CustodianInternalMint(
 	return client.CallContract(ctx, signer, target, parameters)
 }
 
+func CustodianInternalTransfer(
+	ctx context.Context,
+	client tzclient.TezosClient,
+	target tzclient.Contract,
+	signer tzclient.Wallet,
+	token_address tzclient.Contract,
+	token_id int64,
+	amount int64,
+	current_kyc string,
+	new_kyc string,
+) (string, error) {
+	bigToken := big.NewInt(token_id)
+	bigAmount := big.NewInt(amount)
+
+	// Michelson type:
+	// (list %internal_transfer (pair (bytes %from_)
+	//   (pair (address %token_address)
+	//         (list %txs (pair (bytes %to_)
+	//                         (pair (nat %token_id) (nat %amount)))))))
+	parameters := micheline.Parameters{
+		Entrypoint: "internal_transfer",
+		Value: micheline.NewSeq(
+			micheline.NewPair(
+				micheline.NewString(current_kyc),
+				micheline.NewPair(
+					micheline.NewString(token_address.Address.String()),
+					micheline.NewSeq(
+						micheline.NewPair(
+							micheline.NewString(new_kyc),
+							micheline.NewPair(
+								micheline.NewNat(bigToken),
+								micheline.NewNat(bigAmount),
+							),
+						),
+					),
+				),
+			),
+		),
+	}
+	return client.CallContract(ctx, signer, target, parameters)
+}
+
 const (
 	AddOperator = iota + 1
 	RemoveOperator
