@@ -3,6 +3,7 @@ package tzclient
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -91,6 +92,9 @@ func LoadClient(path string) (Client, error) {
 	if err != nil {
 		return Client{}, fmt.Errorf("failed to decode tezos-client config: %w", err)
 	}
+	if config.Endpoint == "" {
+		return Client{}, fmt.Errorf("no rpc endpoint found in tezos-client config - try running 'tezos-client config update'")
+	}
 	client.RPCURL = config.Endpoint
 
 	if strings.Contains(client.RPCURL, "kathmandunet") {
@@ -156,19 +160,22 @@ func LoadClient(path string) (Client, error) {
 
 	content, err = ioutil.ReadFile(filepath.Join(path, "contracts"))
 	if err != nil {
-		return Client{}, fmt.Errorf("failed to open tezos-client contracts: %w", err)
-	}
-	var contracts []tezosClientValue
-	err = json.Unmarshal(content, &contracts)
-	if err != nil {
-		return Client{}, fmt.Errorf("failed to decode tezos-client contracts: %w", err)
-	}
-	for _, contract_info := range contracts {
-		contract, err := NewContractWithAddress(contract_info.Name, contract_info.Value)
-		if err != nil {
-			return Client{}, fmt.Errorf("failed to parse contract %s: %w", contract_info.Name, err)
+		if !errors.Is(err, os.ErrNotExist) {
+			return Client{}, fmt.Errorf("failed to open tezos-client contracts: %w", err)
 		}
-		client.Contracts[contract_info.Name] = contract
+	} else {
+		var contracts []tezosClientValue
+		err = json.Unmarshal(content, &contracts)
+		if err != nil {
+			return Client{}, fmt.Errorf("failed to decode tezos-client contracts: %w", err)
+		}
+		for _, contract_info := range contracts {
+			contract, err := NewContractWithAddress(contract_info.Name, contract_info.Value)
+			if err != nil {
+				return Client{}, fmt.Errorf("failed to parse contract %s: %w", contract_info.Name, err)
+			}
+			client.Contracts[contract_info.Name] = contract
+		}
 	}
 
 	return client, nil

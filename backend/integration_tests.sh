@@ -9,6 +9,7 @@ alias tcli='tezos-client --endpoint ${TEZOS_RPC_HOST}'
 
 # Set up the client with the sandbox node
 tcli config reset
+tcli config update
 tcli bootstrapped
 
 # Import the standard wallets from the sandbox so we can access their tez

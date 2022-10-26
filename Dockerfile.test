@@ -11,6 +11,7 @@ FROM debian:latest as tests
 RUN apt-get update -qqy \
 	&& apt-get install -qy \
 		make \
+		netbase \
 		libev-dev \
 		wget \
 	&& rm -rf /var/lib/apt/lists/* \
