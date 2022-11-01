@@ -43,7 +43,7 @@ func (c addTokenCommand) Run(args []string) int {
 	if !ok {
 		contract, err = tzclient.NewContractWithAddress("contract", args[0])
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Contract address is not valid: %v", err)
+			fmt.Fprintf(os.Stderr, "Contract address is not valid: %v\n", err)
 			return 1
 		}
 	}
@@ -53,7 +53,7 @@ func (c addTokenCommand) Run(args []string) int {
 	if !ok {
 		oracle, err = tzclient.NewWalletWithAddress("oracle", args[1])
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Oracle address is not valid: %v", err)
+			fmt.Fprintf(os.Stderr, "Oracle address is not valid: %v\n", err)
 			return 1
 		}
 	}
@@ -61,7 +61,7 @@ func (c addTokenCommand) Run(args []string) int {
 	// arg2 - token ID
 	token_id, err := strconv.ParseInt(args[2], 10, 64)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to parse token ID %v: %v", args[2], err)
+		fmt.Fprintf(os.Stderr, "Failed to parse token ID %v: %v\n", args[2], err)
 		return 1
 	}
 
@@ -75,7 +75,7 @@ func (c addTokenCommand) Run(args []string) int {
 
 	operation_hash, err := x4c.FA2AddToken(ctx, client, contract, oracle, token_id, title, url)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to add token: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to add token: %v\n", err)
 		return 1
 	}
 

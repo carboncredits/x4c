@@ -43,21 +43,21 @@ func (c fa2OriginateCommand) Run(args []string) int {
 	// arg0 - FA2 contract name
 	alias := args[0]
 	if _, ok := client.Contracts[alias]; ok {
-		fmt.Fprintf(os.Stderr, "Contract with name %s already exists", alias)
+		fmt.Fprintf(os.Stderr, "Contract with name %s already exists\n", alias)
 		return 1
 	}
 
 	// arg1 - path to contract
 	contractBytes, err := ioutil.ReadFile(args[1])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to load contract: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to load contract: %v\n", err)
 		return 1
 	}
 
 	// arg2 - signer name/address
 	signer, ok := client.Wallets[args[2]]
 	if !ok {
-		fmt.Fprintf(os.Stderr, "Signer name is not found")
+		fmt.Fprintf(os.Stderr, "Signer name is not found\n")
 		return 1
 	}
 
@@ -68,7 +68,7 @@ func (c fa2OriginateCommand) Run(args []string) int {
 		if !ok {
 			oracle_wallet, err = tzclient.NewWalletWithAddress("oracle", args[3])
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Oracle address is not valid: %v", err)
+				fmt.Fprintf(os.Stderr, "Oracle address is not valid: %v\n", err)
 				return 1
 			}
 		}
@@ -79,7 +79,7 @@ func (c fa2OriginateCommand) Run(args []string) int {
 
 	contract, err := x4c.FA2Originate(ctx, client, contractBytes, signer, oracle)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to originate contract: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to originate contract: %v\n", err)
 		return 1
 	}
 
@@ -87,7 +87,7 @@ func (c fa2OriginateCommand) Run(args []string) int {
 	contract.Name = alias
 	err = client.SaveContract(contract)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to save contract %s: %v", contract.Address.String(), err)
+		fmt.Fprintf(os.Stderr, "Failed to save contract %s: %v\n", contract.Address.String(), err)
 		return 1
 	}
 

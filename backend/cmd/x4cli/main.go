@@ -4,10 +4,14 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/echa/log"
+
 	"github.com/mitchellh/cli"
 )
 
 func main() {
+	log.SetLevel(log.LevelDebug)
+
 	c := cli.NewCLI("x4cli", "0.0.1")
 	c.Args = os.Args[1:]
 	c.Commands = map[string]cli.CommandFactory{
@@ -29,7 +33,7 @@ func main() {
 
 	exit_status, err := c.Run()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v", err)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 	}
 	os.Exit(exit_status)
 }

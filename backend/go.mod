@@ -3,7 +3,8 @@ module quantify.earth/x4c
 go 1.19
 
 require (
-	blockwatch.cc/tzgo v1.14.2
+	blockwatch.cc/tzgo v1.14.3-0.20221101120936-2e343a4e8328
+	github.com/echa/log v1.2.2
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/mitchellh/cli v1.1.4
 )
@@ -17,7 +18,6 @@ require (
 	github.com/decred/dcrd/dcrec/secp256k1 v1.0.3 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v2 v2.0.0 // indirect
 	github.com/echa/bson v0.0.0-20220430141917-c0fbdf7f8b79 // indirect
-	github.com/echa/log v1.2.2 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect

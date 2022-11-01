@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/echa/log"
 	"blockwatch.cc/tzgo/codec"
 	"blockwatch.cc/tzgo/contract"
 	"blockwatch.cc/tzgo/micheline"
@@ -83,6 +84,11 @@ func LoadClient(path string) (Client, error) {
 		Contracts: make(map[string]Contract),
 	}
 
+	// first check env for hosts
+	client.RPCURL = os.Getenv("TEZOS_RPC_HOST")
+	client.IndexerRPCURL = os.Getenv("TEZOS_INDEX_HOST")
+	client.IndexerWebURL = os.Getenv("TEZOS_INDEX_WEB")
+
 	content, err := ioutil.ReadFile(filepath.Join(path, "config"))
 	if err != nil {
 		return Client{}, fmt.Errorf("failed to open tezos-client config: %w", err)
@@ -92,20 +98,24 @@ func LoadClient(path string) (Client, error) {
 	if err != nil {
 		return Client{}, fmt.Errorf("failed to decode tezos-client config: %w", err)
 	}
-	if config.Endpoint == "" {
-		return Client{}, fmt.Errorf("no rpc endpoint found in tezos-client config - try running 'tezos-client config update'")
-	}
-	client.RPCURL = config.Endpoint
 
-	if strings.Contains(client.RPCURL, "kathmandunet") {
-		client.IndexerRPCURL = "https://api.kathmandunet.tzkt.io/"
-		client.IndexerWebURL = "https://kathmandunet.tzkt.io/"
-	} else if strings.Contains(client.RPCURL, "ghostnet") {
-		client.IndexerRPCURL = "https://api.ghostnet.tzkt.io/"
-		client.IndexerWebURL = "https://ghostnet.tzkt.io/"
-	} else {
-		client.IndexerRPCURL = "https://api.mainnet.tzkt.io/"
-		client.IndexerWebURL = "https://mainnet.tzkt.io/"
+	// If the env didn't specify things, try to infer where things are from the config file
+	if client.RPCURL == "" {
+		if config.Endpoint == "" {
+			return Client{}, fmt.Errorf("no rpc endpoint found in tezos-client config - try running 'tezos-client config update'")
+		}
+		client.RPCURL = config.Endpoint
+
+		if strings.Contains(client.RPCURL, "kathmandunet") {
+			client.IndexerRPCURL = "https://api.kathmandunet.tzkt.io/"
+			client.IndexerWebURL = "https://kathmandunet.tzkt.io/"
+		} else if strings.Contains(client.RPCURL, "ghostnet") {
+			client.IndexerRPCURL = "https://api.ghostnet.tzkt.io/"
+			client.IndexerWebURL = "https://ghostnet.tzkt.io/"
+		} else {
+			client.IndexerRPCURL = "https://api.mainnet.tzkt.io/"
+			client.IndexerWebURL = "https://mainnet.tzkt.io/"
+		}
 	}
 
 	// tezos-client has redundent information stored - both the address/hash and public key
@@ -277,11 +287,11 @@ func (c Client) CallContract(ctx context.Context, signedBy Wallet, target Contra
 func (c Client) GetContractStorage(target Contract, ctx context.Context, storage interface{}) error {
 	indexer, err := tzkt.NewClient(c.IndexerRPCURL)
 	if err != nil {
-		return fmt.Errorf("Failed to make indexer: %w", err)
+		return fmt.Errorf("failed to make indexer: %w", err)
 	}
 	err = indexer.GetContractStorage(ctx, target.Address.String(), storage)
 	if err != nil {
-		return fmt.Errorf("Failed to make indexer: %w", err)
+		return fmt.Errorf("failed to fetch storage: %w", err)
 	}
 
 	return nil
@@ -290,7 +300,7 @@ func (c Client) GetContractStorage(target Contract, ctx context.Context, storage
 func (c Client) GetBigMapContents(ctx context.Context, identifier int64) ([]tzkt.BigMapItem, error) {
 	indexer, err := tzkt.NewClient(c.IndexerRPCURL)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to make indexer: %w", err)
+		return nil, fmt.Errorf("failed to make indexer: %w", err)
 	}
 	return indexer.GetBigMapContents(ctx, identifier)
 }
@@ -298,7 +308,7 @@ func (c Client) GetBigMapContents(ctx context.Context, identifier int64) ([]tzkt
 func (c Client) GetOperationInformation(ctx context.Context, hash string) ([]tzkt.Operation, error) {
 	indexer, err := tzkt.NewClient(c.IndexerRPCURL)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to make indexer: %w", err)
+		return nil, fmt.Errorf("failed to make indexer: %w", err)
 	}
 	return indexer.GetOperationInformation(ctx, hash)
 }
@@ -306,7 +316,7 @@ func (c Client) GetOperationInformation(ctx context.Context, hash string) ([]tzk
 func (c Client) GetContractEvents(ctx context.Context, contractAddress string, tag string) ([]tzkt.Event, error) {
 	indexer, err := tzkt.NewClient(c.IndexerRPCURL)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to make indexer: %w", err)
+		return nil, fmt.Errorf("failed to make indexer: %w", err)
 	}
 	return indexer.GetContractEvents(ctx, contractAddress, tag)
 }
@@ -317,9 +327,11 @@ func (c Client) Originate(ctx context.Context, signedBy Wallet, codedata []byte,
 	if err != nil {
 		return Contract{}, fmt.Errorf("failed to create client: %w", err)
 	}
+	rpc.UseLogger(log.Log)
+	contract.UseLogger(log.Log)
 
 	if signedBy.Key == nil {
-		return Contract{}, fmt.Errorf("Signer wallet %s has no private key", signedBy.Name)
+		return Contract{}, fmt.Errorf("signer wallet %s has no private key", signedBy.Name)
 	}
 	rpcClient.Signer = signer.NewFromKey(*signedBy.Key)
 

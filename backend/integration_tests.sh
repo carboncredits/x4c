@@ -37,7 +37,7 @@ x4c fa2 originate 4CTokenContract build/fa2.tz 4CTokenOracle
 x4c custodian originate CustodianContract build/custodian.tz OffChainCustodian
 
 # this is more a sanity check of the world with contracts
-x4c info
+x4c info 4CTokenContract
 
 # Mint some tokens for the custodian contract
 x4c fa2 add_token 4CTokenContract 4CTokenOracle 123 "Test project" "http://blah.com/"
@@ -50,7 +50,7 @@ do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
-x4c fa2 info
+x4c fa2 info 4CTokenContract
 
 # now transfer tokens to custodian
 x4c custodian internal_mint CustodianContract OffChainCustodian 4CTokenContract 123
@@ -104,13 +104,13 @@ done
 x4c custodian info CustodianContract
 
 c=0
-until x4c fa2 info | grep -q "9980";
+until x4c fa2 info 4CTokenContract | grep -q "9980";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
 c=0
-until x4c fa2 info | grep -q "retire1";
+until x4c fa2 info 4CTokenContract | grep -q "retire1";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
@@ -127,13 +127,13 @@ x4c custodian retire CustodianOperator CustodianContract 4CTokenContract compsci
 x4c custodian retire OffChainCustodian CustodianContract 4CTokenContract compsci 123 5 retire2
 
 c=0
-until x4c fa2 info | grep -q "9975";
+until x4c fa2 info 4CTokenContract | grep -q "9975";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
 c=0
-until x4c fa2 info | grep -q "retire2";
+until x4c fa2 info 4CTokenContract | grep -q "retire2";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
