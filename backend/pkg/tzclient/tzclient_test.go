@@ -12,7 +12,7 @@ func TestLoadInvalidPath(t *testing.T) {
 }
 
 func TestCreateWalletByAddress(t *testing.T) {
-	testcase := []struct {
+	testcases := []struct {
 		address string
 		isValid bool
 	}{
@@ -21,7 +21,7 @@ func TestCreateWalletByAddress(t *testing.T) {
 		// Contract is a valid address, but not an ED25519 wallet address
 		{"KT1MHx2nw8y2JyryGbuAvTYPNGwrfTp4PEYR", false},
 	}
-	for index, testcase := range testcase {
+	for index, testcase := range testcases {
 		a, err := NewWalletWithAddress("name", testcase.address)
 		if testcase.isValid {
 			if err != nil {

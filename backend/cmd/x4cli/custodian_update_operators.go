@@ -55,7 +55,7 @@ func (c custodianUpdateOperator) Run(args []string) int {
 	if !ok {
 		contract, err = tzclient.NewContractWithAddress("contract", args[0])
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Contract address is not valid: %v", err)
+			fmt.Fprintf(os.Stderr, "Contract address is not valid: %v\n", err)
 			return 1
 		}
 	}
@@ -65,7 +65,7 @@ func (c custodianUpdateOperator) Run(args []string) int {
 	if !ok {
 		signer, err = tzclient.NewWalletWithAddress("signer", args[1])
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Signer address is not valid: %v", err)
+			fmt.Fprintf(os.Stderr, "Signer address is not valid: %v\n", err)
 			return 1
 		}
 	}
@@ -75,21 +75,21 @@ func (c custodianUpdateOperator) Run(args []string) int {
 	if !ok {
 		operator, err = tzclient.NewWalletWithAddress("operator", args[2])
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Operator address is not valid: %v", args[2])
+			fmt.Fprintf(os.Stderr, "Operator address is not valid: %v\n", args[2])
 		}
 	}
 
 	// arg3 - token ID
 	token_id, err := strconv.ParseInt(args[3], 10, 64)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to parse token ID %v: %v", args[2], err)
+		fmt.Fprintf(os.Stderr, "Failed to parse token ID %v: %v\n", args[2], err)
 		return 1
 	}
 
 	// arg4 - token owner
 	owner := args[4]
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to parse token owner %v: %v", args[3], err)
+		fmt.Fprintf(os.Stderr, "Failed to parse token owner %v: %v\n", args[3], err)
 		return 1
 	}
 
@@ -105,7 +105,7 @@ func (c custodianUpdateOperator) Run(args []string) int {
 
 	operation_hash, err := x4c.CustodianUpdateOperators(ctx, client, contract, signer, operator_list)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to update operators: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to update operators: %v\n", err)
 		return 1
 	}
 

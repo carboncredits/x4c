@@ -14,8 +14,12 @@ type TokenID struct {
 }
 
 type LedgerKey struct {
-	Token TokenID `json:"token"`
-	KYC   string  `json:"kyc"`
+	Token  TokenID `json:"token"`
+	RawKYC string  `json:"kyc"`
+}
+
+func (l LedgerKey) DecodeKYC() (string, error) {
+	return tzclient.MichelsonToString(l.RawKYC)
 }
 
 type Ledger map[LedgerKey]int64
@@ -23,9 +27,13 @@ type Ledger map[LedgerKey]int64
 type ExternalLedger map[TokenID]int64
 
 type OperatorInformation struct {
-	Owner    string      `json:"token_owner"`
+	RawKYC   string      `json:"token_owner"`
 	Operator string      `json:"token_operator"`
 	TokenID  json.Number `json:"token_id"`
+}
+
+func (l OperatorInformation) DecodeKYC() (string, error) {
+	return tzclient.MichelsonToString(l.RawKYC)
 }
 
 type CustodianStorage struct {

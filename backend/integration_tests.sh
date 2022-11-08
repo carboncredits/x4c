@@ -26,7 +26,8 @@ tcli transfer 1000 from alice to OffChainCustodian --burn-cap 1
 # To simulate deployment, the operator key would be in an HSM,
 # and so is handled by signatory. Thus we just need to make a note
 # of it here and assign it some tez
-tcli add address CustodianOperator tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z --force
+# tcli add address CustodianOperator tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z --force
+tcli gen keys CustodianOperator --force
 tcli transfer 1000 from alice to CustodianOperator --burn-cap 1
 
 # this is more a sanity check of the world
@@ -75,9 +76,9 @@ do
 done
 x4c custodian info CustodianContract
 
-x4c custodian add_operator OffChainCustodian CustodianContract CustodianOperator 123 compsci
+x4c custodian add_operator CustodianContract OffChainCustodian CustodianOperator 123 compsci
 c=0
-until x4c custodian info CustodianContract | grep -q "tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z";
+until x4c custodian info CustodianContract | grep -q "CustodianOperator";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
@@ -85,7 +86,7 @@ done
 x4c custodian info CustodianContract
 
 # Have department retire credits
-x4c custodian retire CustodianOperator CustodianContract 4CTokenContract compsci 123 20 retire1
+x4c custodian retire CustodianContract CustodianOperator 4CTokenContract compsci 123 20 retire1
 
 # Check that the balances on both the custodian contract and the root contract are now adjusted
 
@@ -115,16 +116,16 @@ do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
-x4c fa2 info
+x4c fa2 info 4CTokenContract
 
 # Check that if we revoke the operator they can't still retire redits
-x4c custodian remove_operator OffChainCustodian CustodianContract CustodianOperator 123 compsci
-x4c custodian retire CustodianOperator CustodianContract 4CTokenContract compsci 123 20 flights || echo "Retire failed as expected"
+x4c custodian remove_operator CustodianContract OffChainCustodian CustodianOperator 123 compsci
+x4c custodian retire CustodianContract CustodianOperator 4CTokenContract compsci 123 20 flights || echo "Retire failed as expected"
 
 # It's hard to test that the above didn't work, as we might just have the indexer being slow. So to
 # confirm that the above didn't work, retire some more credits and check that we get the expected
 # result, as we know that operations should happen in the right order at least.
-x4c custodian retire OffChainCustodian CustodianContract 4CTokenContract compsci 123 5 retire2
+x4c custodian retire CustodianContract OffChainCustodian 4CTokenContract compsci 123 5 retire2
 
 c=0
 until x4c fa2 info 4CTokenContract | grep -q "9975";
@@ -138,4 +139,4 @@ do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
-x4c fa2 info
+x4c fa2 info 4CTokenContract

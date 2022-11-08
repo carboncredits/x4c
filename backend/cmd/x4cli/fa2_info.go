@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 
+	"github.com/cheynewallace/tabby"
 	"github.com/mitchellh/cli"
 
 	"quantify.earth/x4c/pkg/tzclient"
@@ -55,27 +55,53 @@ func (c fa2InfoCommand) Run(args []string) int {
 		return 1
 	}
 
-	buf, _ := json.MarshalIndent(storage, "", "  ")
-	fmt.Println(string(buf))
+	oracleName := client.FindNameForAddress(storage.Oracle)
+	fmt.Printf("Oracle: %v\n", oracleName)
 
-	fmt.Printf("Ledger:\n")
+	fmt.Printf("\nLedger:\n")
 	ledger, err := storage.GetLedger(ctx, client)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to read ledger: %v", err)
 		return 1
-	}
-	for key, value := range ledger {
-		fmt.Printf("%v: %v\n", key, value)
+	} else {
+		t := tabby.New()
+		t.AddHeader("ID", "Owner", "Amount")
+		for key, value := range ledger {
+			owner := client.FindNameForAddress(key.TokenOwnder)
+			t.AddLine(key.TokenIdentifier, owner, value)
+		}
+		t.Print()
 	}
 
-	fmt.Printf("Token metadata:\n")
+	fmt.Printf("\nToken metadata:\n")
 	token_metadata, err := storage.GetTokenMetadata(ctx, client)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to read token metadata: %v", err)
 		return 1
+	} else {
+		t := tabby.New()
+		t.AddHeader("Token ID", "Key", "Value")
+		for tokenID, tokenInfo := range token_metadata {
+			for key, value := range tokenInfo.TokenInformation {
+				t.AddLine(tokenID, key, value)
+			}
+		}
+		t.Print()
 	}
-	for key, value := range token_metadata {
-		fmt.Printf("%v: %v\n", key, value)
+
+	fmt.Printf("Retirements:\n")
+	{
+		events, err := x4c.GetFA2RetireEvents(ctx, client, contract)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to get retirement events: %v\n", err)
+			return 1
+		}
+		t := tabby.New()
+		t.AddHeader("ID", "Time", "Reason")
+		for _, event := range events {
+			t.AddLine(event.Identifier, event.Timestamp, event.Reason)
+		}
+		t.Print()
 	}
 
 	return 0

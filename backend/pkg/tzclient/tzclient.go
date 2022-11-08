@@ -6,20 +6,23 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/echa/log"
 	"blockwatch.cc/tzgo/codec"
 	"blockwatch.cc/tzgo/contract"
 	"blockwatch.cc/tzgo/micheline"
 	"blockwatch.cc/tzgo/rpc"
 	"blockwatch.cc/tzgo/signer"
 	"blockwatch.cc/tzgo/tezos"
+	"github.com/echa/log"
 
 	"quantify.earth/x4c/pkg/tzkt"
 )
+
+const maxRetries = 5
 
 // public types
 
@@ -28,6 +31,7 @@ type TezosClient interface {
 	GetContractStorage(target Contract, ctx context.Context, storage interface{}) error
 	GetBigMapContents(ctx context.Context, identifier int64) ([]tzkt.BigMapItem, error)
 	GetOperationInformation(ctx context.Context, hash string) ([]tzkt.Operation, error)
+	GetContractEvents(ctx context.Context, contractAddress string, tag string) ([]tzkt.Event, error)
 	CallContract(ctx context.Context, signedBy Wallet, target Contract, parameters micheline.Parameters) (string, error)
 	Originate(ctx context.Context, signedBy Wallet, code []byte, initial_storage micheline.Prim) (Contract, error)
 }
@@ -196,6 +200,20 @@ func LoadDefaultClient() (Client, error) {
 	return LoadClient(default_path)
 }
 
+func (c *Client) FindNameForAddress(address string) string {
+	for name, info := range c.Wallets {
+		if info.Address.String() == address {
+			return name
+		}
+	}
+	for name, info := range c.Contracts {
+		if info.Address.String() == address {
+			return name
+		}
+	}
+	return address
+}
+
 func (c *Client) SaveContract(contract Contract) error {
 
 	if _, ok := c.Contracts[contract.Name]; ok {
@@ -274,9 +292,18 @@ func (c Client) CallContract(ctx context.Context, signedBy Wallet, target Contra
 	op.WithCall(target.Address, parameters)
 
 	// send operation with default options
-	result, err := rpcClient.Send(ctx, op, nil)
-	if err != nil {
-		return "", err
+	var result *rpc.Receipt
+	for tries := 0; tries <= maxRetries; tries += 1 {
+		result, err = rpcClient.Send(ctx, op, nil)
+		if err != nil {
+			var urlError *url.Error
+			if errors.As(err, &urlError) {
+				continue
+			}
+			fmt.Printf("%T\n%v\n", err, err)
+			return "", err
+		}
+		break
 	}
 
 	// return just the operation hash

@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 
+	"github.com/cheynewallace/tabby"
 	"github.com/mitchellh/cli"
 
 	"quantify.earth/x4c/pkg/tzclient"
@@ -42,7 +42,7 @@ func (c custodianInfoCommand) Run(args []string) int {
 	if !ok {
 		contract, err = tzclient.NewContractWithAddress(args[0], args[0])
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Contract address is not valid: %v", err)
+			fmt.Fprintf(os.Stderr, "Contract address is not valid: %v\n", err)
 			return 1
 		}
 	}
@@ -55,27 +55,102 @@ func (c custodianInfoCommand) Run(args []string) int {
 		return 1
 	}
 
-	buf, _ := json.MarshalIndent(storage, "", "  ")
-	fmt.Println(string(buf))
+	custodianName := client.FindNameForAddress(storage.Custodian)
+	fmt.Printf("Custodian: %v\n", custodianName)
 
-	fmt.Printf("Ledger:\n")
+	fmt.Printf("\nLedger:\n")
 	ledger, err := storage.GetLedger(ctx, client)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to read ledger: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to read ledger: %v\n", err)
 		return 1
-	}
-	for key, value := range ledger {
-		fmt.Printf("%v: %v\n", key, value)
+	} else {
+		t := tabby.New()
+		t.AddHeader("KYC", "Minter", "ID", "Amount")
+		for key, value := range ledger {
+			kyc, err := key.DecodeKYC()
+			if err != nil {
+				kyc = key.RawKYC
+			}
+			minter := client.FindNameForAddress(key.Token.Address)
+			t.AddLine(kyc, minter, key.Token.TokenID, value)
+		}
+		t.Print()
 	}
 
-	fmt.Printf("External ledger:\n")
+	fmt.Printf("\nOperators:\n")
+	{
+		t := tabby.New()
+		t.AddHeader("Operator", "KYC", "Token ID")
+		for _, operator := range storage.Operators {
+			kyc, err := operator.DecodeKYC()
+			if err != nil {
+				kyc = operator.RawKYC
+			}
+			operatorName := client.FindNameForAddress(operator.Operator)
+			t.AddLine(operatorName, kyc, operator.TokenID)
+		}
+		t.Print()
+	}
+
+	fmt.Printf("\nExternal ledger:\n")
 	external_ledger, err := storage.GetExternalLedger(ctx, client)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to read external ledger: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to read external ledger: %v\n", err)
 		return 1
+	} else {
+		t := tabby.New()
+		t.AddHeader("Minter", "ID", "Amount")
+
+		for key, value := range external_ledger {
+			minter := client.FindNameForAddress(key.Address)
+			t.AddLine(minter, key.TokenID, value)
+		}
+		t.Print()
 	}
-	for key, value := range external_ledger {
-		fmt.Printf("%v: %v\n", key, value)
+
+	fmt.Printf("Internal mints:\n")
+	{
+		events, err := x4c.GetInternalMintEvents(ctx, client, contract)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to get internal mint events: %v\n", err)
+			return 1
+		}
+		t := tabby.New()
+		t.AddHeader("ID", "Time", "Token Address", "Token ID", "Amount", "New total")
+		for _, event := range events {
+			t.AddLine(event.Identifier, event.Timestamp, event.Token.Address, event.Token.TokenID, event.Amount, event.NewTotal)
+		}
+		t.Print()
+	}
+
+	fmt.Printf("Internal transfers:\n")
+	{
+		events, err := x4c.GetInternalTransferEvents(ctx, client, contract)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to get internal transfer events: %v\n", err)
+			return 1
+		}
+		t := tabby.New()
+		t.AddHeader("ID", "Time", "Token Address", "Token ID", "From", "To", "Amount")
+		for _, event := range events {
+			t.AddLine(event.Identifier, event.Timestamp, event.Token.Address, event.Token.TokenID, event.From(), event.To())
+		}
+		t.Print()
+	}
+
+	fmt.Printf("Retirements:\n")
+	{
+		events, err := x4c.GetCustodianRetireEvents(ctx, client, contract)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to get retirement events: %v\n", err)
+			return 1
+		}
+		t := tabby.New()
+		t.AddHeader("ID", "Time", "Reason")
+		for _, event := range events {
+			t.AddLine(event.Identifier, event.Timestamp, event.Reason)
+		}
+		t.Print()
 	}
 
 	return 0

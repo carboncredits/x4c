@@ -48,6 +48,14 @@ func (c mockClient) GetBigMapContents(ctx context.Context, identifier int64) ([]
 	}
 }
 
+func (c mockClient) GetContractEvents(ctx context.Context, contractAddress string, tag string) ([]tzkt.Event, error) {
+	if c.ShouldError {
+		return nil, fmt.Errorf("Test should fail")
+	}
+	return nil, nil
+}
+
+
 func (c mockClient) GetOperationInformation(ctx context.Context, hash string) ([]tzkt.Operation, error) {
 	if c.ShouldError {
 		return nil, fmt.Errorf("Test should fail")

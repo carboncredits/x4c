@@ -62,10 +62,14 @@ func (s *server) getCreditSources(w http.ResponseWriter, r *http.Request, ps htt
 			return
 		}
 
+		kyc, err := key.DecodeKYC()
+		if err != nil {
+			kyc = key.RawKYC
+		}
 		item := CreditSourcesResponseItem{
 			TokenID:      token_id,
 			MinterURL:    fmt.Sprintf("%s%s", s.tezosClient.IndexerWebURL, key.Token.Address),
-			KYC:          key.KYC,
+			KYC:          kyc,
 			CustodainURL: fmt.Sprintf("%s%s", s.tezosClient.IndexerWebURL, contract.Address.String()),
 			Amount:       value,
 			Minter:       key.Token.Address,

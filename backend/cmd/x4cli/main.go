@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	log.SetLevel(log.LevelDebug)
+	log.SetLevel(log.LevelError)
 
 	c := cli.NewCLI("x4cli", "0.0.1")
 	c.Args = os.Args[1:]
@@ -25,7 +25,7 @@ func main() {
 		"custodian info":              NewCustodianInfoCommand,
 		"custodian originate":         NewCustodianOriginateCommand,
 		"custodian internal_mint":     NewCustodianInternalMintCommand,
-		"custodian internal_trasnfer": NewCustodianInternalTransferCommand,
+		"custodian internal_transfer": NewCustodianInternalTransferCommand,
 		"custodian add_operator":      NewCustodianAddOperatorCommand,
 		"custodian remove_operator":   NewCustodianRemoveOperatorCommand,
 		"custodian retire":            NewCustodianRetireCommand,
