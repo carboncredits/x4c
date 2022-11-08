@@ -16,6 +16,7 @@ import (
 	"blockwatch.cc/tzgo/micheline"
 	"blockwatch.cc/tzgo/rpc"
 	"blockwatch.cc/tzgo/signer"
+	"blockwatch.cc/tzgo/signer/remote"
 	"blockwatch.cc/tzgo/tezos"
 	"github.com/echa/log"
 
@@ -41,6 +42,7 @@ type Client struct {
 	RPCURL        string
 	IndexerRPCURL string
 	IndexerWebURL string
+	SignatoryURL  string
 	Wallets       map[string]Wallet
 	Contracts     map[string]Contract
 }
@@ -92,6 +94,7 @@ func LoadClient(path string) (Client, error) {
 	client.RPCURL = os.Getenv("TEZOS_RPC_HOST")
 	client.IndexerRPCURL = os.Getenv("TEZOS_INDEX_HOST")
 	client.IndexerWebURL = os.Getenv("TEZOS_INDEX_WEB")
+	client.SignatoryURL = os.Getenv("SIGNATORY_HOST")
 
 	content, err := ioutil.ReadFile(filepath.Join(path, "config"))
 	if err != nil {
@@ -283,10 +286,21 @@ func (c Client) CallContract(ctx context.Context, signedBy Wallet, target Contra
 	rpcClient.Listen()
 
 	if signedBy.Key == nil {
-		return "", fmt.Errorf("Signer wallet %s has no private key", signedBy.Name)
-	}
-
-	rpcClient.Signer = signer.NewFromKey(*signedBy.Key)
+		// It's not a given that any hashes without keys are stored in signatory in
+		// general, but in the 4C app context I think we can assert this is, if not
+		// true. something we're happy to see errors for if we mess our tezos-client
+		// stores for :)
+		if c.SignatoryURL == "" {
+			return "", fmt.Errorf("remote signer not configured for %v", signedBy.Name)
+		}
+		remoteSigner, err := remote.New(c.SignatoryURL, nil)
+		if err != nil {
+			return "", fmt.Errorf("failed to make remote signer for %v: %w", signedBy.Name, err)
+		}
+		rpcClient.Signer = remoteSigner.WithAddress(signedBy.Address)
+	} else {
+		rpcClient.Signer = signer.NewFromKey(*signedBy.Key)
+		}
 
 	op := codec.NewOp().WithSource(signedBy.Address)
 	op.WithCall(target.Address, parameters)
@@ -377,9 +391,17 @@ func (c Client) Originate(ctx context.Context, signedBy Wallet, codedata []byte,
 	}
 	contract.WithScript(&script)
 
-	receipt, err := contract.Deploy(ctx, nil)
-	if err != nil {
-		return Contract{}, fmt.Errorf("failed to deploy: %v", err)
+	var receipt *rpc.Receipt
+	for tries := 0; tries <= maxRetries; tries += 1 {
+		receipt, err = contract.Deploy(ctx, nil)
+		if err != nil {
+			var urlError *url.Error
+			if errors.As(err, &urlError) {
+				continue
+			}
+			return Contract{}, fmt.Errorf("failed to deploy: %v", err)
+		}
+		break
 	}
 
 	contract_address, err := NewContractWithAddress("new", contract.Address().String())

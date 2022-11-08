@@ -26,8 +26,8 @@ tcli transfer 1000 from alice to OffChainCustodian --burn-cap 1
 # To simulate deployment, the operator key would be in an HSM,
 # and so is handled by signatory. Thus we just need to make a note
 # of it here and assign it some tez
-# tcli add address CustodianOperator tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z --force
-tcli gen keys CustodianOperator --force
+tcli add address CustodianOperator tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z --force
+# tcli gen keys CustodianOperator --force
 tcli transfer 1000 from alice to CustodianOperator --burn-cap 1
 
 # this is more a sanity check of the world
