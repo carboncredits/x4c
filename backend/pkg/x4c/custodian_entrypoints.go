@@ -69,7 +69,6 @@ func CustodianInternalTransfer(
 		return "", fmt.Errorf("fialed to convert new kyc bytes: %w", err)
 	}
 
-
 	// Michelson type:
 	// (list %internal_transfer
 	// 	(pair
@@ -142,7 +141,6 @@ func CustodianUpdateOperators(
 			return "", fmt.Errorf("fialed to convert owner bytes: %w", err)
 		}
 
-
 		var update_type micheline.OpCode
 		switch operator.UpdateType {
 		case AddOperator:
@@ -198,7 +196,6 @@ func CustodianRetire(
 ) (string, error) {
 	bigAmount := big.NewInt(amount)
 	bigToken := big.NewInt(token_id)
-
 
 	michelson_owner, err := tzclient.StringToMichelson(kyc)
 	if err != nil {

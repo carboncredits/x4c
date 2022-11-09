@@ -20,8 +20,8 @@ func SetupMyHandlers(client tzclient.Client, operator tzclient.Wallet) server {
 
 	router := httprouter.New()
 	server := server{
-		mux:         router,
-		tezosClient: client,
+		mux:               router,
+		tezosClient:       client,
 		custodianOperator: operator,
 	}
 

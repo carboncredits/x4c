@@ -17,17 +17,17 @@ type CustodianRetireEvent struct {
 
 type InternalMintEvent struct {
 	tzkt.Event
-	Token TokenID `json:"token"`
-	Amount json.Number `json:"amount"`
+	Token    TokenID     `json:"token"`
+	Amount   json.Number `json:"amount"`
 	NewTotal json.Number `json:"new_total"`
 }
 
 type InternalTransferEvent struct {
 	tzkt.Event
-	RawTo string `json:"to"`
-	RawFrom string `json:"from"`
-	Token TokenID `json:"token"`
-	Amount json.Number `json:"amount"`
+	RawTo   string      `json:"to"`
+	RawFrom string      `json:"from"`
+	Token   TokenID     `json:"token"`
+	Amount  json.Number `json:"amount"`
 }
 
 func (e InternalTransferEvent) To() string {
@@ -45,7 +45,6 @@ func (e InternalTransferEvent) From() string {
 	}
 	return res
 }
-
 
 func GetCustodianRetireEvents(ctx context.Context, client tzclient.TezosClient, contract tzclient.Contract) ([]CustodianRetireEvent, error) {
 	raw, err := client.GetContractEvents(ctx, contract.Address.String(), "retire")
@@ -119,4 +118,3 @@ func GetInternalMintEvents(ctx context.Context, client tzclient.TezosClient, con
 	}
 	return result, nil
 }
-

@@ -55,7 +55,6 @@ func (c mockClient) GetContractEvents(ctx context.Context, contractAddress strin
 	return nil, nil
 }
 
-
 func (c mockClient) GetOperationInformation(ctx context.Context, hash string) ([]tzkt.Operation, error) {
 	if c.ShouldError {
 		return nil, fmt.Errorf("Test should fail")

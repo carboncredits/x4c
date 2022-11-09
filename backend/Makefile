@@ -33,4 +33,5 @@ docker: Dockerfile server
 	docker build .
 
 static:
+	go mod tidy
 	CGO_ENABLED=0 GOOS=linux go build -o ${RELEASE_DIR}/server ${MKFILE_DIR}cmd/server/
