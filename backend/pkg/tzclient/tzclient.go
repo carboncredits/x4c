@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"blockwatch.cc/tzgo/codec"
 	"blockwatch.cc/tzgo/contract"
@@ -307,20 +308,23 @@ func (c Client) CallContract(ctx context.Context, signedBy Wallet, target Contra
 
 	// send operation with default options
 	var result *rpc.Receipt
-	for tries := 0; tries <= maxRetries; tries += 1 {
+	for tries := 0; true; tries += 1 {
 		result, err = rpcClient.Send(ctx, op, nil)
 		if err != nil {
 			var urlError *url.Error
-			if errors.As(err, &urlError) {
+			if errors.As(err, &urlError) && (tries < maxRetries) {
+				time.Sleep(500 * time.Millisecond)
 				continue
 			}
-			fmt.Printf("%T\n%v\n", err, err)
 			return "", err
 		}
 		break
 	}
 
 	// return just the operation hash
+	if (result == nil) || (result.Op == nil) {
+		return "", fmt.Errorf("malformed result: %v", result)
+	}
 	return result.Op.Hash.String(), nil
 }
 
