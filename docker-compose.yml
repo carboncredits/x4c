@@ -2,10 +2,10 @@ version: "3.7"
 
 services:
     signatory:
-        image: ecadlabs/signatory:latest-${ARCH:-amd64}
-        volumes:
-            - "./signatory_config/signatory.yaml:/etc/signatory.yaml"
-            - "./signatory_config/secret.json:/etc/secret.json"
+        build:
+            context: signatory_config
+            args:
+                ARCH: ${ARCH:-amd64}
         command: serve -c /etc/signatory.yaml
         profiles: ["setup"]
 
