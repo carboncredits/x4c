@@ -94,7 +94,7 @@ func (c custodianRetireCommand) Run(args []string) int {
 
 	operation_hash, err := x4c.CustodianRetire(ctx, client, contract, signer, fa2, token_id, kyc, amount, reason)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to update operators: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Failed to retire tokens: %v\n", err)
 		return 1
 	}
 

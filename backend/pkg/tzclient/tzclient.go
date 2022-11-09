@@ -396,11 +396,12 @@ func (c Client) Originate(ctx context.Context, signedBy Wallet, codedata []byte,
 	contract.WithScript(&script)
 
 	var receipt *rpc.Receipt
-	for tries := 0; tries <= maxRetries; tries += 1 {
+	for tries := 0; true; tries += 1 {
 		receipt, err = contract.Deploy(ctx, nil)
 		if err != nil {
 			var urlError *url.Error
-			if errors.As(err, &urlError) {
+			if errors.As(err, &urlError) && (tries < maxRetries) {
+				time.Sleep(500 * time.Millisecond)
 				continue
 			}
 			return Contract{}, fmt.Errorf("failed to deploy: %v", err)
