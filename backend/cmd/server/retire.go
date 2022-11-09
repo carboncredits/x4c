@@ -79,6 +79,11 @@ func (s *server) retire(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	}
 
 	op_hash, err := x4c.CustodianRetire(r.Context(), s.tezosClient, contract, s.custodianOperator, minter, token_id, request.KYC, amount, request.Reason)
+	if err != nil {
+		err_str := fmt.Sprintf("Failed call contract: %v", err)
+		http.Error(w, err_str, http.StatusInternalServerError)
+		return
+	}
 
 	result := CreditRetireResponse{
 		Message:            "Successfully retired credits",

@@ -118,6 +118,33 @@ do
 done
 x4c fa2 info 4CTokenContract
 
+# Whilst we have the custodian set up, let's try to retire something via the X4C server
+
+# just check the server is vaguely configured correctly
+curl ${X4C_HOST}/info/indexer-url | grep -q "${TEZOS_INDEX_WEB}"
+
+# try getting a list of tokens
+CONTRACT=`x4c info CustodianContract`
+curl ${X4C_HOST}/credit/sources/${CONTRACT} | grep -q compsci
+
+# issue a retirement
+FA2=`x4c info 4CTokenContract`
+curl -X POST -H "Content-Type: application/json" -d "{\"minter\": \"${FA2}\", \"kyc\": \"compsci\", \"tokenID\": 123, \"amount\": 10, \"reason\": \"retire3\"}" ${X4C_HOST}/contract/${CONTRACT}/retire | grep -q "Successfully retired credits"
+
+c=0
+until x4c fa2 info 4CTokenContract | grep -q "9970";
+do
+  ((c++)) && ((c==20)) && exit 1
+  sleep 1;
+done
+c=0
+until x4c fa2 info 4CTokenContract | grep -q "retire3";
+do
+  ((c++)) && ((c==20)) && exit 1
+  sleep 1;
+done
+x4c fa2 info 4CTokenContract
+
 # Check that if we revoke the operator they can't still retire redits
 x4c custodian remove_operator CustodianContract OffChainCustodian CustodianOperator 123 compsci
 x4c custodian retire CustodianContract CustodianOperator 4CTokenContract compsci 123 20 flights || echo "Retire failed as expected"
@@ -128,7 +155,7 @@ x4c custodian retire CustodianContract CustodianOperator 4CTokenContract compsci
 x4c custodian retire CustodianContract OffChainCustodian 4CTokenContract compsci 123 5 retire2
 
 c=0
-until x4c fa2 info 4CTokenContract | grep -q "9975";
+until x4c fa2 info 4CTokenContract | grep -q "9965";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;

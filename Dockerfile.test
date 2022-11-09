@@ -12,6 +12,7 @@ FROM debian:latest as tests
 RUN apt-get update -qqy \
 	&& apt-get install -qy \
 		curl \
+		jq \
 		make \
 		netbase \
 		libev-dev \

@@ -8,6 +8,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
+	"quantify.earth/x4c/pkg/tzclient"
 	"quantify.earth/x4c/pkg/x4c"
 )
 
@@ -25,21 +26,23 @@ type CreditSourcesResponse struct {
 }
 
 func (s *server) getCreditSources(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	// In theory we could let through the custodianID as an address, but this stops people using
-	// us as a generic Tezos lookup tool
 	custodian_address := ps.ByName("custodianID")
 	if custodian_address == "" {
 		http.Error(w, "No custodian ID specified", http.StatusBadRequest)
 		return
 	}
 	contract, ok := s.tezosClient.Contracts[custodian_address]
+	var err error
 	if !ok {
-		http.Error(w, "Custodian ID not recognised", http.StatusNotFound)
-		return
+		contract, err = tzclient.NewContractWithAddress("custodian", custodian_address)
+		if err != nil {
+			http.Error(w, "Custodian ID not recognised", http.StatusBadRequest)
+			return
+		}
 	}
 
 	var storage x4c.CustodianStorage
-	err := s.tezosClient.GetContractStorage(contract, r.Context(), &storage)
+	err = s.tezosClient.GetContractStorage(contract, r.Context(), &storage)
 	if err != nil {
 		log.Printf("Failed to lookup contract storage for %s: %v", custodian_address, err)
 		http.Error(w, "Failed to get contract storage", http.StatusFailedDependency)

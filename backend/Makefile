@@ -31,3 +31,6 @@ fmt:
 
 docker: Dockerfile server
 	docker build .
+
+static:
+	CGO_ENABLED=0 GOOS=linux go build -o ${RELEASE_DIR}/server ${MKFILE_DIR}cmd/server/

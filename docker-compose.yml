@@ -53,6 +53,23 @@ services:
             TezosNode__Endpoint: http://tezossandbox:20000
         profiles: ["setup"]
 
+    test-server:
+        build:
+            context: backend
+        environment:
+            - TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER=yes
+            - TEZOS_RPC_HOST=http://tezossandbox:20000
+            - TEZOS_INDEX_HOST=http://tzkt-api:5000
+            - TEZOS_INDEX_WEB=http://tzkt-web # This doesn't need to run, just needs to be defined
+            - SIGNATORY_HOST=http://signatory:6732
+            - CUSTODIAN_OPERATOR=tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z
+        depends_on:
+            - signatory
+            - tezossandbox
+            - tzkt-api
+            - tzkt-sync
+        profiles: ["test"]
+
     test:
         build:
             context: .
@@ -61,11 +78,14 @@ services:
             - TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER=yes
             - TEZOS_RPC_HOST=http://tezossandbox:20000
             - TEZOS_INDEX_HOST=http://tzkt-api:5000
+            - TEZOS_INDEX_WEB=http://tzkt-web # This doesn't need to run, just needs to be defined
             - SIGNATORY_HOST=http://signatory:6732
+            - X4C_HOST=http://test-server:8080
         depends_on:
             - signatory
             - tezossandbox
             - tzkt-api
             - tzkt-sync
+            - test-server
         command: /app/backend/integration_tests.sh
         profiles: ["test"]

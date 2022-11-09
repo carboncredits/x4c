@@ -83,6 +83,30 @@ func (t tezosClientPublicKey) Key() (string, error) {
 }
 
 // public code
+func NewClient() (Client, error) {
+	client := Client{
+		Path:      "",
+		Wallets:   make(map[string]Wallet),
+		Contracts: make(map[string]Contract),
+	}
+
+	// first check env for hosts
+	client.RPCURL = os.Getenv("TEZOS_RPC_HOST")
+	if client.RPCURL == "" {
+		return Client{}, fmt.Errorf("TEZOS_RPC_HOST is not configured")
+	}
+
+	client.IndexerRPCURL = os.Getenv("TEZOS_INDEX_HOST")
+	if client.RPCURL == "" {
+		return Client{}, fmt.Errorf("TEZOS_INDEX_HOST is not configured")
+	}
+
+	// These two are optional
+	client.IndexerWebURL = os.Getenv("TEZOS_INDEX_WEB")
+	client.SignatoryURL = os.Getenv("SIGNATORY_HOST")
+
+	return client, nil
+}
 
 func LoadClient(path string) (Client, error) {
 	client := Client{
@@ -298,10 +322,13 @@ func (c Client) CallContract(ctx context.Context, signedBy Wallet, target Contra
 		if err != nil {
 			return "", fmt.Errorf("failed to make remote signer for %v: %w", signedBy.Name, err)
 		}
+		if signedBy.Address.String() == "" {
+			return "", fmt.Errorf("signer is missing address!")
+		}
 		rpcClient.Signer = remoteSigner.WithAddress(signedBy.Address)
 	} else {
 		rpcClient.Signer = signer.NewFromKey(*signedBy.Key)
-		}
+	}
 
 	op := codec.NewOp().WithSource(signedBy.Address)
 	op.WithCall(target.Address, parameters)

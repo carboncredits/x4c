@@ -1,7 +1,7 @@
 FROM golang:latest AS builder
 COPY . backend
 WORKDIR backend
-RUN make build
+RUN make static
 
 FROM scratch
 COPY --from=builder /go/backend/bin/server /bin/server

@@ -165,7 +165,6 @@ func CustodianUpdateOperators(
 		)
 		operator_list = append(operator_list, update)
 	}
-	fmt.Printf("ops: %v\n", operator_list)
 
 	// Michelson type:
 	// (list %update_internal_operators (or
