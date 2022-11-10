@@ -29,7 +29,9 @@ jobs:
       - uses: actions/setup-go@v3
 
       - name: Build
+        working-directory: ./backed
         run: make build
 
       - name: Test
+        working-directory: ./backed
         run: make test
