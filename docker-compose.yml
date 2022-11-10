@@ -3,7 +3,7 @@ version: "3.7"
 services:
     signatory:
         build:
-            context: signatory_config
+            context: ci/signatory_config
             args:
                 ARCH: ${ARCH:-amd64}
         command: serve -c /etc/signatory.yaml
