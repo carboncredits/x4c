@@ -27,7 +27,7 @@ RUN mv tezos-client /bin/tezos-client
 RUN tezos-client config reset
 
 COPY --from=ligolang /root/ligo /bin/ligo
-COPY --from=x4clibuild /go/backend/bin/x4cli /bin/x4c
+COPY --from=x4clibuild /go/backend/bin/x4cli /bin/x4cli
 
 WORKDIR /app
 COPY . .

@@ -31,92 +31,92 @@ tcli add address CustodianOperator tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z --force
 tcli transfer 1000 from alice to CustodianOperator --burn-cap 1
 
 # this is more a sanity check of the world
-x4c info
+x4cli info
 
 # make a couple of contracts
-x4c fa2 originate 4CTokenContract build/fa2.tz 4CTokenOracle
-x4c custodian originate CustodianContract build/custodian.tz OffChainCustodian
+x4cli fa2 originate 4CTokenContract build/fa2.tz 4CTokenOracle
+x4cli custodian originate CustodianContract build/custodian.tz OffChainCustodian
 
 # this is more a sanity check of the world with contracts
-x4c info 4CTokenContract
+x4cli info 4CTokenContract
 
 # Mint some tokens for the custodian contract
-x4c fa2 add_token 4CTokenContract 4CTokenOracle 123 "Test project" "http://blah.com/"
-x4c fa2 mint 4CTokenContract 4CTokenOracle 123 CustodianContract 10000
+x4cli fa2 add_token 4CTokenContract 4CTokenOracle 123 "Test project" "http://blah.com/"
+x4cli fa2 mint 4CTokenContract 4CTokenOracle 123 CustodianContract 10000
 
 # Display some info about the contract (this will need the indexer)
 c=0
-until x4c fa2 info 4CTokenContract | grep -q "123";
+until x4cli fa2 info 4CTokenContract | grep -q "123";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
-x4c fa2 info 4CTokenContract
+x4cli fa2 info 4CTokenContract
 
 # now transfer tokens to custodian
-x4c custodian internal_mint CustodianContract OffChainCustodian 4CTokenContract 123
+x4cli custodian internal_mint CustodianContract OffChainCustodian 4CTokenContract 123
 
 # Display some info about the contract (this will need the indexer)
 c=0
-until x4c custodian info CustodianContract | grep -q "123";
+until x4cli custodian info CustodianContract | grep -q "123";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
-x4c custodian info CustodianContract
+x4cli custodian info CustodianContract
 
 # Assign some tokens to a department and make sure the operator can access them
-x4c custodian internal_transfer CustodianContract OffChainCustodian 4CTokenContract 123 500 self compsci
+x4cli custodian internal_transfer CustodianContract OffChainCustodian 4CTokenContract 123 500 self compsci
 
 c=0
-until x4c custodian info CustodianContract | grep -q "compsci";
+until x4cli custodian info CustodianContract | grep -q "compsci";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
-x4c custodian info CustodianContract
+x4cli custodian info CustodianContract
 
-x4c custodian add_operator CustodianContract OffChainCustodian CustodianOperator 123 compsci
+x4cli custodian add_operator CustodianContract OffChainCustodian CustodianOperator 123 compsci
 c=0
-until x4c custodian info CustodianContract | grep -q "CustodianOperator";
+until x4cli custodian info CustodianContract | grep -q "CustodianOperator";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
-x4c custodian info CustodianContract
+x4cli custodian info CustodianContract
 
 # Have department retire credits
-x4c custodian retire CustodianContract CustodianOperator 4CTokenContract compsci 123 20 retire1
+x4cli custodian retire CustodianContract CustodianOperator 4CTokenContract compsci 123 20 retire1
 
 # Check that the balances on both the custodian contract and the root contract are now adjusted
 
 c=0
-until x4c custodian info CustodianContract | grep -q "480";
+until x4cli custodian info CustodianContract | grep -q "480";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
 c=0
-until x4c custodian info CustodianContract | grep -q "retire1";
+until x4cli custodian info CustodianContract | grep -q "retire1";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
-x4c custodian info CustodianContract
+x4cli custodian info CustodianContract
 
 c=0
-until x4c fa2 info 4CTokenContract | grep -q "9980";
+until x4cli fa2 info 4CTokenContract | grep -q "9980";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
 c=0
-until x4c fa2 info 4CTokenContract | grep -q "retire1";
+until x4cli fa2 info 4CTokenContract | grep -q "retire1";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
-x4c fa2 info 4CTokenContract
+x4cli fa2 info 4CTokenContract
 
 # Whilst we have the custodian set up, let's try to retire something via the X4C server
 
@@ -124,46 +124,46 @@ x4c fa2 info 4CTokenContract
 curl ${X4C_HOST}/info/indexer-url | grep -q "${TEZOS_INDEX_WEB}"
 
 # try getting a list of tokens
-CONTRACT=`x4c info CustodianContract`
+CONTRACT=`x4cli info CustodianContract`
 curl ${X4C_HOST}/credit/sources/${CONTRACT} | grep -q compsci
 
 # issue a retirement
-FA2=`x4c info 4CTokenContract`
+FA2=`x4cli info 4CTokenContract`
 curl -X POST -H "Content-Type: application/json" -d "{\"minter\": \"${FA2}\", \"kyc\": \"compsci\", \"tokenID\": 123, \"amount\": 10, \"reason\": \"retire3\"}" ${X4C_HOST}/contract/${CONTRACT}/retire | grep -q "Successfully retired credits"
 
 c=0
-until x4c fa2 info 4CTokenContract | grep -q "9970";
+until x4cli fa2 info 4CTokenContract | grep -q "9970";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
 c=0
-until x4c fa2 info 4CTokenContract | grep -q "retire3";
+until x4cli fa2 info 4CTokenContract | grep -q "retire3";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
-x4c fa2 info 4CTokenContract
+x4cli fa2 info 4CTokenContract
 
 # Check that if we revoke the operator they can't still retire redits
-x4c custodian remove_operator CustodianContract OffChainCustodian CustodianOperator 123 compsci
-x4c custodian retire CustodianContract CustodianOperator 4CTokenContract compsci 123 20 flights || echo "Retire failed as expected"
+x4cli custodian remove_operator CustodianContract OffChainCustodian CustodianOperator 123 compsci
+x4cli custodian retire CustodianContract CustodianOperator 4CTokenContract compsci 123 20 flights || echo "Retire failed as expected"
 
 # It's hard to test that the above didn't work, as we might just have the indexer being slow. So to
 # confirm that the above didn't work, retire some more credits and check that we get the expected
 # result, as we know that operations should happen in the right order at least.
-x4c custodian retire CustodianContract OffChainCustodian 4CTokenContract compsci 123 5 retire2
+x4cli custodian retire CustodianContract OffChainCustodian 4CTokenContract compsci 123 5 retire2
 
 c=0
-until x4c fa2 info 4CTokenContract | grep -q "9965";
+until x4cli fa2 info 4CTokenContract | grep -q "9965";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
 c=0
-until x4c fa2 info 4CTokenContract | grep -q "retire2";
+until x4cli fa2 info 4CTokenContract | grep -q "retire2";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
-x4c fa2 info 4CTokenContract
+x4cli fa2 info 4CTokenContract
