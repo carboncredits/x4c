@@ -2,7 +2,6 @@ package x4c
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"math/big"
 
@@ -51,24 +50,6 @@ func CustodianInternalTransfer(
 	bigToken := big.NewInt(token_id)
 	bigAmount := big.NewInt(amount)
 
-	michelson_current_kyc, err := tzclient.StringToMichelson(current_kyc)
-	if err != nil {
-		return "", fmt.Errorf("failed to convert current kyc: %w", err)
-	}
-	hex_current_kyc, err := hex.DecodeString(michelson_current_kyc)
-	if err != nil {
-		return "", fmt.Errorf("fialed to convert current kyc bytes: %w", err)
-	}
-
-	michelson_new_kyc, err := tzclient.StringToMichelson(new_kyc)
-	if err != nil {
-		return "", fmt.Errorf("failed to convert new kyc: %w", err)
-	}
-	hex_new_kyc, err := hex.DecodeString(michelson_new_kyc)
-	if err != nil {
-		return "", fmt.Errorf("fialed to convert new kyc bytes: %w", err)
-	}
-
 	// Michelson type:
 	// (list %internal_transfer
 	// 	(pair
@@ -91,12 +72,12 @@ func CustodianInternalTransfer(
 		Entrypoint: "internal_transfer",
 		Value: micheline.NewSeq(
 			micheline.NewPair(
-				micheline.NewBytes(hex_current_kyc),
+				micheline.NewBytes(micheline.NewString(current_kyc).Pack()),
 				micheline.NewPair(
 					micheline.NewString(token_address.Address.String()),
 					micheline.NewSeq(
 						micheline.NewPair(
-							micheline.NewBytes(hex_new_kyc),
+							micheline.NewBytes(micheline.NewString(new_kyc).Pack()),
 							micheline.NewPair(
 								micheline.NewNat(bigToken),
 								micheline.NewNat(bigAmount),
@@ -132,15 +113,6 @@ func CustodianUpdateOperators(
 	operator_list := make([]micheline.Prim, 0, len(update_list))
 	for index, operator := range update_list {
 
-		michelson_owner, err := tzclient.StringToMichelson(operator.Owner)
-		if err != nil {
-			return "", fmt.Errorf("failed to convert owner: %w", err)
-		}
-		hex_owner, err := hex.DecodeString(michelson_owner)
-		if err != nil {
-			return "", fmt.Errorf("fialed to convert owner bytes: %w", err)
-		}
-
 		var update_type micheline.OpCode
 		switch operator.UpdateType {
 		case AddOperator:
@@ -154,7 +126,7 @@ func CustodianUpdateOperators(
 		update := micheline.NewCode(
 			update_type,
 			micheline.NewPair(
-				micheline.NewBytes([]byte(hex_owner)),
+				micheline.NewBytes(micheline.NewString(operator.Owner).Pack()),
 				micheline.NewPair(
 					micheline.NewString(operator.Operator.String()),
 					micheline.NewNat(bigToken),
@@ -197,15 +169,6 @@ func CustodianRetire(
 	bigAmount := big.NewInt(amount)
 	bigToken := big.NewInt(token_id)
 
-	michelson_owner, err := tzclient.StringToMichelson(kyc)
-	if err != nil {
-		return "", fmt.Errorf("failed to convert owner: %w", err)
-	}
-	hex_owner, err := hex.DecodeString(michelson_owner)
-	if err != nil {
-		return "", fmt.Errorf("fialed to convert owner bytes: %w", err)
-	}
-
 	// Michelson type:
 	// (list %retire (pair (address %token_address)
 	//                	(list %txs (pair (pair (nat %amount) (bytes %retiring_data))
@@ -222,7 +185,7 @@ func CustodianRetire(
 							micheline.NewBytes([]byte(reason)),
 						),
 						micheline.NewPair(
-							micheline.NewBytes(hex_owner),
+							micheline.NewBytes(micheline.NewString(kyc).Pack()),
 							micheline.NewNat(bigToken),
 						),
 					),

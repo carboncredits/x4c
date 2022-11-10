@@ -47,25 +47,3 @@ func TestMichelsonToString(t *testing.T) {
 		}
 	}
 }
-
-func TestStringToMichelson(t *testing.T) {
-	testcases := []struct {
-		input  string
-		output string
-	}{
-		{
-			"self",
-			"05010000000473656c66",
-		},
-		{
-			"other org",
-			"0501000000096f74686572206f7267",
-		},
-	}
-	for index, testcase := range testcases {
-		result, _ := StringToMichelson(testcase.input)
-		if result != testcase.output {
-			t.Errorf("Unexpected result for case %d: '%s'", index, result)
-		}
-	}
-}
