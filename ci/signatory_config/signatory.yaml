@@ -16,11 +16,10 @@ tezos:
   # Default policy allows "block" and "endorsement" operations
   tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z:
     log_payloads: true
-    allowed_operations:
-    - generic
-    - block
-    - endorsement
-    allowed_kinds:
-    - transaction
-    - endorsement
-    - reveal
+    allow:
+      block: []
+      endorsement: []
+      generic:
+        - endorsement
+        - reveal
+        - transaction
