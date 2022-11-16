@@ -91,7 +91,7 @@ func (c MockClient) CallContract(ctx context.Context, signedBy Wallet, target Co
 	if c.ShouldError {
 		return "", fmt.Errorf("Test should fail")
 	}
-	return "", nil
+	return "operationHash", nil
 }
 
 func (c MockClient) Originate(ctx context.Context, signedBy Wallet, code []byte, initial_storage micheline.Prim) (Contract, error) {

@@ -62,9 +62,7 @@ func TestGetCreditSources(t *testing.T) {
 		custodianStorage := x4c.CustodianStorage{
 			Ledger: testcase.bigmapID,
 		}
-		fmt.Printf("%v\n", mockClient)
 		mockClient.Storage = &custodianStorage
-		fmt.Printf("%v\n", mockClient)
 		server := newMockServer(mockClient)
 
 		url := fmt.Sprintf("/credit/sources/%s", testcase.custodian)

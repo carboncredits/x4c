@@ -20,10 +20,14 @@ type CreditRetireRequest struct {
 	Reason  string      `json:"reason"`
 }
 
-type CreditRetireResponse struct {
+type CreditRetireData struct {
 	Message            string `json:"message"`
 	OperationHash      string `json:"updateHash"`
 	OperationLookupURL string `json:"tzstatsUpdateHashUrl"`
+}
+
+type CreditRetireResponse struct {
+	Data CreditRetireData `json:"data"`
 }
 
 func (s *server) retire(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -77,6 +81,11 @@ func (s *server) retire(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 		http.Error(w, err_str, http.StatusBadRequest)
 		return
 	}
+	if amount <= 0 {
+		err_str := fmt.Sprintf("Amount to retire is not valid: %v", amount)
+		http.Error(w, err_str, http.StatusBadRequest)
+		return
+	}
 
 	op_hash, err := x4c.CustodianRetire(r.Context(), s.tezosClient, contract, s.custodianOperator, minter, token_id, request.KYC, amount, request.Reason)
 	if err != nil {
@@ -86,9 +95,11 @@ func (s *server) retire(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	}
 
 	result := CreditRetireResponse{
-		Message:            "Successfully retired credits",
-		OperationHash:      op_hash,
-		OperationLookupURL: s.tezosClient.GetIndexerWebURL() + "/" + op_hash,
+		Data: CreditRetireData{
+			Message:            "Successfully retired credits",
+			OperationHash:      op_hash,
+			OperationLookupURL: s.tezosClient.GetIndexerWebURL() + "/" + op_hash,
+		},
 	}
 	err = json.NewEncoder(w).Encode(result)
 	if err != nil {

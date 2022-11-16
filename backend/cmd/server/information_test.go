@@ -34,7 +34,7 @@ func TestGetIndexerURL(t *testing.T) {
 
 	if resp.StatusCode != http.StatusOK {
 		respDump, _ := httputil.DumpResponse(resp, true)
-		t.Errorf("Unexpected status code %d. Body was: %v", resp.StatusCode, respDump)
+		t.Errorf("Unexpected status code %d. Body was: %v", resp.StatusCode, string(respDump))
 	}
 
 	var result GetIndexerURLResponse
