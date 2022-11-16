@@ -49,9 +49,9 @@ func main() {
 	log.Printf("Indexer Web URL: %v\n", client.GetIndexerWebURL())
 	log.Printf("Signatory URL: %v\n", client.SignatoryURL)
 
-	operator_name := os.Getenv("CUSTODIAN_OPERATOR")
+	operator_name := os.Getenv("X4C_CUSTODIAN_OPERATOR")
 	if operator_name == "" {
-		log.Printf("No operator specified (use env var CUSTODIAN_OPERATOR)")
+		log.Printf("No operator specified (use env var X4C_CUSTODIAN_OPERATOR)")
 		os.Exit(1)
 	}
 	operator, ok := client.Wallets[operator_name]

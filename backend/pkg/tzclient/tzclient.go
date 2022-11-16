@@ -96,19 +96,19 @@ func NewClient() (Client, error) {
 	}
 
 	// first check env for hosts
-	client.RPCURL = os.Getenv("TEZOS_RPC_HOST")
+	client.RPCURL = os.Getenv("X4C_TEZOS_RPC_HOST")
 	if client.RPCURL == "" {
-		return Client{}, fmt.Errorf("TEZOS_RPC_HOST is not configured")
+		return Client{}, fmt.Errorf("X4C_TEZOS_RPC_HOST is not configured")
 	}
 
-	client.IndexerRPCURL = os.Getenv("TEZOS_INDEX_HOST")
+	client.IndexerRPCURL = os.Getenv("X4C_TEZOS_INDEX_HOST")
 	if client.RPCURL == "" {
-		return Client{}, fmt.Errorf("TEZOS_INDEX_HOST is not configured")
+		return Client{}, fmt.Errorf("X4C_TEZOS_INDEX_HOST is not configured")
 	}
 
 	// These two are optional
-	client.indexerWebURL = os.Getenv("TEZOS_INDEX_WEB")
-	client.SignatoryURL = os.Getenv("SIGNATORY_HOST")
+	client.indexerWebURL = os.Getenv("X4C_TEZOS_INDEX_WEB")
+	client.SignatoryURL = os.Getenv("X4C_SIGNATORY_HOST")
 
 	return client, nil
 }
@@ -121,10 +121,10 @@ func LoadClient(path string) (Client, error) {
 	}
 
 	// first check env for hosts
-	client.RPCURL = os.Getenv("TEZOS_RPC_HOST")
-	client.IndexerRPCURL = os.Getenv("TEZOS_INDEX_HOST")
-	client.indexerWebURL = os.Getenv("TEZOS_INDEX_WEB")
-	client.SignatoryURL = os.Getenv("SIGNATORY_HOST")
+	client.RPCURL = os.Getenv("X4C_TEZOS_RPC_HOST")
+	client.IndexerRPCURL = os.Getenv("X4C_TEZOS_INDEX_HOST")
+	client.indexerWebURL = os.Getenv("X4C_TEZOS_INDEX_WEB")
+	client.SignatoryURL = os.Getenv("X4C_SIGNATORY_HOST")
 
 	content, err := ioutil.ReadFile(filepath.Join(path, "config"))
 	if err != nil {

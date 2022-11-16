@@ -5,7 +5,7 @@ set -e
 sleep 5
 
 shopt -s expand_aliases
-alias tcli='tezos-client --endpoint ${TEZOS_RPC_HOST}'
+alias tcli='tezos-client --endpoint ${X4C_TEZOS_RPC_HOST}'
 
 # Set up the client with the sandbox node
 tcli config reset
@@ -121,7 +121,7 @@ x4cli fa2 info 4CTokenContract
 # Whilst we have the custodian set up, let's try to retire something via the X4C server
 
 # just check the server is vaguely configured correctly
-curl ${X4C_HOST}/info/indexer-url | grep -q "${TEZOS_INDEX_WEB}"
+curl ${X4C_HOST}/info/indexer-url | grep -q "${X4C_TEZOS_INDEX_WEB}"
 
 # try getting a list of tokens
 CONTRACT=`x4cli info CustodianContract`
