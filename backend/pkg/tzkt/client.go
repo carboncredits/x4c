@@ -71,7 +71,10 @@ func (c *TzKTClient) makeRequest(ctx context.Context, path string, result interf
 
 	if result != nil {
 		decoder := json.NewDecoder(resp.Body)
-		decoder.DisallowUnknownFields()
+		// I wanted to do strict decode here, but tzkt's API documentation is troublesome - their example responses
+		// and response schema do not match, and as such we have to accept unknown fields. Thankfully in Go they'll
+		// be dropped, but I'd be much more cautious in Python or Javascript about this
+		// decoder.DisallowUnknownFields()
 		err = decoder.Decode(result)
 		if err != nil {
 			return fmt.Errorf("failed to decode response: %w", err)
