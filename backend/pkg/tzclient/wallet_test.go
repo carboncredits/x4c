@@ -4,7 +4,6 @@ import (
 	"testing"
 )
 
-
 func TestCreateWalletByAddress(t *testing.T) {
 	testcases := []struct {
 		address string

@@ -18,7 +18,6 @@ import (
 	"blockwatch.cc/tzgo/rpc"
 	"blockwatch.cc/tzgo/signer"
 	"blockwatch.cc/tzgo/signer/remote"
-	"blockwatch.cc/tzgo/tezos"
 	"github.com/echa/log"
 
 	"quantify.earth/x4c/pkg/tzkt"
@@ -253,7 +252,7 @@ func (c Client) ContractByName(name string) (Contract, error) {
 		return contract, nil
 	}
 	for _, contract := range c.Contracts {
-		if 	(contract.Name == name) || (contract.Address.String() == name) {
+		if (contract.Name == name) || (contract.Address.String() == name) {
 			return contract, nil
 		}
 	}
@@ -296,35 +295,6 @@ func (c *Client) SaveContract(contract Contract) error {
 	}
 
 	return nil
-}
-
-func (c *Client) DirectGetContractStorage(address string, ctx context.Context) (interface{}, error) {
-	addr, err := tezos.ParseAddress(address)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse address: %w", err)
-	}
-	if addr.Type != tezos.AddressTypeContract {
-		return nil, fmt.Errorf("invalid contract address")
-	}
-
-	rpcClient, err := rpc.NewClient(c.RPCURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create client: %w", err)
-	}
-
-	script, err := rpcClient.GetContractScript(ctx, addr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get storage: %w", err)
-	}
-
-	// unfold Micheline storage into human-readable form
-	val := micheline.NewValue(script.StorageType(), script.Storage)
-
-	m, err := val.Map()
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode storage: %w", err)
-	}
-	return m, nil
 }
 
 func (c Client) CallContract(ctx context.Context, signedBy Wallet, target Contract, parameters micheline.Parameters) (string, error) {

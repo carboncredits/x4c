@@ -3,14 +3,19 @@ package tzclient
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"blockwatch.cc/tzgo/micheline"
 
 	"quantify.earth/x4c/pkg/tzkt"
 )
 
+// This is a version of the client used for testing. Normally I'd put this in test
+// code, but its needed in several different modules in the project, so I've pulled
+// it in as common code.
 type MockClient struct {
 	ShouldError bool
+	Storage     interface{}
 	Items       map[int64][]tzkt.BigMapItem
 }
 
@@ -35,6 +40,21 @@ func (c MockClient) GetIndexerWebURL() string {
 func (c MockClient) GetContractStorage(target Contract, ctx context.Context, storage interface{}) error {
 	if c.ShouldError {
 		return fmt.Errorf("Test should fail")
+	}
+	if c.Storage != nil {
+		t := reflect.TypeOf(storage)
+		if (t == reflect.TypeOf(c.Storage)) && (t.Kind() == reflect.Ptr) {
+			src := reflect.ValueOf(c.Storage).Elem()
+			dst := reflect.ValueOf(storage).Elem()
+			inner_type := reflect.TypeOf(src.Interface())
+			for i := 0; i < src.NumField(); i++ {
+				src_field := src.Field(i)
+				dst_field := dst.Field(i)
+				if inner_type.Field(i).IsExported() {
+					dst_field.Set(src_field)
+				}
+			}
+		}
 	}
 	return nil
 }

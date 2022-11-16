@@ -10,16 +10,17 @@ import (
 	"quantify.earth/x4c/pkg/tzclient"
 )
 
-func newMockServer() server {
-	client := tzclient.NewMockClient()
+func newMockServer(client tzclient.MockClient) server {
 	operator, _ := tzclient.NewWalletWithAddress("operator", "tz1bWfY2RfUMCgjrSooaFuXfGpMCwUzJL7P5")
-	return SetupMyHandlers(client, operator)
+	server := SetupMyHandlers(client, operator)
+	return server
 }
 
 func TestGetIndexerURL(t *testing.T) {
-	server := newMockServer()
+	client := tzclient.NewMockClient()
+	server := newMockServer(client)
 
-    r, err := http.NewRequest("GET", "/info/indexer-url", nil)
+	r, err := http.NewRequest("GET", "/info/indexer-url", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
