@@ -12,11 +12,11 @@ import (
 
 type server struct {
 	mux               *httprouter.Router
-	tezosClient       tzclient.Client
+	tezosClient       tzclient.TezosClient
 	custodianOperator tzclient.Wallet
 }
 
-func SetupMyHandlers(client tzclient.Client, operator tzclient.Wallet) server {
+func SetupMyHandlers(client tzclient.TezosClient, operator tzclient.Wallet) server {
 
 	router := httprouter.New()
 	server := server{
@@ -46,7 +46,7 @@ func main() {
 
 	log.Printf("Tezos RPC URL: %v\n", client.RPCURL)
 	log.Printf("Indexer RPC URL: %v\n", client.IndexerRPCURL)
-	log.Printf("Indexer Web URL: %v\n", client.IndexerWebURL)
+	log.Printf("Indexer Web URL: %v\n", client.GetIndexerWebURL())
 	log.Printf("Signatory URL: %v\n", client.SignatoryURL)
 
 	operator_name := os.Getenv("CUSTODIAN_OPERATOR")

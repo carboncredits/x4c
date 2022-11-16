@@ -31,9 +31,8 @@ func (s *server) getCreditSources(w http.ResponseWriter, r *http.Request, ps htt
 		http.Error(w, "No custodian ID specified", http.StatusBadRequest)
 		return
 	}
-	contract, ok := s.tezosClient.Contracts[custodian_address]
-	var err error
-	if !ok {
+	contract, err := s.tezosClient.ContractByName(custodian_address)
+	if err != nil {
 		contract, err = tzclient.NewContractWithAddress("custodian", custodian_address)
 		if err != nil {
 			http.Error(w, "Custodian ID not recognised", http.StatusBadRequest)
@@ -69,11 +68,12 @@ func (s *server) getCreditSources(w http.ResponseWriter, r *http.Request, ps htt
 		if err != nil {
 			kyc = key.RawKYC
 		}
+		indexerURL := s.tezosClient.GetIndexerWebURL()
 		item := CreditSourcesResponseItem{
 			TokenID:      token_id,
-			MinterURL:    fmt.Sprintf("%s%s", s.tezosClient.IndexerWebURL, key.Token.Address),
+			MinterURL:    fmt.Sprintf("%s%s", indexerURL, key.Token.Address),
 			KYC:          kyc,
-			CustodainURL: fmt.Sprintf("%s%s", s.tezosClient.IndexerWebURL, contract.Address.String()),
+			CustodainURL: fmt.Sprintf("%s%s", indexerURL, contract.Address.String()),
 			Amount:       value,
 			Minter:       key.Token.Address,
 		}

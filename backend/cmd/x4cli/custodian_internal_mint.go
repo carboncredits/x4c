@@ -41,8 +41,8 @@ func (c custodianInternalMint) Run(args []string) int {
 	}
 
 	// arg0 - Custodian contract name/address
-	contract, ok := client.Contracts[args[0]]
-	if !ok {
+	contract, err := client.ContractByName(args[0])
+	if err != nil {
 		contract, err = tzclient.NewContractWithAddress("contract", args[0])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Contract address is not valid: %v", err)
@@ -61,8 +61,8 @@ func (c custodianInternalMint) Run(args []string) int {
 	}
 
 	// arg2 - FA2 contract address
-	fa2, ok := client.Contracts[args[2]]
-	if !ok {
+	fa2, err := client.ContractByName(args[2])
+	if err != nil {
 		fa2, err = tzclient.NewContractWithAddress("contract", args[0])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "FA2 contract address is not valid: %v", err)

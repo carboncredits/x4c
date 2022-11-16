@@ -33,8 +33,8 @@ func (s *server) retire(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 		http.Error(w, "No contract address specified", http.StatusBadRequest)
 		return
 	}
-	contract, ok := s.tezosClient.Contracts[contract_address]
-	if !ok {
+	contract, err := s.tezosClient.ContractByName(contract_address)
+	if err != nil {
 		var err error
 		contract, err = tzclient.NewContractWithAddress("contract", contract_address)
 		if err != nil {
@@ -48,14 +48,14 @@ func (s *server) retire(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	decoder.DisallowUnknownFields()
 
 	var request CreditRetireRequest
-	err := decoder.Decode(&request)
+	err = decoder.Decode(&request)
 	if err != nil {
 		http.Error(w, "Failed to decode request", http.StatusBadRequest)
 		return
 	}
 
-	minter, ok := s.tezosClient.Contracts[request.Minter]
-	if !ok {
+	minter, err := s.tezosClient.ContractByName(request.Minter)
+	if err != nil {
 		minter, err = tzclient.NewContractWithAddress("minter", request.Minter)
 		if err != nil {
 			err_str := fmt.Sprintf("Failed to resolve minter: %v", err)
@@ -88,7 +88,7 @@ func (s *server) retire(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	result := CreditRetireResponse{
 		Message:            "Successfully retired credits",
 		OperationHash:      op_hash,
-		OperationLookupURL: s.tezosClient.IndexerWebURL + "/" + op_hash,
+		OperationLookupURL: s.tezosClient.GetIndexerWebURL() + "/" + op_hash,
 	}
 	err = json.NewEncoder(w).Encode(result)
 	if err != nil {

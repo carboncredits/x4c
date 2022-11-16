@@ -26,7 +26,7 @@ type GetEventsResponse struct {
 
 func (s *server) getIndexerURL(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	response := GetIndexerURLResponse{
-		Data: s.tezosClient.IndexerWebURL,
+		Data: s.tezosClient.GetIndexerWebURL(),
 	}
 
 	err := json.NewEncoder(w).Encode(response)

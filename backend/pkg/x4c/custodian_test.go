@@ -3,81 +3,14 @@ package x4c
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"testing"
-
-	"blockwatch.cc/tzgo/micheline"
 
 	"quantify.earth/x4c/pkg/tzclient"
 	"quantify.earth/x4c/pkg/tzkt"
 )
 
-type mockClient struct {
-	ShouldError bool
-	Items       map[int64][]tzkt.BigMapItem
-}
-
-func newmockClient() mockClient {
-	return mockClient{
-		Items: make(map[int64][]tzkt.BigMapItem),
-	}
-}
-
-func (c *mockClient) addBigMap(identifier int64, items []tzkt.BigMapItem) {
-	c.Items[identifier] = items
-}
-
-func (c mockClient) GetContractStorage(target tzclient.Contract, ctx context.Context, storage interface{}) error {
-	if c.ShouldError {
-		return fmt.Errorf("Test should fail")
-	}
-	return nil
-}
-
-func (c mockClient) GetBigMapContents(ctx context.Context, identifier int64) ([]tzkt.BigMapItem, error) {
-	if c.ShouldError {
-		return nil, fmt.Errorf("Test should fail")
-	}
-	if items, ok := c.Items[identifier]; ok {
-		return items, nil
-	} else {
-		// The tzkt API returns empty list if you ask for an invalid ID
-		// Though you could also argue we should return other garbage here, as that's also
-		// a valid response, that's handled in other test cases
-		return make([]tzkt.BigMapItem, 0), nil
-	}
-}
-
-func (c mockClient) GetContractEvents(ctx context.Context, contractAddress string, tag string) ([]tzkt.Event, error) {
-	if c.ShouldError {
-		return nil, fmt.Errorf("Test should fail")
-	}
-	return nil, nil
-}
-
-func (c mockClient) GetOperationInformation(ctx context.Context, hash string) ([]tzkt.Operation, error) {
-	if c.ShouldError {
-		return nil, fmt.Errorf("Test should fail")
-	}
-	return nil, nil
-}
-
-func (c mockClient) CallContract(ctx context.Context, signedBy tzclient.Wallet, target tzclient.Contract, parameters micheline.Parameters) (string, error) {
-	if c.ShouldError {
-		return "", fmt.Errorf("Test should fail")
-	}
-	return "", nil
-}
-
-func (c mockClient) Originate(ctx context.Context, signedBy tzclient.Wallet, code []byte, initial_storage micheline.Prim) (tzclient.Contract, error) {
-	if c.ShouldError {
-		return tzclient.Contract{}, fmt.Errorf("Test should fail")
-	}
-	return tzclient.Contract{}, nil
-}
-
 func TestLedgerLoadFail(t *testing.T) {
-	client := mockClient{
+	client := tzclient.MockClient{
 		ShouldError: true,
 	}
 	storage := CustodianStorage{}
@@ -93,7 +26,7 @@ func TestLedgerLoadFail(t *testing.T) {
 }
 
 func TestExternalLedgerLoadFail(t *testing.T) {
-	client := mockClient{
+	client := tzclient.MockClient{
 		ShouldError: true,
 	}
 	storage := CustodianStorage{}
@@ -179,8 +112,8 @@ func TestBasicLedgerLoad(t *testing.T) {
 
 		items := make([]tzkt.BigMapItem, 1)
 		items[0] = item
-		client := newmockClient()
-		client.addBigMap(bigMapID, items)
+		client := tzclient.NewMockClient()
+		client.AddBigMap(bigMapID, items)
 
 		storage := CustodianStorage{
 			Ledger: testcase.BigMapID,

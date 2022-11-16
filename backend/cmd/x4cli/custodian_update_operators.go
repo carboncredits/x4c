@@ -51,8 +51,8 @@ func (c custodianUpdateOperator) Run(args []string) int {
 	}
 
 	// arg0 - Custodian contract name/address
-	contract, ok := client.Contracts[args[0]]
-	if !ok {
+	contract, err := client.ContractByName(args[0])
+	if err != nil {
 		contract, err = tzclient.NewContractWithAddress("contract", args[0])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Contract address is not valid: %v\n", err)

@@ -36,16 +36,22 @@ type TezosClient interface {
 	GetContractEvents(ctx context.Context, contractAddress string, tag string) ([]tzkt.Event, error)
 	CallContract(ctx context.Context, signedBy Wallet, target Contract, parameters micheline.Parameters) (string, error)
 	Originate(ctx context.Context, signedBy Wallet, code []byte, initial_storage micheline.Prim) (Contract, error)
+
+	// Mostly to stop people accessing struct fields directly so we can mock out
+	// the client for testing.
+	ContractByName(name string) (Contract, error)
+	GetIndexerWebURL() string
 }
 
 type Client struct {
-	Path          string
 	RPCURL        string
 	IndexerRPCURL string
-	IndexerWebURL string
 	SignatoryURL  string
 	Wallets       map[string]Wallet
 	Contracts     map[string]Contract
+
+	path          string
+	indexerWebURL string
 }
 
 // internal types
@@ -85,7 +91,7 @@ func (t tezosClientPublicKey) Key() (string, error) {
 // public code
 func NewClient() (Client, error) {
 	client := Client{
-		Path:      "",
+		path:      "",
 		Wallets:   make(map[string]Wallet),
 		Contracts: make(map[string]Contract),
 	}
@@ -102,7 +108,7 @@ func NewClient() (Client, error) {
 	}
 
 	// These two are optional
-	client.IndexerWebURL = os.Getenv("TEZOS_INDEX_WEB")
+	client.indexerWebURL = os.Getenv("TEZOS_INDEX_WEB")
 	client.SignatoryURL = os.Getenv("SIGNATORY_HOST")
 
 	return client, nil
@@ -110,7 +116,7 @@ func NewClient() (Client, error) {
 
 func LoadClient(path string) (Client, error) {
 	client := Client{
-		Path:      path,
+		path:      path,
 		Wallets:   make(map[string]Wallet),
 		Contracts: make(map[string]Contract),
 	}
@@ -118,7 +124,7 @@ func LoadClient(path string) (Client, error) {
 	// first check env for hosts
 	client.RPCURL = os.Getenv("TEZOS_RPC_HOST")
 	client.IndexerRPCURL = os.Getenv("TEZOS_INDEX_HOST")
-	client.IndexerWebURL = os.Getenv("TEZOS_INDEX_WEB")
+	client.indexerWebURL = os.Getenv("TEZOS_INDEX_WEB")
 	client.SignatoryURL = os.Getenv("SIGNATORY_HOST")
 
 	content, err := ioutil.ReadFile(filepath.Join(path, "config"))
@@ -140,13 +146,13 @@ func LoadClient(path string) (Client, error) {
 
 		if strings.Contains(client.RPCURL, "kathmandunet") {
 			client.IndexerRPCURL = "https://api.kathmandunet.tzkt.io/"
-			client.IndexerWebURL = "https://kathmandunet.tzkt.io/"
+			client.indexerWebURL = "https://kathmandunet.tzkt.io/"
 		} else if strings.Contains(client.RPCURL, "ghostnet") {
 			client.IndexerRPCURL = "https://api.ghostnet.tzkt.io/"
-			client.IndexerWebURL = "https://ghostnet.tzkt.io/"
+			client.indexerWebURL = "https://ghostnet.tzkt.io/"
 		} else {
 			client.IndexerRPCURL = "https://api.mainnet.tzkt.io/"
-			client.IndexerWebURL = "https://mainnet.tzkt.io/"
+			client.indexerWebURL = "https://mainnet.tzkt.io/"
 		}
 	}
 
@@ -242,7 +248,27 @@ func (c *Client) FindNameForAddress(address string) string {
 	return address
 }
 
+func (c Client) ContractByName(name string) (Contract, error) {
+	if contract, ok := c.Contracts[name]; ok {
+		return contract, nil
+	}
+	for _, contract := range c.Contracts {
+		if 	(contract.Name == name) || (contract.Address.String() == name) {
+			return contract, nil
+		}
+	}
+	return Contract{}, fmt.Errorf("contract not found")
+}
+
+func (c Client) GetIndexerWebURL() string {
+	return c.indexerWebURL
+}
+
 func (c *Client) SaveContract(contract Contract) error {
+
+	if c.path == "" {
+		return fmt.Errorf("client has not storage path set")
+	}
 
 	if _, ok := c.Contracts[contract.Name]; ok {
 		return fmt.Errorf("contract with name %s alread exists", contract.Name)
@@ -264,7 +290,7 @@ func (c *Client) SaveContract(contract Contract) error {
 		return fmt.Errorf("failed to marshall new contract file: %w", err)
 	}
 
-	err = ioutil.WriteFile(filepath.Join(c.Path, "contracts"), data, 0644)
+	err = ioutil.WriteFile(filepath.Join(c.path, "contracts"), data, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write new contract file: %w", err)
 	}

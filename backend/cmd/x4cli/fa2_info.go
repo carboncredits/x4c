@@ -38,8 +38,8 @@ func (c fa2InfoCommand) Run(args []string) int {
 		return 1
 	}
 
-	contract, ok := client.Contracts[args[0]]
-	if !ok {
+	contract, err := client.ContractByName(args[0])
+	if err != nil {
 		contract, err = tzclient.NewContractWithAddress(args[0], args[0])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Contract address is not valid: %v", err)

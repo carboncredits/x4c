@@ -40,8 +40,8 @@ func (c mintCommand) Run(args []string) int {
 	}
 
 	// arg0 - FA2 contract name/address
-	contract, ok := client.Contracts[args[0]]
-	if !ok {
+	contract, err := client.ContractByName(args[0])
+	if err != nil {
 		contract, err = tzclient.NewContractWithAddress("contract", args[0])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Contract address is not valid: %v\n", err)
@@ -70,7 +70,7 @@ func (c mintCommand) Run(args []string) int {
 	owner := tezos.Address{}
 	if wallet, ok := client.Wallets[args[3]]; ok {
 		owner = wallet.Address
-	} else if contract, ok := client.Contracts[args[3]]; ok {
+	} else if contract, err := client.ContractByName(args[3]); err == nil {
 		owner = contract.Address
 	} else {
 		owner, err = tezos.ParseAddress(args[3])

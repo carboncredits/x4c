@@ -10,10 +10,13 @@ build: go.sum vet x4cli server
 x4cli server:
 	go build -o ${RELEASE_DIR}/$@ ${MKFILE_DIR}cmd/$@/
 
-test: go.sum tzclient x4c tzkt
+test: go.sum tzclient x4c tzkt servertest
 
 tzclient x4c tzkt:
 	go test ${MKFILE_DIR}pkg/$@/
+
+servertest:
+	go test ${MKFILE_DIR}cmd/server/
 
 vet:
 	go vet ${MKFILE_DIR}pkg/tzclient
