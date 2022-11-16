@@ -2,27 +2,31 @@ version: "3.7"
 
 services:
     signatory:
-        image: ecadlabs/signatory:latest
-        volumes:
-            - "./signatory_config/signatory.yaml:/etc/signatory.yaml"
-            - "./signatory_config/secret.json:/etc/secret.json"
+        build:
+            context: ci/signatory_config
+            args:
+                ARCH: ${ARCH:-amd64}
         command: serve -c /etc/signatory.yaml
         profiles: ["setup"]
 
     tezossandbox:
-        build:
-            context: ci/flextesa
+        image: oxheadalpha/flextesa:20221026
         command: kathmandubox start
         profiles: ["setup"]
 
     tzkt-db:
         restart: always
-        image: postgres:13
+        image: postgres:15
         environment:
             POSTGRES_USER: ${POSTGRES_USER:-tzkt}
             POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-qwerty}
             POSTGRES_DB: ${POSTGRES_DB:-tzkt_db}
         profiles: ["setup"]
+        volumes:
+            - type: tmpfs
+              target: /var/lib/postgresql/data:rw
+              tmpfs:
+                size: 4294967296
 
     tzkt-api:
         build:
@@ -49,19 +53,39 @@ services:
             TezosNode__Endpoint: http://tezossandbox:20000
         profiles: ["setup"]
 
+    test-server:
+        build:
+            context: backend
+        environment:
+            - TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER=yes
+            - X4C_TEZOS_RPC_HOST=http://tezossandbox:20000
+            - X4C_TEZOS_INDEX_HOST=http://tzkt-api:5000
+            - X4C_TEZOS_INDEX_WEB=http://tzkt-web # This doesn't need to run, just needs to be defined
+            - X4C_SIGNATORY_HOST=http://signatory:6732
+            - X4C_CUSTODIAN_OPERATOR=tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z
+        depends_on:
+            - signatory
+            - tezossandbox
+            - tzkt-api
+            - tzkt-sync
+        profiles: ["test"]
+
     test:
         build:
             context: .
             dockerfile: Dockerfile.test
         environment:
             - TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER=yes
-            - TEZOS_RPC_HOST=http://tezossandbox:20000
-            - TEZOS_INDEX_HOST=http://tzkt-api:5000
-            - SIGNATORY_HOST=http://signatory:6732
+            - X4C_TEZOS_RPC_HOST=http://tezossandbox:20000
+            - X4C_TEZOS_INDEX_HOST=http://tzkt-api:5000
+            - X4C_TEZOS_INDEX_WEB=http://tzkt-web # This doesn't need to run, just needs to be defined
+            - X4C_SIGNATORY_HOST=http://signatory:6732
+            - X4C_HOST=http://test-server:8080
         depends_on:
             - signatory
             - tezossandbox
             - tzkt-api
             - tzkt-sync
-        command: /app/cli/integration_tests.sh
+            - test-server
+        command: /app/backend/integration_tests.sh
         profiles: ["test"]

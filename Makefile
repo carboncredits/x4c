@@ -1,7 +1,7 @@
 ifndef USE_DOCKER
 LIGO = ligo
 else
-LIGO = docker run --rm -v "$(PWD)":"$(PWD)" -w "$(PWD)" ligolang/ligo:0.52.0
+LIGO = docker run --rm -v "$(PWD)":"$(PWD)" -w "$(PWD)" ligolang/ligo:0.53.0
 endif
 
 .PHONY = test build all clean
@@ -19,7 +19,7 @@ TEST_TARGETS := $(patsubst $(TEST)/%.mligo, $(BUILD)/%.output, $(TESTS))
 build: $(TARGETS)
 
 $(BUILD)/%.tz: $(SRC)/%.mligo
-	$(LIGO) compile contract -p kathmandu $< --entry-point main --output-file $@
+	$(LIGO) compile contract -p kathmandu $< --entry-point main --michelson-format json --output-file $@
 
 test: $(TEST_TARGETS)
 
