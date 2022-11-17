@@ -1,7 +1,7 @@
 ifndef USE_DOCKER
 LIGO = ligo
 else
-LIGO = docker run --rm -v "$(PWD)":"$(PWD)" -w "$(PWD)" ligolang/ligo:0.53.0
+LIGO = docker run --rm -v "$(PWD)":"$(PWD)" -w "$(PWD)" ligolang/ligo:0.55.0
 endif
 
 .PHONY = test build all clean
@@ -24,7 +24,7 @@ $(BUILD)/%.tz: $(SRC)/%.mligo
 test: $(TEST_TARGETS)
 
 $(BUILD)/%.output: $(TEST)/%.mligo tests/common.mligo tests/assert.mligo $(SRC)/*.mligo
-	$(LIGO) run test -p kathmandu $< > $@
+	$(LIGO) run test $< > $@
 
 all: build test
 
