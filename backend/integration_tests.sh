@@ -54,36 +54,52 @@ done
 x4cli fa2 info 4CTokenContract
 
 # now transfer tokens to custodian
+x4cli custodian info -json CustodianContract | jq ".ledger_bigmap | length" | grep -q "0"
+x4cli custodian info -json CustodianContract | jq ".internal_mint_events | length" | grep -q "0"
+
 x4cli custodian internal_mint CustodianContract OffChainCustodian 4CTokenContract 123
 
-# Display some info about the contract (this will need the indexer)
+# Wait for indexer to update then check contents
 c=0
-until x4cli custodian info CustodianContract | grep -q "123";
+until x4cli custodian info -json CustodianContract | jq ".internal_mint_events | length" | grep -q "1";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
 x4cli custodian info CustodianContract
+x4cli custodian info -json CustodianContract | jq ".ledger_bigmap | length" | grep -q "1"
+x4cli custodian info -json CustodianContract | jq ".ledger_bigmap[0].key.token.token_id" | grep -q "123"
+x4cli custodian info -json CustodianContract | jq ".ledger_bigmap[0].value" | grep -q "10000"
 
 # Assign some tokens to a department and make sure the operator can access them
+x4cli custodian info -json CustodianContract | jq ".internal_transfer_events | length" | grep -q "0"
+
 x4cli custodian internal_transfer CustodianContract OffChainCustodian 4CTokenContract 123 500 self compsci
 
 c=0
-until x4cli custodian info CustodianContract | grep -q "compsci";
+until x4cli custodian info -json CustodianContract | jq ".internal_transfer_events | length" | grep -q "1";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
 x4cli custodian info CustodianContract
+x4cli custodian info -json CustodianContract | jq ".ledger_bigmap | length" | grep -q "2"
+# TODO: KYC value check, which is currently in michelson packed format
+x4cli custodian info -json CustodianContract | jq ".ledger_bigmap[0].key.token.token_id" | grep -q "123"
+x4cli custodian info -json CustodianContract | jq ".ledger_bigmap[0].value" | grep -q "9500"
+x4cli custodian info -json CustodianContract | jq ".ledger_bigmap[1].key.token.token_id" | grep -q "123"
+x4cli custodian info -json CustodianContract | jq ".ledger_bigmap[1].value" | grep -q "500"
 
+x4cli custodian info -json CustodianContract | jq ".operators | length" | grep -q "0"
 x4cli custodian add_operator CustodianContract OffChainCustodian CustodianOperator 123 compsci
 c=0
-until x4cli custodian info CustodianContract | grep -q "CustodianOperator";
+until x4cli custodian info -json CustodianContract | jq ".operators | length" | grep -q "1";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
 x4cli custodian info CustodianContract
+x4cli custodian info -json CustodianContract | jq ".operators[0].token_operator" | grep -q "tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z"
 
 # Have department retire credits
 x4cli custodian retire CustodianContract CustodianOperator 4CTokenContract compsci 123 20 retire1
@@ -91,18 +107,13 @@ x4cli custodian retire CustodianContract CustodianOperator 4CTokenContract comps
 # Check that the balances on both the custodian contract and the root contract are now adjusted
 
 c=0
-until x4cli custodian info CustodianContract | grep -q "480";
-do
-  ((c++)) && ((c==20)) && exit 1
-  sleep 1;
-done
-c=0
-until x4cli custodian info CustodianContract | grep -q "retire1";
+until x4cli custodian info -json CustodianContract | jq ".retire_events | length" | grep -q "1";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
 x4cli custodian info CustodianContract
+x4cli custodian info -json CustodianContract | jq ".retire_events[0].Reason" | grep -q "retire1"
 
 c=0
 until x4cli fa2 info 4CTokenContract | grep -q "9980";
@@ -145,7 +156,7 @@ do
 done
 x4cli fa2 info 4CTokenContract
 
-# Check that if we revoke the operator they can't still retire redits
+# Check that if we revoke the operator they can't still retire credits
 x4cli custodian remove_operator CustodianContract OffChainCustodian CustodianOperator 123 compsci
 x4cli custodian retire CustodianContract CustodianOperator 4CTokenContract compsci 123 20 flights || echo "Retire failed as expected"
 
