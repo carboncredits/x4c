@@ -41,17 +41,21 @@ x4cli custodian originate CustodianContract build/custodian.tz OffChainCustodian
 x4cli info 4CTokenContract
 
 # Mint some tokens for the custodian contract
+x4cli fa2 info -json 4CTokenContract | jq ".ledger_bigmap | length" | grep -q "0"
+
 x4cli fa2 add_token 4CTokenContract 4CTokenOracle 123 "Test project" "http://blah.com/"
 x4cli fa2 mint 4CTokenContract 4CTokenOracle 123 CustodianContract 10000
 
 # Display some info about the contract (this will need the indexer)
 c=0
-until x4cli fa2 info 4CTokenContract | grep -q "123";
+until x4cli fa2 info -json 4CTokenContract | jq ".ledger_bigmap | length" | grep -q "1";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
 x4cli fa2 info 4CTokenContract
+x4cli fa2 info -json 4CTokenContract | jq ".ledger_bigmap[0].key.token_id" | grep -q "123"
+x4cli fa2 info -json 4CTokenContract | jq ".ledger_bigmap[0].value" | grep -q "10000"
 
 # now transfer tokens to custodian
 x4cli custodian info -json CustodianContract | jq ".ledger_bigmap | length" | grep -q "0"
@@ -116,18 +120,15 @@ x4cli custodian info CustodianContract
 x4cli custodian info -json CustodianContract | jq ".retire_events[0].Reason" | grep -q "retire1"
 
 c=0
-until x4cli fa2 info 4CTokenContract | grep -q "9980";
-do
-  ((c++)) && ((c==20)) && exit 1
-  sleep 1;
-done
-c=0
-until x4cli fa2 info 4CTokenContract | grep -q "retire1";
+until x4cli fa2 info -json 4CTokenContract | jq ".retire_events | length" | grep -q "1";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
 x4cli fa2 info 4CTokenContract
+x4cli fa2 info -json 4CTokenContract | jq ".ledger_bigmap[0].value" | grep -q "9980"
+x4cli fa2 info -json 4CTokenContract | jq ".retire_events[0].Reason" | grep -q "retire1"
+
 
 # Whilst we have the custodian set up, let's try to retire something via the X4C server
 
@@ -143,18 +144,14 @@ FA2=`x4cli info 4CTokenContract`
 curl -X POST -H "Content-Type: application/json" -d "{\"minter\": \"${FA2}\", \"kyc\": \"compsci\", \"tokenID\": 123, \"amount\": 10, \"reason\": \"retire3\"}" ${X4C_HOST}/contract/${CONTRACT}/retire | grep -q "Successfully retired credits"
 
 c=0
-until x4cli fa2 info 4CTokenContract | grep -q "9970";
-do
-  ((c++)) && ((c==20)) && exit 1
-  sleep 1;
-done
-c=0
-until x4cli fa2 info 4CTokenContract | grep -q "retire3";
+until x4cli fa2 info -json 4CTokenContract | jq ".retire_events | length" | grep -q "2";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
 x4cli fa2 info 4CTokenContract
+x4cli fa2 info -json 4CTokenContract | jq ".ledger_bigmap[0].value" | grep -q "9970"
+x4cli fa2 info -json 4CTokenContract | jq ".retire_events[1].Reason" | grep -q "retire3"
 
 # Check that if we revoke the operator they can't still retire credits
 x4cli custodian remove_operator CustodianContract OffChainCustodian CustodianOperator 123 compsci
@@ -166,15 +163,11 @@ x4cli custodian retire CustodianContract CustodianOperator 4CTokenContract comps
 x4cli custodian retire CustodianContract OffChainCustodian 4CTokenContract compsci 123 5 retire2
 
 c=0
-until x4cli fa2 info 4CTokenContract | grep -q "9965";
-do
-  ((c++)) && ((c==20)) && exit 1
-  sleep 1;
-done
-c=0
-until x4cli fa2 info 4CTokenContract | grep -q "retire2";
+until x4cli fa2 info -json 4CTokenContract | jq ".retire_events | length" | grep -q "3";
 do
   ((c++)) && ((c==20)) && exit 1
   sleep 1;
 done
 x4cli fa2 info 4CTokenContract
+x4cli fa2 info -json 4CTokenContract | jq ".ledger_bigmap[0].value" | grep -q "9965"
+x4cli fa2 info -json 4CTokenContract | jq ".retire_events[2].Reason" | grep -q "retire2"

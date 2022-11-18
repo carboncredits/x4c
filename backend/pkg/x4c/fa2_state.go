@@ -21,6 +21,10 @@ type FA2Owner struct {
 
 type FA2Ledger map[FA2Owner]int64
 
+// Technically this should be map[string][]byte, but in x4c we currently
+// only ever put strings in there, so this simplifies things for us
+type FA2Metadata map[string]string
+
 type FA2TokenMetadata struct {
 	TokenIdentifier  json.Number       `json:"token_id"`
 	TokenInformation map[string]string `json:"token_info"`
@@ -62,6 +66,30 @@ func (storage *FA2Storage) GetLedger(ctx context.Context, client tzclient.TezosC
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert value to correct ledger value %v: %v", value, err)
 		}
+	}
+
+	return result, nil
+}
+
+func (storage *FA2Storage) GetFA2Metadata(ctx context.Context, client tzclient.TezosClient) (FA2Metadata, error) {
+	bigmap, err := client.GetBigMapContents(ctx, storage.Metadata)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get custodian metadata big map: %w", err)
+	}
+
+	result := make(FA2Metadata)
+	for _, item := range bigmap {
+		var key string
+		err := json.Unmarshal(item.Key, &key)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to decode FA2 metadata key %v: %w", item.Key, err)
+		}
+		var value string
+		err = json.Unmarshal(item.Value, &value)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to decode FA2 metadata value %v: %w", item.Value, err)
+		}
+		result[key] = value
 	}
 
 	return result, nil

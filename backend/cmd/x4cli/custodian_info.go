@@ -131,9 +131,9 @@ func (c custodianInfoCommand) Run(rawargs []string) int {
 	}
 
 	if outputJson {
-		err = displayAsJson(info)
+		err = displayCustodianAsJson(info)
 	} else {
-		err = displayAsText(client, info)
+		err = displayCustodianAsText(client, info)
 	}
 
 	if err != nil {
@@ -143,7 +143,7 @@ func (c custodianInfoCommand) Run(rawargs []string) int {
 	return 0
 }
 
-func displayAsText(client tzclient.Client, info CustodianSnapshot) error {
+func displayCustodianAsText(client tzclient.Client, info CustodianSnapshot) error {
 	custodianName := client.FindNameForAddress(info.Custodian)
 	fmt.Printf("Custodian: %v\n", custodianName)
 
@@ -233,7 +233,7 @@ func displayAsText(client tzclient.Client, info CustodianSnapshot) error {
 	return nil
 }
 
-func displayAsJson(info CustodianSnapshot) error {
+func displayCustodianAsJson(info CustodianSnapshot) error {
 
 	// we need to populate the JSON safe fields here
 	safe_ledger := make([]map[string]interface{}, 0, len(info.LedgerContents))
