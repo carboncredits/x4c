@@ -16,46 +16,46 @@ func TestRetire(t *testing.T) {
 	client := tzclient.NewMockClient()
 	server := newMockServer(client)
 
-	testcases := []struct{
-		contract string
+	testcases := []struct {
+		contract      string
 		expectSuccess bool
-		amount json.Number
+		amount        json.Number
 	}{
 		{
-			contract: "alice",
+			contract:      "alice",
 			expectSuccess: false,
-			amount: "123",
+			amount:        "123",
 		},
 		{
-			contract: "KT1QjwDCohN4BEewsWgzkQHLsrv1Sf3s2PCm",
+			contract:      "KT1QjwDCohN4BEewsWgzkQHLsrv1Sf3s2PCm",
 			expectSuccess: true,
-			amount: "123",
+			amount:        "123",
 		},
 		{
-			contract: "KT1QjwDCohN4BEewsWgzkQHLsrv1Sf3s2PCm",
+			contract:      "KT1QjwDCohN4BEewsWgzkQHLsrv1Sf3s2PCm",
 			expectSuccess: false,
-			amount: "0",
+			amount:        "0",
 		},
 		{
-			contract: "KT1QjwDCohN4BEewsWgzkQHLsrv1Sf3s2PCm",
+			contract:      "KT1QjwDCohN4BEewsWgzkQHLsrv1Sf3s2PCm",
 			expectSuccess: false,
-			amount: "-123",
+			amount:        "-123",
 		},
 		{
-			contract: "KT1QjwDCohN4BEewsWgzkQHLsrv1Sf3s2PCm",
+			contract:      "KT1QjwDCohN4BEewsWgzkQHLsrv1Sf3s2PCm",
 			expectSuccess: false,
-			amount: "3.14",
+			amount:        "3.14",
 		},
 	}
 
-	for idx, testcase := range testcases{
+	for idx, testcase := range testcases {
 
 		request := CreditRetireRequest{
-			Minter: "KT1MHx2nw8y2JyryGbuAvTYPNGwrfTp4PEYR",
-			KYC: "compsci",
+			Minter:  "KT1MHx2nw8y2JyryGbuAvTYPNGwrfTp4PEYR",
+			KYC:     "compsci",
 			TokenID: "123",
-			Amount: testcase.amount,
-			Reason: "fun",
+			Amount:  testcase.amount,
+			Reason:  "fun",
 		}
 		requestBody, err := json.Marshal(request)
 		if err != nil {

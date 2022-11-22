@@ -26,6 +26,10 @@ type Ledger map[LedgerKey]int64
 
 type ExternalLedger map[TokenID]int64
 
+// Technically this should be map[string][]byte, but in x4c we currently
+// only ever put strings in there, so this simplifies things for us
+type CustodianMetadata map[string]string
+
 type OperatorInformation struct {
 	RawKYC   string      `json:"token_owner"`
 	Operator string      `json:"token_operator"`
@@ -78,7 +82,7 @@ func (storage *CustodianStorage) GetLedger(ctx context.Context, client tzclient.
 func (storage *CustodianStorage) GetExternalLedger(ctx context.Context, client tzclient.TezosClient) (ExternalLedger, error) {
 	bigmap, err := client.GetBigMapContents(ctx, storage.ExternalLedger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get ledger big map: %w", err)
+		return nil, fmt.Errorf("failed to get external ledger big map: %w", err)
 	}
 
 	result := make(ExternalLedger)
@@ -97,6 +101,30 @@ func (storage *CustodianStorage) GetExternalLedger(ctx context.Context, client t
 		if err != nil {
 			return nil, fmt.Errorf("Failed to convert external value to correct ledger value %v: %v", value, err)
 		}
+	}
+
+	return result, nil
+}
+
+func (storage *CustodianStorage) GetCustodianMetadata(ctx context.Context, client tzclient.TezosClient) (CustodianMetadata, error) {
+	bigmap, err := client.GetBigMapContents(ctx, storage.Metadata)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get custodian metadata big map: %w", err)
+	}
+
+	result := make(CustodianMetadata)
+	for _, item := range bigmap {
+		var key string
+		err := json.Unmarshal(item.Key, &key)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to decode custodian metadata key %v: %w", item.Key, err)
+		}
+		var value string
+		err = json.Unmarshal(item.Value, &value)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to decode custodian metadata value %v: %w", item.Value, err)
+		}
+		result[key] = value
 	}
 
 	return result, nil
