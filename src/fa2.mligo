@@ -185,7 +185,7 @@ let update_operators (param : update_operators) (storage : storage) : result =
 // This entrypoint can only be called by the admin
 let mint_tokens (param : mint) (storage : storage) : result =
     // check permissions
-    if (Tezos.get_source ()) <> storage.oracle then (failwith error_PERMISSIONS_DENIED : result) else
+    if (Tezos.get_sender ()) <> storage.oracle then (failwith error_PERMISSIONS_DENIED : result) else
     // mint tokens
     ([] : operation list),
     List.fold
