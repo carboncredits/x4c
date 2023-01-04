@@ -98,7 +98,7 @@ Finally you'll want to select a [test network](https://teztnets.xyz) on which to
 * An Indexer RPC endpoint - e.g., https://api.kathmandu.tzstats.com
 * An Indexer human frontend - e.g., https://kathmandu.tzstats.com
 
-When using a test net tezos-client will report that you're not on mainnet on every command invocation, so you may wish to set the following environmental variable to prevent that:
+When using a test net octez-client will report that you're not on mainnet on every command invocation, so you may wish to set the following environmental variable to prevent that:
 
 ```
 $ export TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER=yes
@@ -106,38 +106,47 @@ $ export TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER=yes
 
 ## Steps
 
+### Build the x4c backend
+
+Not strictly necessary, but other steps use the x4cli tool so it's worth having it built.
+
+```
+$ cd backend
+$ make
+$ cd ..
+```
+
 ### Set up an admin wallet
 
 Not strictly necessary, but I find it makes testing easier - you should create a wallet for you as the admin and ensure it has some tez associated with it. In this example we're using [Kathmanduanet](https://teztnets.xyz/kathmandunet-about).
 
-If you have an old tezos-client state, you may wish to backup your ~/.tezos-client folder. You can then reset the state there if you're not already on kathmandunet using:
+If you have an old octez-client state, you may wish to backup your ~/.tezos-client folder. You can then reset the state there if you're not already on kathmandunet using:
 
 ```
-$ tezos-client config reset
+$ octez-client config reset
 ```
 
 Set tezos-client to use the right test network:
 
 ```
-$ tezos-client --endpoint https://rpc.kathmandunet.teztnets.xyz config update
+$ octez-client --endpoint https://rpc.kathmandunet.teztnets.xyz config update
 
 ```
 
 Now you want to set up a new wallet and get some tez on that. First create the wallet:
 
 ```
-$ tezos-client gen keys facetwallet
-$ tezos-client get balance for facetwallet
+$ octez-client gen keys facetwallet
+$ octez-client get balance for facetwallet
 0 ꜩ
-$ x4cli info
-Alias           Hash                                   Contract type   Default
- facetwallet    tz1cyDKwRw1CAT1dw7B95eBPqUq456rW6Gsw   Wallet
+$ backend/bin/x4cli info
+facetwallet: tz1cyDKwRw1CAT1dw7B95eBPqUq456rW6Gsw
 ```
 
 Then go to https://faucet.kathmandunet.teztnets.xyz and request tez for the wallet’s hash. Once you've done that you should hopefully find you now have some tez:
 
 ```
-$ tezos-client get balance for facetwallet
+$ octez-client get balance for facetwallet
 6001 ꜩ
 ```
 
@@ -156,14 +165,14 @@ The first two wallets will generally live not on a live server, but out of neces
 We can create these wallets and assign them some tez so that they can do things:
 
 ```
-$ tezos-client gen keys FA2Owner
-$ tezos-client transfer 1000 from facetwallet to FA2Owner --burn-cap 0.1
+$ octez-client gen keys FA2Owner
+$ octez-client transfer 1000 from facetwallet to FA2Owner --burn-cap 0.1
 ...
-$ tezos-client gen keys CustodianOwner
-$ tezos-client transfer 1000 from facetwallet to CustodianOwner --burn-cap 0.1
+$ octez-client gen keys CustodianOwner
+$ octez-client transfer 1000 from facetwallet to CustodianOwner --burn-cap 0.1
 ...
-$ tezos-client gen keys CustodianOperator
-$ tezos-client transfer 1000 from facetwallet to CustodianOperator --burn-cap 0.1
+$ octez-client gen keys CustodianOperator
+$ octez-client transfer 1000 from facetwallet to CustodianOperator --burn-cap 0.1
 ...
 ```
 
@@ -174,14 +183,14 @@ Note that in practice you would not use a local wallet for the operator - you'd 
 You can use the x4c tools to instantiate the contracts. First do the FA2 contract thus:
 
 ```
-$ x4cli fa2 originate FA2Contract build/fa2.tz FA2Owner
+$ backend/bin/x4cli fa2 originate FA2Contract build/fa2.tz FA2Owner
 Contract originated as KT1HrP3bxARDNWxGyEPtx3LprzUQczg8u19a
 ```
 
 and then a custodian contract:
 
 ```
-$ x4cli custodian originate CustodianContract build/custodian.tz CustodianOwner
+$ backend/bin/x4cli custodian originate CustodianContract build/custodian.tz CustodianOwner
 Contract originated as KT1AoLsWX28kH4YhyCKm2g9wGUJGgud8Mkp3
 ```
 
@@ -192,12 +201,12 @@ In practice there may be many custodians, but few FA2s (citation needed).
 Now we need to add a token definition and then mint some actual tokens. There would be a token per project ideally.
 
 ```
-$ x4cli fa2 add_token FA2Contract FA2Owner 123 "My project" "http://project.url"
+$ backend/bin/x4cli fa2 add_token FA2Contract FA2Owner 123 "My project" "http://project.url"
 Adding token...
 Awaiting for onwEvkpVH19BPzoZdgHNqLQnD5k3AreZchXw5HSXdadDcEEUdBb to be confirmed...
 Operation injected: https://rpc.kathmandunet.teztnets.xyz/onwEvkpVH19BPzoZdgHNqLQnD5k3AreZchXw5HSXdadDcEEUdBb
 
-$ x4cli fa2 mint FA2Contract FA2Owner CustodianContract 123 1000
+$ backend/bin/x4cli fa2 mint FA2Contract FA2Owner 123 CustodianContract 1000
 Minting tokens...
 Awaiting for ooowBFJwhYMLcBCTeycxa9w7BWE3fbUPMraEAsrVW2LgxStqQ2P to be confirmed...
 Operation injected: https://rpc.kathmandunet.teztnets.xyz/ooowBFJwhYMLcBCTeycxa9w7BWE3fbUPMraEAsrVW2LgxStqQ2P
@@ -206,7 +215,7 @@ Operation injected: https://rpc.kathmandunet.teztnets.xyz/ooowBFJwhYMLcBCTeycxa9
 We need then to sync the custodian contract with the FA2 contract:
 
 ```
-$ x4cli custodian internal_mint CustodianContract CustodianOwner FA2Contract 123
+$ backend/bin/x4cli custodian internal_mint CustodianContract CustodianOwner FA2Contract 123
 Syncing tokens...
 Awaiting for opViJhWJz3HBzS2K5x3hf5BaXWpbmrD5yLkYd2y55YxcCznZAbJ to be confirmed...
 Operation injected: https://rpc.kathmandunet.teztnets.xyz/opViJhWJz3HBzS2K5x3hf5BaXWpbmrD5yLkYd2y55YxcCznZAbJ
@@ -215,12 +224,12 @@ Operation injected: https://rpc.kathmandunet.teztnets.xyz/opViJhWJz3HBzS2K5x3hf5
 Finally, the custodian is holding tokens for off-chain entities that aren't expected to hold their own wallets. By default the internal_mint call to the custodian has "self" holding the tokens, but in practice you'd then assign them to others:
 
 ```
-$ x4cli custodian internal_transfer CustodianContract CustodianOwner FA2Contract 123 500 "self" "example corp"
+$ backend/bin/x4cli custodian internal_transfer CustodianContract CustodianOwner FA2Contract 123 500 "self" "example corp"
 Syncing tokens...
 Awaiting for opCPgnfteYVeKNL2gNo75h9WzGJaS2MAmPbK9DepPegu7FDsXxH to be confirmed...
 Operation injected: https://rpc.kathmandunet.teztnets.xyz/opCPgnfteYVeKNL2gNo75h9WzGJaS2MAmPbK9DepPegu7FDsXxH```
 
-$ x4cli custodian internal_transfer CustodianContract CustodianOwner FA2Contract 123 500 "self" "other org"
+$ backend/bin/x4cli custodian internal_transfer CustodianContract CustodianOwner FA2Contract 123 500 "self" "other org"
 Syncing tokens...
 Awaiting for ooatdoMAwHRNwTJ7trxd5G8m391yDFaWkHSddpT8JwCXmeZu7HY to be confirmed...
 Operation injected: https://rpc.kathmandunet.teztnets.xyz/ooatdoMAwHRNwTJ7trxd5G8m391yDFaWkHSddpT8JwCXmeZu7HY
@@ -231,13 +240,19 @@ Operation injected: https://rpc.kathmandunet.teztnets.xyz/ooatdoMAwHRNwTJ7trxd5G
 To avoid having the custodian contract's owner's wallet online, we should delegate responsibility for retiring the credits to one or more operators. In this example I'm going to use a single operator wallet, but you would probably use one per off-chain client. The operator's wallet can then be held on a public facing server without fear that if it is compromised all tokens held by the custodian contract can be drained.
 
 ```
-$ x4cli custodian add_operator CustodianContract CustodianOwner CustodianOperator 123 "other org"
+$ backend/bin/x4cli custodian add_operator CustodianContract CustodianOwner CustodianOperator 123 "other org"
 Adding operator...
 Awaiting for oow5qgodszwHSo17eXN2XdcumDpMMsbDeSuYVCVCnDEyDAghVK5 to be confirmed...
 Operation injected: https://rpc.kathmandunet.teztnets.xyz/oow5qgodszwHSo17eXN2XdcumDpMMsbDeSuYVCVCnDEyDAghVK5
 ```
 
 Once this is done the CustodianOperator wallet can only call retire or internal_transfer on the CustodianContract for the tokens of ID 123 that have been assigned to "other org".
+
+For example, you can retire 50 tokens for a flight to Rome with the command:
+
+```
+backend/bin/x4cli custodian retire CustodianContract CustodianOperator FA2Contract "other org" 123 50 "Flight to Rome"
+```
 
 ## Deployment security
 
@@ -246,10 +261,11 @@ In the above test setup we have three addresses in play. The first two are used 
 Instead, in this setup a remote signature should be configured that uses something like [Signatory.io](https://signatory.io/) to provide access to a key managed via an HSM. The x4c library will assume that any addresses found in the .tezos-client library that don't have a secret key configured are remote managed, so you can simply add them as follows:
 
 ```
-$ tezos-client add address CustodianOperator tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z
-$ x4cli info
-Alias                 Hash                                   Contract type   Default
- CustodianOperator    tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z   Remote
+$ octez-client add address CustodianOperatorRemote tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z
+$ backend/bin/x4cli info
+CustodianOperatorRemote: tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z
+...
 ```
 
 An example use case of this can be seen in the integration tests shell script in the cli directory.
+
