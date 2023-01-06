@@ -106,6 +106,17 @@ $ export TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER=yes
 
 ## Steps
 
+### Build the x4c backend
+
+Not strictly necessary, but other steps use the x4cli tool so it's worth having it built and putting it into your PATH.
+
+```
+$ cd backend
+$ make
+$ cd ..
+$ export PATH=$PWD/backend/bin:$PATH
+```
+
 ### Set up an admin wallet
 
 Not strictly necessary, but I find it makes testing easier - you should create a wallet for you as the admin and ensure it has some tez associated with it. In this example we're using [Ghostnet](https://teztnets.xyz/ghostnet-about).
@@ -120,7 +131,6 @@ Set octez-client to use the right test network:
 
 ```
 $ octez-client --endpoint https://rpc.ghostnet.teztnets.xyz config update
-
 ```
 
 Now you want to set up a new wallet and get some tez on that. First create the wallet:
@@ -130,8 +140,7 @@ $ octez-client gen keys facetwallet
 $ octez-client get balance for facetwallet
 0 ꜩ
 $ x4cli info
-Alias           Hash                                   Contract type   Default
- facetwallet    tz1cyDKwRw1CAT1dw7B95eBPqUq456rW6Gsw   Wallet
+facetwallet: tz1cyDKwRw1CAT1dw7B95eBPqUq456rW6Gsw
 ```
 
 Then go to https://faucet.ghostnet.teztnets.xyz and request tez for the wallet’s hash. Once you've done that you should hopefully find you now have some tez:
@@ -239,6 +248,13 @@ Submitted operation successfully as oow5qgodszwHSo17eXN2XdcumDpMMsbDeSuYVCVCnDEy
 
 Once this is done the CustodianOperator wallet can only call retire or internal_transfer on the CustodianContract for the tokens of ID 123 that have been assigned to "other org".
 
+For example, you can retire 50 tokens for a flight to Rome with the command:
+
+```
+$ x4cli custodian retire CustodianContract CustodianOperator FA2Contract "other org" 123 50 "Flight to Rome"
+Submitted operation successfully as ooU46b4iwAhW8jte4AUGR8w3uuQ7vpNsavdnbrFek1mAorohoYb
+```
+
 ## Deployment security
 
 In the above test setup we have three addresses in play. The first two are used offline to manage tokens: the FA2 owner can add projects, mint tokens, and then assign them to a custodian, and the custodian owner can assign their tokens to different internal "users". Then there is the custodian operator contract, which is the token that is used online to retire requests based on imagined API calls. Whilst in the demo script above we use octez-client to manage this wallet, in practice you should not do that, as that requires the wallet's secret key to be stored online.
@@ -246,10 +262,11 @@ In the above test setup we have three addresses in play. The first two are used 
 Instead, in this setup a remote signature should be configured that uses something like [Signatory.io](https://signatory.io/) to provide access to a key managed via an HSM. The x4c library will assume that any addresses found in the .octez-client library that don't have a secret key configured are remote managed, so you can simply add them as follows:
 
 ```
-$ octez-client add address CustodianOperator tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z
+$ octez-client add address CustodianOperatorRemote tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z
 $ x4cli info
-Alias                 Hash                                   Contract type   Default
- CustodianOperator    tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z   Remote
+CustodianOperatorRemote: tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z
+...
 ```
 
 An example use case of this can be seen in the integration tests shell script in the cli directory.
+
