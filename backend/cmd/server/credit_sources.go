@@ -71,9 +71,9 @@ func (s *server) getCreditSources(w http.ResponseWriter, r *http.Request, ps htt
 		indexerURL := s.tezosClient.GetIndexerWebURL()
 		item := CreditSourcesResponseItem{
 			TokenID:      token_id,
-			MinterURL:    fmt.Sprintf("%s%s", indexerURL, key.Token.Address),
+			MinterURL:    fmt.Sprintf("%s/%s", indexerURL, key.Token.Address),
 			KYC:          kyc,
-			CustodainURL: fmt.Sprintf("%s%s", indexerURL, contract.Address.String()),
+			CustodainURL: fmt.Sprintf("%s/%s", indexerURL, contract.Address.String()),
 			Amount:       value,
 			Minter:       key.Token.Address,
 		}
