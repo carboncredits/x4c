@@ -93,6 +93,16 @@ func TestGetCreditSources(t *testing.T) {
 					if testcase.expectData && len(result.Data) == 0 {
 						t.Errorf("%d: Expected data, but got none", idx)
 					}
+					if testcase.expectData && len(result.Data) > 0 {
+						source := result.Data[0]
+						// This relies on the mock server configuration, if that changes this test will fail.
+						if source.CustodainURL != "https://index.web/KT1Lw1p7rDaZixeX1SpmdNAueWW3QihZ31C6" {
+							t.Errorf("Unexpected CustodianURL: %s", source.CustodainURL)
+						}
+						if source.Amount != 1234 {
+							t.Errorf("Unexpected amount: %v", source.Amount)
+						}
+					}
 					if !testcase.expectData && len(result.Data) != 0 {
 						t.Errorf("%d: Expected no data, but got some: %v", idx, result.Data)
 					}
