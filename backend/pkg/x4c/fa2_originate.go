@@ -2,9 +2,9 @@ package x4c
 
 import (
 	"context"
+	"fmt"
 
 	"blockwatch.cc/tzgo/micheline"
-	"blockwatch.cc/tzgo/tezos"
 
 	"quantify.earth/x4c/pkg/tzclient"
 )
@@ -14,22 +14,37 @@ func FA2Originate(
 	client tzclient.TezosClient,
 	contractBytes []byte,
 	signer tzclient.Wallet,
-	oracle tezos.Address,
+	storage FA2Snapshot,
 ) (tzclient.Contract, error) {
 
-	storage := micheline.NewPair(
+	metadata, err := storage.GetJSONMetadataAsMichelson()
+	if err != nil {
+		return tzclient.Contract{}, fmt.Errorf("failed to parse metadata: %w", err)
+	}
+
+	tokenMetadata, err := storage.GetJSONTokenMetadataAsMichelson()
+	if err != nil {
+		return tzclient.Contract{}, fmt.Errorf("failed to parse token metadata: %w", err)
+	}
+
+	ledger, err := storage.GetJSONLedgerAsMichelson()
+	if err != nil {
+		return tzclient.Contract{}, fmt.Errorf("failed to parse ledger: %w", err)
+	}
+
+	michelson_storage := micheline.NewPair(
 		micheline.NewCode(micheline.D_PAIR,
 			micheline.NewPair(
-				micheline.NewSeq(),
-				micheline.NewSeq(),
+				ledger,
+				metadata,
 			),
 			micheline.NewSeq(),
-			micheline.NewString(oracle.String()),
+			micheline.NewString(storage.Oracle),
 		),
-		micheline.NewSeq(),
+		tokenMetadata,
 	)
 
-	res, err := client.Originate(ctx, signer, contractBytes, storage)
+	res, err := client.Originate(ctx, signer, contractBytes, michelson_storage)
 
 	return res, err
 }

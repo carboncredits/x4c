@@ -171,3 +171,22 @@ done
 x4cli fa2 info 4CTokenContract
 x4cli fa2 info -json 4CTokenContract | jq ".ledger_bigmap[0].value" | grep -q "9965"
 x4cli fa2 info -json 4CTokenContract | jq ".retire_events[2].Reason" | grep -q "retire2"
+
+
+# Now dump the current contract, and originate a duplicate, as a precursor to upgrade testing
+# We do it as alice to show that it doesn't need to be the oracle
+x4cli fa2 info -json 4CTokenContract > original.json
+x4cli fa2 originate 4CTokenContract2 build/fa2.tz alice original.json
+
+# wait for the new contract to show up in the indexer
+c=0
+until x4cli fa2 info -json 4CTokenContract2 | jq ".oracle" | grep -q `x4cli info 4CTokenOracle`;
+do
+  ((c++)) && ((c==20)) && exit 1
+  sleep 1;
+done
+
+# now we should find that the new contract has the same ledger as the old one, but none of the emits
+x4cli fa2 info 4CTokenContract2
+x4cli fa2 info -json 4CTokenContract2 | jq ".ledger_bigmap | length" | grep -q "1"
+x4cli fa2 info -json 4CTokenContract2 | jq ".retire_events | length" | grep -q "0"

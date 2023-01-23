@@ -14,26 +14,6 @@ import (
 	"quantify.earth/x4c/pkg/x4c"
 )
 
-type FA2Snapshot struct {
-	// Basic info (will include bigmap IDs)
-	x4c.FA2Storage
-
-	// Bigmaps that are stored. We can't output these as JSON because
-	// unlike bigmaps, JSON can only have simple types as dictionary
-	// so these are just for holding the data
-	LedgerContents        x4c.FA2Ledger           `json:"-"`
-	MetadataContents      x4c.FA2Metadata         `json:"-"`
-	TokenMetadataContents x4c.FA2TokenMetadataMap `json:"-"`
-
-	// These are the versions of the above for JSON output
-	JSONSafeLedger        []map[string]interface{} `json:"ledger_bigmap"`
-	JSONSafeMetadata      []map[string]interface{} `json:"metadata_bigmap"`
-	JSONSafeTokenMetadata []map[string]interface{} `json:"token_metadata_bigmap"`
-
-	// Emits on this contract
-	RetireEvents []x4c.FA2RetireEvent `json:"retire_events"`
-}
-
 type fa2InfoCommand struct{}
 
 func NewFA2InfoCommand() (cli.Command, error) {
@@ -108,7 +88,7 @@ func (c fa2InfoCommand) Run(rawargs []string) int {
 		return 1
 	}
 
-	info := FA2Snapshot{
+	info := x4c.FA2Snapshot{
 		FA2Storage:            storage,
 		LedgerContents:        ledger,
 		MetadataContents:      metadata,
@@ -129,7 +109,7 @@ func (c fa2InfoCommand) Run(rawargs []string) int {
 	return 0
 }
 
-func displayFA2AsText(client tzclient.Client, info FA2Snapshot) error {
+func displayFA2AsText(client tzclient.Client, info x4c.FA2Snapshot) error {
 	oracleName := client.FindNameForAddress(info.Oracle)
 	fmt.Printf("Oracle: %v\n", oracleName)
 
@@ -138,7 +118,7 @@ func displayFA2AsText(client tzclient.Client, info FA2Snapshot) error {
 		t := tabby.New()
 		t.AddHeader("ID", "Owner", "Amount")
 		for key, value := range info.LedgerContents {
-			owner := client.FindNameForAddress(key.TokenOwnder)
+			owner := client.FindNameForAddress(key.TokenOwner)
 			t.AddLine(key.TokenIdentifier, owner, value)
 		}
 		t.Print()
@@ -180,32 +160,35 @@ func displayFA2AsText(client tzclient.Client, info FA2Snapshot) error {
 	return nil
 }
 
-func displayFA2AsJson(info FA2Snapshot) error {
+func displayFA2AsJson(info x4c.FA2Snapshot) error {
 
 	// we need to populate the JSON safe fields here
-	safe_ledger := make([]map[string]interface{}, 0, len(info.LedgerContents))
+	safe_ledger := make([]x4c.JSONSafeFA2Ledger, 0, len(info.LedgerContents))
 	for key, value := range info.LedgerContents {
-		item := make(map[string]interface{}, 2)
-		item["key"] = key
-		item["value"] = value
+		item := x4c.JSONSafeFA2Ledger{
+			Key:   key,
+			Value: json.Number(fmt.Sprintf("%v", value)),
+		}
 		safe_ledger = append(safe_ledger, item)
 	}
 	info.JSONSafeLedger = safe_ledger
 
-	safe_metadata := make([]map[string]interface{}, 0, len(info.MetadataContents))
+	safe_metadata := make([]x4c.JSONSafeFA2Metadata, 0, len(info.MetadataContents))
 	for key, value := range info.MetadataContents {
-		item := make(map[string]interface{}, 2)
-		item["key"] = key
-		item["value"] = value
+		item := x4c.JSONSafeFA2Metadata{
+			Key:   key,
+			Value: value,
+		}
 		safe_metadata = append(safe_metadata, item)
 	}
 	info.JSONSafeMetadata = safe_metadata
 
-	safe_token_metadata := make([]map[string]interface{}, 0, len(info.TokenMetadataContents))
+	safe_token_metadata := make([]x4c.JSONSafeFA2TokenMetadata, 0, len(info.TokenMetadataContents))
 	for key, value := range info.TokenMetadataContents {
-		item := make(map[string]interface{}, 2)
-		item["key"] = key
-		item["value"] = value
+		item := x4c.JSONSafeFA2TokenMetadata{
+			Key:   json.Number(fmt.Sprintf("%v", key)),
+			Value: value,
+		}
 		safe_token_metadata = append(safe_token_metadata, item)
 	}
 	info.JSONSafeTokenMetadata = safe_token_metadata

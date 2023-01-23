@@ -270,3 +270,19 @@ CustodianOperatorRemote: tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z
 
 An example use case of this can be seen in the integration tests shell script in the cli directory.
 
+
+## Upgrades
+
+Upgrades are very much a work in progress. For now the tooling only has support for duplicating the FA2 contract. You can take a JSON snapshot of the current FA2 contract like so:
+
+```
+$ x4cli fa2 info -json 4CTokenContract > fa2.json
+```
+
+You can then use this json file to originate another contract with the same oracle, metadata, token metadata, and ledger of minted tokens:
+
+```
+$ x4cli fa2 originate Next4CTokenContract ./build/fa2.tz 4CTokenOracle fa2.json
+```
+
+Note that doing this will not transfer emitted events, as Tezos events are tied to a specific contract instance.

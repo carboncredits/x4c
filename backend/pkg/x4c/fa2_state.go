@@ -2,6 +2,7 @@ package x4c
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
@@ -9,13 +10,13 @@ import (
 )
 
 type FA2Operator struct {
-	TokenOwnder     string `json:"token_owner"`
+	TokenOwner      string `json:"token_owner"`
 	TokenOperator   string `json:"token_operator"`
 	TokenIdentifier int64  `json:"token_id"`
 }
 
 type FA2Owner struct {
-	TokenOwnder     string      `json:"token_owner"`
+	TokenOwner      string      `json:"token_owner"`
 	TokenIdentifier json.Number `json:"token_id"`
 }
 
@@ -89,7 +90,13 @@ func (storage *FA2Storage) GetFA2Metadata(ctx context.Context, client tzclient.T
 		if err != nil {
 			return nil, fmt.Errorf("Failed to decode FA2 metadata value %v: %w", item.Value, err)
 		}
-		result[key] = value
+		// if the data is a hex encoded string, then unpack it
+		decoded, err := hex.DecodeString(value)
+		if err != nil {
+			result[key] = value
+		} else {
+			result[key] = string(decoded)
+		}
 	}
 
 	return result, nil
@@ -117,12 +124,19 @@ func (storage *FA2Storage) GetTokenMetadata(ctx context.Context, client tzclient
 			return nil, fmt.Errorf("failed to decode key %v: %v", keyraw, err)
 		}
 
-		var value FA2TokenMetadata
-		err = json.Unmarshal(item.Value, &value)
+		var tokenMetadata FA2TokenMetadata
+		err = json.Unmarshal(item.Value, &tokenMetadata)
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode ledger value %v: %w", item.Value, err)
 		}
-		result[key] = value
+		// If possible, convert the hex encoded metadata to the original string
+		for key, value := range tokenMetadata.TokenInformation {
+			decoded, err := hex.DecodeString(value)
+			if err == nil {
+				tokenMetadata.TokenInformation[key] = string(decoded)
+			}
+		}
+		result[key] = tokenMetadata
 	}
 
 	return result, nil

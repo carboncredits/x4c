@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -19,7 +20,7 @@ func NewFA2OriginateCommand() (cli.Command, error) {
 }
 
 func (c fa2OriginateCommand) Help() string {
-	return `usage: x4cli fa2 originate ALIAS TZ_FILE_PATH SIGNER ORACLE
+	return `usage: x4cli fa2 originate ALIAS TZ_FILE_PATH SIGNER [ORACLE|Storage JSON]
 
 Originates the FA2 contract with the specified address as the oracle.`
 }
@@ -61,23 +62,43 @@ func (c fa2OriginateCommand) Run(args []string) int {
 		return 1
 	}
 
-	// arg2 - Oracle name/address
-	oracle := signer.Address
+	// arg3 - Oracle name/address or filename with storage in
+	var storage x4c.FA2Snapshot
+	storage.FA2Storage.Oracle = signer.Address.String()
+
 	if len(args) == 4 {
 		oracle_wallet, ok := client.Wallets[args[3]]
 		if !ok {
 			oracle_wallet, err = tzclient.NewWalletWithAddress("oracle", args[3])
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Oracle address is not valid: %v\n", err)
-				return 1
+				// if we don't think this is a valid address, then see if it's a file
+				storageFile, err := os.Open(args[3])
+				if err != nil {
+					fmt.Fprintln(os.Stderr, "Final argument is neither a valid oracle address nor a storage JSON file")
+					return 1
+				}
+				defer storageFile.Close()
+
+				decoder := json.NewDecoder(storageFile)
+				decoder.DisallowUnknownFields()
+				err = decoder.Decode(&storage)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Failed to parse storage file: %v\n", err)
+					return 1
+				}
+				if storage.Oracle == "" {
+					fmt.Fprintf(os.Stderr, "No oracle specified in file\n")
+					return 1
+				}
+			} else {
+				storage.Oracle = oracle_wallet.Address.String()
 			}
 		}
-		oracle = oracle_wallet.Address
 	}
 
 	ctx := context.Background()
 
-	contract, err := x4c.FA2Originate(ctx, client, contractBytes, signer, oracle)
+	contract, err := x4c.FA2Originate(ctx, client, contractBytes, signer, storage)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to originate contract: %v\n", err)
 		return 1
