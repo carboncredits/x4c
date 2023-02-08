@@ -3,7 +3,7 @@ module quantify.earth/x4c
 go 1.19
 
 require (
-	blockwatch.cc/tzgo v1.14.3-0.20221101120936-2e343a4e8328
+	blockwatch.cc/tzgo v1.15.1
 	github.com/cheynewallace/tabby v1.1.1
 	github.com/echa/log v1.2.2
 	github.com/julienschmidt/httprouter v1.3.0
