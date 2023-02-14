@@ -4,13 +4,24 @@
 #include "../src/fa2.mligo"
 type storage_fa2 = storage
 type entrypoint_fa2 = entrypoint
-type retire_tokens_event_fa2 = bytes
+type retire_tokens_event_fa2 = {
+   retiring_party: address;
+   token_id: nat;
+   amount: nat;
+   retiring_data: bytes;
+}
 
 #include "../src/custodian.mligo"
 type result_custodian = result
 type owner_custodian = owner
 type operator_custodian = operator
-type retire_tokens_event_custodian = bytes
+type retire_tokens_event_custodian = {
+    retiring_party: address;
+    retiring_party_kyc: bytes;
+    token_id: nat;
+    amount: nat;
+    retiring_data: bytes;
+}
 
 let test_internal_mint_with_tokens =
 	let test_fa2 = Common.fa2_bootstrap(3n) in
@@ -351,7 +362,7 @@ let test_retire =
         } in
 		let events: retire_tokens_event_custodian list = Test.get_last_events_from test_custodian.contract "retire" in
 			match events with
-			| [ val ] -> assert (val = Bytes.pack retire_custodian_event)
+			| [ val ] -> assert (val = retire_custodian_event)
 			| [] -> Test.failwith "no data found"
 			| _ -> Test.failwith "got wrong data"
 		in
@@ -365,7 +376,7 @@ let test_retire =
         } in
 		let events: retire_tokens_event_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
 			match events with
-			| [ val ] -> assert (val = Bytes.pack retire_fa2_event)
+			| [ val ] -> assert (val = retire_fa2_event)
 			| [] -> Test.failwith "no data found"
 			| _ -> Test.failwith "got wrong data"
 		in ()
@@ -488,7 +499,7 @@ let test_operator_can_retire =
         } in
 		let events: retire_tokens_event_custodian list = Test.get_last_events_from test_custodian.contract "retire" in
 			match events with
-			| [ val ] -> assert (val = Bytes.pack retire_custodian_event)
+			| [ val ] -> assert (val = retire_custodian_event)
             | [] -> Test.failwith "no data found"
 			| _ -> Test.failwith "got wrong data"
 		in
@@ -502,7 +513,7 @@ let test_operator_can_retire =
         } in
 		let events: retire_tokens_event_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
 			match events with
-			| [ val ] -> assert (val = Bytes.pack retire_fa2_event)
+			| [ val ] -> assert (val = retire_fa2_event)
 			| [] -> Test.failwith "no data found"
 			| _ -> Test.failwith "got wrong data"
 		in ()

@@ -334,13 +334,13 @@ let retire (param : internal_retire list) (storage : storage) : result =
     let ops_emit_retirement =
         flat_map
         (fun (p : internal_retire) : operation list ->
-            List.map (fun (d: internal_retire_data) : operation -> Tezos.emit "%retire" (Bytes.pack {
+            List.map (fun (d: internal_retire_data) : operation -> Tezos.emit "%retire" {
                 retiring_party = (Tezos.get_source ()) ;
                 retiring_party_kyc = d.retiring_party_kyc ;
                 token_id = d.token_id ;
                 amount = d.amount ;
                 retiring_data = d.retiring_data ;
-            })) p.txs
+            }) p.txs
         )
         param in
    concat (ops_retire_tokens, ops_emit_retirement) , storage

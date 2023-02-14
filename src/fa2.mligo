@@ -202,7 +202,7 @@ let mint_tokens (param : mint) (storage : storage) : result =
 let retire_tokens (param : retire) (storage : storage) : result =
     List.map (
         fun (p: retire_tokens): operation ->
-            Tezos.emit "%retire" (Bytes.pack p)
+            Tezos.emit "%retire" p
     )
     param
     ,
