@@ -68,14 +68,21 @@ In this section we describe how all these parts fit together in the initial
 
 In the 4C Tezos contract system we have two contract types, the FA2 token issuing contract, and the custodian token management contract. Tokens in this will related to some amount of CO2 offset typically, enabling you to buy carbon credits ahead of time, and then later retire them as offsets are needed.
 
-There will typically be one FA2 contract per institute managing credits being added to the chain, and the optionally those who acquire tokens can choose to use the custodian contract to own their tokens, letting them do publicly visible internal accounting, such as assigning tokens to departments within a larger organisation, without having to give every department their own wallet.
+There will typically be one FA2 contract per institute managing credits being added to the chain, with each carbon credit generating project being in effect a new asset-type, and the credits within that project being a token (e.g., 1 token represents 1kg of CO2).
 
-The custodian contract is similar to an FA2 contract in many ways: it has an internal ledger, whereby the tokens owned by the custodian contract are kept, and they're assigned to off-chain entities, which are just labels rather than wallets. It also has an owner (cf the FA2 Oracle) and operators, which allow the owner to delegate retirement responsibility.
+Once the credits have been registered, people can acquire them. The mechanism for any exchange to pay for the credits etc. is not part of the X4C contract - that happens outside, and when some agreement is reached a number of project credits, or tokens for a particular asset, are transferred to the buyer.
+
+The buyer may assign the tokens to a wallet directly, or more likely in the X4C context, they will use an X4C custodian contract. Using a custodian contract to manage tokens you own confers two benefits:
+
+1. You can divide the tokens you've acquired between multiple off-chain entities (represented as byte strings in the contract). For example, a large enterprise could buy the credits and then assign them to different departments within that organisation. Doing so with a custodian contract means the different departments do not need their own wallets, and all the retirements will be still credited to the enterprise, but there will be some trail of how they were used on the chain.
+1. The custodian contract makes it easier to dominate a delegate wallet, which is useful for security reasons, and discussed in more detail below. In theory you can use operators on the FA2 contract directly, but that requires approval of the FA2 operator each time, so its easier to do this on a custodian contract you have ownership of.
+
+Carbon credits do not tend to be held on to, like other assets, rather they are "consumed" when the holder emits some carbon, thus being used to offset those emissions. When this happens the tokens are "retired", which in effect deletes them from both the custodian contract (if one is being used) and from the originating FA2 contract. Although the token is deleted, the tokens lifecycle will have been recorded in the blockchain, providing traceability that the institution bought and retired the carbon credit.
 
 
 ## Tasks
 
-Here are a list of the major tasks within the X4C system, and who is responsible for initiating them.
+Here are a list of the major tasks within the X4C system, which translate to endpoint calls on the contracts, and who is responsible for initiating them.
 
 ### FA2 minting
 
@@ -123,11 +130,22 @@ Here are a list of the major tasks within the X4C system, and who is responsible
 * Description: removes a specified number of tokens from the owner's ledger entry, effectively deleting them, signifying carbon credits being retired.
 
 
-## Key Management
+# X4C Initial Production Configuration
 
-In a standard X4C system it is expected that tokens will be acquired in bulk batches ahead of time, and retired as carbon offsets are consumed on flights etc. made by the organisation, perhaps via some web-service as part of the travel booking.
+As outlined in the introduction section, key security is vital in a blockchain system, as once a private key is known, the owner can be spoofed. For a working system there will have to be some time spent with keys being hot, but that should be minimised as much as possible. To understand how to achieve that, we first need to examine how X4C is expected to be deployed.
 
-This leads to a division of tasks that can be done in batch operation periodically by a human, and other tasks that need to be done continuously through the lifetime of the system:
+## Carbon Credit Token Lifecycle
+
+In a standard X4C system it is expected that tokens will be acquired in bulk batches ahead of time, and retired as carbon offsets are consumed on flights etc. made by the organisation, perhaps via some web-service as part of the travel booking. The rough cycle is:
+
+1. A project has some carbon sinking ability that it wants to offer as offsets. This project is added to the FA2 contract.
+2. As offsets are generated, tokens are added to the FA2 token. Whilst this is an incremental process, in practice we anticipate this will be done in bulk periodically.
+3. An organisation will acquire tokens, with the FA2 owner assigning them to the organisations custodian contract. Again, this is expected to be a periodic bulk purchase initially, similar to how offsets are bought today.
+4. The organisation will then synchronise their custodian contract with the FA2 contract, so the new credits are now on the ledger in the custodian contract.
+5. The credits will then most likely be divided between off-chain entities at the same time.
+6. As the organisation goes about its business, carbon emmisions will be gradually generated, and as part of that process, tokens will be retired.
+
+In this workflow, it's only the last stage that is a continual process, with all the other stages effectively being a manual batch operation done periodically by a human.
 
 | Batch | Continuous |
 |---|---|
@@ -137,6 +155,9 @@ This leads to a division of tasks that can be done in batch operation periodical
 | Custodian Mint | |
 | Custorian Transfer | |
 | Custorian Update Operators | |
+
+
+## Key Management Implications
 
 For those operations that need to be continuously available, we will need a hot wallet to be accessible on a server, which represents an attack risk, and for such operations we should only use an operator token with limited power, and we should use an HSM to store the private key. With this setup an attacker may do limited damage when they compromise a system. For other operations the keys should be managed by a human using a mostly cold wallet that is not typically connected to a computer except for the brief moment when tokens are minted, or such.
 
