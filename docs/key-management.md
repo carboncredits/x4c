@@ -189,11 +189,21 @@ In this workflow, it's only the last stage that is a continual process, with all
 
 ## Key Management Implications
 
-For those operations that need to be continuously available, we will need a hot wallet to be accessible on a server, which represents an attack risk, and for such operations we should only use an operator token with limited power, and we should use an HSM to store the private key. With this setup an attacker may do limited damage when they compromise a system. For other operations the keys should be managed by a human using a mostly cold wallet that is not typically connected to a computer except for the brief moment when tokens are minted, or such.
+For those operations that need to be continuously available, we will need a hot wallet to be accessible on a server. For all other operations the keys should be managed by a human using a  cold wallet that is only brought online briefly to carry out specific actions like registering projects, minting new tokens, and transferring tokens to organisations that acquire them, and the security can be further enhanced using a hardware backed wallet like [Ledger](https://www.ledger.com/tezos-wallet) or [Trezor](https://trezor.io).
 
-In practice, because only the FA2 Owner can create FA2 delegates, in practice we can eliminate that role from our system planning, as it is easier if you want to delegate token access to run a custodian contract even if you have no off-chain entities to worry about.
+However the hot wallet used to power the server is a significant attack liability:
 
-As such, we then end up with a key arrangement:
+1. No wallets with any sort of significant power should be stored on a publicly reachable server (so neither FA2 Oracle or Custodian Owner).
+2. No private-keys should be left on any publicly reachable server.
+
+Note that by "publicly reachable" I mean any server that your web service connects to, even if that machine isn't on the public facing Internet directly. We have to assume that any node in a cluster that makes up a web-service can be reachable once compromised by an attacker. If your private-keys are on a machine that only response to local network requests from a publicly addressable we have to assume that a determined attacker will compromise the first machine to then reach the second machine.
+
+The solution to this is then twofold:
+
+1. We should use operator wallets for any contract endpoints that require a hot wallet as part of the deployment.
+2. We should use an HSM to store the private-key on the server, so as to limit the impact of an attack.
+
+Thus in the X4C system, the hot/cold wallet division would become:
 
 | Key | Type |
 |---|---|
