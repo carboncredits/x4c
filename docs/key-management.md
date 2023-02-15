@@ -80,54 +80,83 @@ The buyer may assign the tokens to a wallet directly, or more likely in the X4C 
 Carbon credits do not tend to be held on to, like other assets, rather they are "consumed" when the holder emits some carbon, thus being used to offset those emissions. When this happens the tokens are "retired", which in effect deletes them from both the custodian contract (if one is being used) and from the originating FA2 contract. Although the token is deleted, the tokens lifecycle will have been recorded in the blockchain, providing traceability that the institution bought and retired the carbon credit.
 
 
-## Tasks
+## FA2 Entrypoints
 
 Here are a list of the major tasks within the X4C system, which translate to endpoint calls on the contracts, and who is responsible for initiating them.
 
-### FA2 minting
+### Add Token
+
+* Initiated by: FA2 Oracle
+* Description: When a project is registered, it has to be given a unique ID to identify it's tokens; this call adds the ID to the FA2 contract ledger.
+
+### Mint Token
 
 * Initiated by: FA2 Oracle
 * Description: When a project generates new credits, these must first be generated in the FA2 contract as tokens. Initially minted tokes are owned by the contract oracle.
 
-### FA2 token transfer
+### Token Transfer
 
 * Initiated by: Token owner
 * Description: At some point an entity will want to acquire tokens, and so the FA2 oracle will transfer them to that organisation, or to their custodian contract.
 
-### Custodian minting
+### Update Operators
+
+* Initiated by: FA2 Oracle
+* Description: Allows the adding or removing of another entity to be designated as having the ability to transfer a particular set of tokens.
+
+### Retire
+
+* Initiated by: Token owner
+* Description: removes a specified number of tokens from the owner's ledger entry, effectively deleting them, signifying carbon credits being retired.
+
+
+### Update contract metadata
+
+* Initiated by: FA2 Oracle
+* Description: Standard FA2 call that lets the oracle set some metadata about the contract, which is then shown in indexers. Not used in X4C workflow.
+
+
+### Update Oracle
+* Initiated by: FA2 Oracle
+* Description: Lets the current Oracle nominate a new entity to be the owner of the FA2 contract. Not used in X4C workflow.
+
+
+### Balance of
+* Initiated By: Anyone
+* Description: returns the balance for a token. Superseded by the view, but kept for legacy reasons. Not used in the X4C workflow.
+
+
+## Custodian Entrypoints
+
+### Internal Mint
 
 * Initiated by: Custodian owner
 * Description: If the token owner is using a custodian contract to manage their tokens, then they need to manually synchronise the custodian contract with the main FA2 contract to ensure tokens they own on the FA2 contract's internal ledger appear on the custodian contract's ledger.
 
 
-### Custodian transfer
+### Internal Transfer
 
 * Initiated by: Custodian owner
 * Description: This updates the custodian contract's internal ledger to divide the tokens from a given FA2 contract an off-chain entity.
 
 
-### FA2 update operators
-
-* Initiated by: FA2 oracle
-* Description: Allows the adding or removing of another entity to be designated as having the ability to transfer a particular set of tokens.
-
-
-### Custodian update operators
+### Update Operators
 
 * Initiated by: Custodian owner
 * Description: Allows the adding or removing of another entity to be designated as having the ability to retire a particular set of tokens for a particular off-chain entity.
 
 
-### Custodian retiring
+### Retire
 
 * Initiated by: Custodian owner OR Custodian operator
 * Description: Removes tokens from the custodian ledger and then calls the FA2 contract to retire the contracts properly.
 
 
-### FA2 retiring
+### External Transfer
 
-* Initiated by: Token owner
-* Description: removes a specified number of tokens from the owner's ledger entry, effectively deleting them, signifying carbon credits being retired.
+* Initiated by: Custodian owner
+* Description: Is used to assign tokens to some other entity, removing them from the custodian contract, without retiring them. Not currently used in the X4C system.
+
 
 
 # X4C Initial Production Configuration
@@ -152,8 +181,9 @@ In this workflow, it's only the last stage that is a continual process, with all
 | FA2 Mint | FA2 Retire |
 | FA2 Transfer | Custodian Retire |
 | FA2 Update Operators | |
-| Custodian Mint | |
-| Custorian Transfer | |
+| FA2 Add Token | |
+| Custodian Internal Mint | |
+| Custorian Internal Transfer | |
 | Custorian Update Operators | |
 
 
