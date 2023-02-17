@@ -242,7 +242,32 @@ We should use as many custodian wallets as makes sense (e.g., if different depar
 
 Typically a web-service these days consists of many parts (front-end load balancer, service code, database, etc.) running over a number of different machines. In a typical X4C system we will end up with at least the following set of services running:
 
-[pic]
+```
+
+					│                                                │
+ ┌────────────┐     │
+ │   Tezos    │ ◀───┼────────────────────────────────────────────────┼────────────┐
+ └────────────┘     │                                                             │
+					│                                                │            │
+ ┌────────────┐     │    ┌──────────────┐      ┌──────────────┐             ┌───────────┐
+ │            │     │    │              │      │              │      │      │           │
+ │User Browser│ ────┼───▶│    Caddy     │─────▶│  Biz logic   │────────────▶│ X4C REST  │
+ │            │     │    │              │      │              │      │      │           │
+ └────────────┘     │    └──────────────┘      └──────────────┘             └───────────┘
+					│                                  │             │            │
+					│                                  │                          │
+					│                                  ▼             │            ▼
+					│                          ┌──────────────┐             ┌───────────┐
+					│                          │   Database   │      │      │ Signatory │
+					│                          │              │             │           │
+					│                          └──────────────┘      │      └───────────┘
+																				  │
+																				  ▼
+																			┌───────────┐
+																			│    HSM    │
+																			│           │
+																			└───────────┘
+```
 
 From the perspective of trying to minimise access to the hot wallet, the machine with the HSM should have the smallest possible amount of code running on it with the least flexible service API presented to other machines: this minimises the amount of functinality exposed to someone on the same network (being able to make arbitrary API calls to the machine) and the minimal footprint of code that could be exploited to get onto the machine itself.
 
