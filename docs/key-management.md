@@ -192,11 +192,11 @@ As outlined in the introduction section, key security is vital in a blockchain s
 In a standard X4C system it is expected that tokens will be acquired in bulk batches ahead of time, and retired as carbon offsets are consumed on flights etc. made by the organisation, perhaps via some web-service as part of the travel booking. The rough cycle is:
 
 1. A project has some carbon sinking ability that it wants to offer as offsets. This project is added to the FA2 contract.
-2. As offsets are generated, tokens are added to the FA2 token. Whilst this is an incremental process, in practice we anticipate this will be done in bulk periodically.
-3. An organisation will acquire tokens, with the FA2 owner assigning them to the organisations custodian contract. Again, this is expected to be a periodic bulk purchase initially, similar to how offsets are bought today.
-4. The organisation will then synchronise their custodian contract with the FA2 contract, so the new credits are now on the ledger in the custodian contract.
-5. The credits will then most likely be divided between off-chain entities at the same time.
-6. As the organisation goes about its business, carbon emmisions will be gradually generated, and as part of that process, tokens will be retired.
+1. As offsets are generated, tokens are added to the FA2 token. Whilst this is an incremental process, in practice we anticipate this will be done in bulk periodically.
+1. An organisation will acquire tokens, with the FA2 owner assigning them to the organisations custodian contract. Again, this is expected to be a periodic bulk purchase initially, similar to how offsets are bought today.
+1. The organisation will then synchronise their custodian contract with the FA2 contract, so the new credits are now on the ledger in the custodian contract.
+1. The credits will then most likely be divided between off-chain entities at the same time.
+1. As the organisation goes about its business, carbon emmisions will be gradually generated, and as part of that process, tokens will be retired.
 
 In this workflow, it's only the last stage that is a continual process, with all the other stages effectively being a manual batch operation done periodically by a human.
 
@@ -213,19 +213,20 @@ In this workflow, it's only the last stage that is a continual process, with all
 
 ## Key Management Implications
 
-For those operations that need to be continuously available, we will need a hot wallet to be accessible on a server. For all other operations the keys should be managed by a human using a  cold wallet that is only brought online briefly to carry out specific actions like registering projects, minting new tokens, and transferring tokens to organisations that acquire them, and the security can be further enhanced using a hardware backed wallet like [Ledger](https://www.ledger.com/tezos-wallet) or [Trezor](https://trezor.io).
+The majority of management actions in X4C are batch operations, and the keys used for those operations should be managed by a human using one or more cold wallets that are only brought online briefly to carry out specific actions. Ideally these wallets would be a hardware backed wallet like [Ledger](https://www.ledger.com/tezos-wallet) or [Trezor](https://trezor.io).
 
-However the hot wallet used to power the server is a significant attack liability:
+For the online part of the X4C service, where retirements are carried out on a continuous basis via a web-service, a hot wallet will be required. As should now be obvious, this is then then part of the system at most risk. We can mitigate some of that risk by following these two guidelines:
 
 1. No wallets with any sort of significant power should be stored on a publicly reachable server (so neither FA2 Oracle or Custodian Owner).
-2. No private-keys should be left on any publicly reachable server.
+1. No private-keys should be left on any publicly reachable server.
+
 
 Note that by "publicly reachable" I mean any server that your web service connects to, even if that machine isn't on the public facing Internet directly. We have to assume that any node in a cluster that makes up a web-service can be reachable once compromised by an attacker. If your private-keys are on a machine that only response to local network requests from a publicly addressable we have to assume that a determined attacker will compromise the first machine to then reach the second machine.
 
 The solution to this is then twofold:
 
 1. We should use operator wallets for any contract endpoints that require a hot wallet as part of the deployment.
-2. We should use an HSM to store the private-key on the server, so as to limit the impact of an attack.
+1. We should use an HSM to store the private-key on the server, so as to limit the impact of an attack.
 
 Thus in the X4C system, the hot/cold wallet division would become:
 
@@ -235,5 +236,18 @@ Thus in the X4C system, the hot/cold wallet division would become:
 | Custodian Owner | Cold |
 | Custodian Operator | Hot |
 
+We should use as many custodian wallets as makes sense (e.g., if different departments in an organisation have different portals for say retiring offsets for flights via the travel portal versus retiring offsets for ongoing infrastructure related emissions), with each limited to being able to retire only the credits it is allowed to access (this assumes the services are run on different servers, if they reside on the same server then there is no benefit to this).
+
+## Service Infrastructure Implications
+
+Typically a web-service these days consists of many parts (front-end load balancer, service code, database, etc.) running over a number of different machines. In a typical X4C system we will end up with at least the following set of services running:
+
+[pic]
+
+From the perspective of trying to minimise access to the hot wallet, the machine with the HSM should have the smallest possible amount of code running on it with the least flexible service API presented to other machines: this minimises the amount of functinality exposed to someone on the same network (being able to make arbitrary API calls to the machine) and the minimal footprint of code that could be exploited to get onto the machine itself.
+
+From this perspective, we draw the line at the X4C REST service, which offers a minimal "retire" REST API, being what runs on the machine with the HSM. Although services such as [signatory](https://signatory.io) make it possible for X4C's REST service to run on another node and make signing requests, that offers an API much more open to abuse by someone who gets onto that network. By only having miminal Tezos interaction code in the X4C REST service, and all other X4C business logic on another node, we minimise the amount of exploitable code that runs on the HSM machine.
+
+Obviously there are physical security considerations when using an HSM, but those are outwith the scope of this document.
 
 
