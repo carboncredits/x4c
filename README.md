@@ -271,3 +271,17 @@ CustodianOperatorRemote: tz1XnDJdXQLMV22chvL9Vpvbskcwyysn8t4z
 
 An example use case of this can be seen in the integration tests shell script in the cli directory.
 
+
+# Integration tests
+
+Set the docker containers needed for the integrations running with the command:
+
+```
+$ docker-compose --profile setup up
+```
+
+Once they are up, you can run the tests with:
+
+```
+$ docker-compose --profile setup --profile test run test
+```
