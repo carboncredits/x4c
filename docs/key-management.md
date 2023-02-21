@@ -167,8 +167,8 @@ Here are a list of the major tasks within the X4C system, which translate to end
 
 ### Internal Transfer
 
-* Initiated by: Custodian owner
-* Description: This updates the custodian contract's internal ledger to assign some number of tokens from a given FA2 contract to an off-chain entity.
+* Initiated by: Custodian owner OR Custodian operator
+* Description: This updates the custodian contract's internal ledger to assign some number of tokens to an off-chain entity, either from the unassigned pool, or from the off-chain entity controlled by the operator.
 
 
 ### Update Operators
