@@ -15,9 +15,9 @@ The blockchain works on public-key cryptography, where an encryption key comes i
 
 ### Wallet
 
-The Tezos term for a public/private key pair used for signing operations. The name wallet implies storage, but in fact it is just a key pair, and then funds and tokens stores on the blockchain and associated to that key pair.
+The Tezos term for a public/private key pair used for signing operations. The name wallet implies storage, but in fact it is just a key pair, and the funds and tokens associated with that wallet are stored on the blockchain itself.
 
-Transactions on the blockchain are verified as being on behalf of a particular wallet by having the wallet owner use the private key pair to sign the transaction. This means that in a blockchain system, the ability to carry out actions is based on access to the private key of a key-pair, which is why it's vitally important to restrict access to the private key.
+Transactions on the blockchain are verified as being on behalf of a particular wallet by having the wallet owner use the private key to sign the transaction. This means that in a blockchain system, the ability to carry out actions is based on access to the private key of a key-pair, which is why it's vitally important to restrict access to the private key.
 
 ### Hot and Cold Wallets
 
@@ -26,9 +26,9 @@ A wallet is said to be "hot" if it's being used in a computer, and "cold" if it'
 
 ### Hardware Security Module (HSM)
 
-To sign data on a particular computer you need access on that computer to the private key of a key-pair. This means that if a computer is compromised then the attacker can now spoof being the owner of the key-pair or wallet because they have access to the private key. Worse, because digital data is inherently copyable, the attacker can take the private-key off the compromised computer to their own computer and forever more pretend to be that wallet, even if their access to the computer is later revoked.
+To sign data on a particular computer you need access on that computer to the private key of a key-pair. This means that if a computer is compromised then the attacker can now spoof being the owner of the key-pair or wallet because they have access to the private key. Worse, because digital data is inherently copyable, the attacker can take the private key off the compromised computer to their own computer and forever more pretend to be that wallet, even if their access to the computer is later revoked.
 
-An HSM is a hardware device that you plug into a computer in order to solve the second problem described above. You can install your private-key into an HSM and then delete the private key from that computer, and from then on ask the HSM to sign things for you. An HSM will never give out the stored private key, it can only be used to sign things with that key - that means an attacker can never take a copy of the private key. They can still ask the HSM to sign things whilst they have access to the server, but once the attack is discovered and revoked they can no longer continue to sign things.
+An HSM is a hardware device that you plug into a computer in order to solve the second problem described above. You can install your private key into an HSM and then delete the private key from that computer, and from then on ask the HSM to sign things for you. An HSM will never give out the stored private key, it can only be used to sign things with that key - that means an attacker can never take a copy of the private key. They can still ask the HSM to sign things whilst they have access to the server, but once the attack is discovered and revoked they can no longer continue to sign things.
 
 
 ### FA2 Contracts
@@ -43,7 +43,7 @@ The main ones are:
 
 * **Token owner**: An entity who actually has some tokens assigned to them.
 
-* **Operator**: This is a delegated role, recorded in the FA2 contract instance. An oracle may add operators to carry out certain limited duties on a token owner's behalf on a specific owner (as there's nothing to stop a token owner owning many different token types within the same contract).
+* **Operator**: This is a delegated role, recorded in the FA2 contract instance. An oracle may add operators to carry out certain limited duties on a token owner's behalf on a specific set of tokens (as there's nothing to stop a token owner owning many different token types within the same contract).
 
 
 To reiterate, all three roles may be either human controlled wallets or other Tezos contracts.
@@ -62,7 +62,7 @@ In this sense, the operator mechanism in a Tezos FA2 contract is a simple versio
 
 # X4C Contract Overview
 
-In this section we describe how all these parts fit together in the initial
+In this section we describe how all these parts fit together in the current 4C token contract.
 
 ## Contract use
 
@@ -218,15 +218,15 @@ The majority of management actions in X4C are batch operations, and the keys use
 For the online part of the X4C service, where retirements are carried out on a continuous basis via a web-service, a hot wallet will be required. As should now be obvious, this is then then part of the system at most risk. We can mitigate some of that risk by following these two guidelines:
 
 1. No wallets with any sort of significant power should be stored on a publicly reachable server (so neither FA2 Oracle or Custodian Owner).
-1. No private-keys should be left on any publicly reachable server.
+1. No private keys should be left on any publicly reachable server.
 
 
-Note that by "publicly reachable" I mean any server that your web service connects to, even if that machine isn't on the public facing Internet directly. We have to assume that any node in a cluster that makes up a web-service can be reachable once compromised by an attacker. If your private-keys are on a machine that only response to local network requests from a publicly addressable we have to assume that a determined attacker will compromise the first machine to then reach the second machine.
+Note that by "publicly reachable" I mean any server that your web service connects to, even if that node isn't on the public facing Internet directly. We have to assume that any node in a cluster that makes up a web-service can be reachable via other compromised nodes. If your private keys are on a node that only responds to local network requests from a publicly addressable node we have to assume that a determined attacker will compromise the first node to then reach the second node.
 
 The solution to this is then twofold:
 
 1. We should use operator wallets for any contract endpoints that require a hot wallet as part of the deployment.
-1. We should use an HSM to store the private-key on the server, so as to limit the impact of an attack.
+1. We should use an HSM to store the private key on the server, so as to limit the impact of an attack.
 
 Thus in the X4C system, the hot/cold wallet division would become:
 
@@ -269,9 +269,11 @@ Typically a web-service these days consists of many parts (front-end load balanc
 																			└───────────┘
 ```
 
-From the perspective of trying to minimise access to the hot wallet, the machine with the HSM should have the smallest possible amount of code running on it with the least flexible service API presented to other machines: this minimises the amount of functinality exposed to someone on the same network (being able to make arbitrary API calls to the machine) and the minimal footprint of code that could be exploited to get onto the machine itself.
+In this diagram the X4C Rest service is talking to [Signatory](https://signatory.io), which is a signing service that lets us abstract whether we're using an HSM (as we do in production and staging environments), a cloud based KMS if deployed on say Azure or AWS, or just simple file backed key pair as used in CI tests.
 
-From this perspective, we draw the line at the X4C REST service, which offers a minimal "retire" REST API, being what runs on the machine with the HSM. Although services such as [signatory](https://signatory.io) make it possible for X4C's REST service to run on another node and make signing requests, that offers an API much more open to abuse by someone who gets onto that network. By only having miminal Tezos interaction code in the X4C REST service, and all other X4C business logic on another node, we minimise the amount of exploitable code that runs on the HSM machine.
+From the perspective of trying to minimise access to the hot wallet, the node with the HSM should have the smallest possible amount of code running on it with the least flexible service API presented to other nodes: this minimises the amount of functinality exposed to someone on the same network (being able to make arbitrary API calls to the node) and the minimal footprint of code that could be exploited to get onto the node itself.
+
+Based on this desire, we draw the line at the X4C REST service, which offers a minimal "retire" REST API, being what runs on the machine with the HSM. Although Signatory does make it possible for X4C's REST service to run on another node and make signing requests, that offers an API much more open to abuse by someone who gets onto that network. By only having miminal Tezos interaction code in the X4C REST service, and all other X4C business logic on another node, we minimise the amount of exploitable code that runs on the HSM machine.
 
 Obviously there are physical security considerations when using an HSM, but those are outwith the scope of this document.
 
