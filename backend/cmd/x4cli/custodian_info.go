@@ -225,7 +225,7 @@ func displayCustodianAsText(client tzclient.Client, info CustodianSnapshot) erro
 		t := tabby.New()
 		t.AddHeader("ID", "Time", "Token Address", "Token ID", "By", "KYC", "Amount", "Reason")
 		for _, event := range info.RetireEvents {
-			t.AddLine(event.Identifier, event.Timestamp, event.Token.Address, event.Token.TokenID, event.RetiringParty, event.RetiringPartyKyc(), event.Amount, event.Reason())
+			t.AddLine(event.Identifier, event.Timestamp, event.Token.Address, event.Token.TokenID, event.RetiringParty, event.RetiringPartyKyc, event.Amount, event.Reason)
 		}
 		t.Print()
 	}
