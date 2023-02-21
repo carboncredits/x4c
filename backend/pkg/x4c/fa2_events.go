@@ -2,7 +2,6 @@ package x4c
 
 import (
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
@@ -12,7 +11,18 @@ import (
 
 type FA2RetireEvent struct {
 	tzkt.Event
-	Reason string
+	RetiringParty       string      `json:"retiring_party"`
+	TokenID             json.Number `json:"tokenId"`
+	Amount              json.Number `json:"amount"`
+	RawReason           string      `json:"retiring_data"`
+}
+
+func (e FA2RetireEvent) Reason() string {
+	res, err := tzclient.MichelsonToString(e.RawReason)
+	if err != nil {
+		return e.RawReason
+	}
+	return res
 }
 
 func GetFA2RetireEvents(ctx context.Context, client tzclient.TezosClient, contract tzclient.Contract) ([]FA2RetireEvent, error) {
@@ -23,18 +33,16 @@ func GetFA2RetireEvents(ctx context.Context, client tzclient.TezosClient, contra
 
 	result := make([]FA2RetireEvent, len(raw))
 	for idx, event := range raw {
-		var rawPayload string
-		err = json.Unmarshal(event.Payload, &rawPayload)
+		typedEvent := FA2RetireEvent {
+			event,
+			"",
+			"0",
+			"0",
+			"",
+		}
+		err = json.Unmarshal(event.Payload, &typedEvent)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshall payload: %w", err)
-		}
-		data, err := hex.DecodeString(rawPayload)
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode payload: %w", err)
-		}
-		typedEvent := FA2RetireEvent{
-			event,
-			string(data),
 		}
 		result[idx] = typedEvent
 	}

@@ -170,9 +170,9 @@ func displayFA2AsText(client tzclient.Client, info FA2Snapshot) error {
 	fmt.Printf("\nRetirements:\n")
 	{
 		t := tabby.New()
-		t.AddHeader("ID", "Time", "Reason")
+		t.AddHeader("ID", "Time", "Token ID", "By", "Amount", "Reason")
 		for _, event := range info.RetireEvents {
-			t.AddLine(event.Identifier, event.Timestamp, event.Reason)
+			t.AddLine(event.Identifier, event.Timestamp, event.TokenID, event.RetiringParty, event.Amount, event.Reason())
 		}
 		t.Print()
 	}

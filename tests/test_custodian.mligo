@@ -18,7 +18,7 @@ type operator_custodian = operator
 type retire_tokens_event_custodian = {
     retiring_party: address;
     retiring_party_kyc: bytes;
-    token_id: nat;
+    token: token;
     amount: nat;
     retiring_data: bytes;
 }
@@ -356,7 +356,7 @@ let test_retire =
         let retire_custodian_event = {
             retiring_party = test_custodian.owner ;
             retiring_party_kyc = retire_data.retiring_party_kyc ;
-            token_id = retire_data.token_id ;
+            token = { token_address = test_fa2.contract_address ; token_id = retire_data.token_id ;  } ;
             amount = retire_data.amount ;
             retiring_data = retiring_data ;
         } in
@@ -493,7 +493,7 @@ let test_operator_can_retire =
         let retire_custodian_event = {
             retiring_party = operator_actor.owner ;
             retiring_party_kyc = retire_data.retiring_party_kyc ;
-            token_id = retire_data.token_id ;
+            token = { token_address = test_fa2.contract_address ; token_id = retire_data.token_id ;  } ;
             amount = retire_data.amount ;
             retiring_data = retiring_data ;
         } in
