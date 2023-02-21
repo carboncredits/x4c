@@ -114,7 +114,13 @@ type emit_internal_mint = {
     new_total : nat;
 }
 
-type emit_retire = bytes
+type emit_retire = {
+    retiring_party : address;
+    retiring_party_kyc : bytes;
+    token: token;
+    amount: nat;
+    retiring_data : bytes ;
+}
 
 (* =============================================================================
  * Error Codes
@@ -334,13 +340,18 @@ let retire (param : internal_retire list) (storage : storage) : result =
     let ops_emit_retirement =
         flat_map
         (fun (p : internal_retire) : operation list ->
-            List.map (fun (d: internal_retire_data) : operation -> Tezos.emit "%retire" {
-                retiring_party = (Tezos.get_source ()) ;
-                retiring_party_kyc = d.retiring_party_kyc ;
-                token_id = d.token_id ;
-                amount = d.amount ;
-                retiring_data = d.retiring_data ;
-            }) p.txs
+            List.map
+                (fun (d: internal_retire_data) : operation ->
+                    (let token : token = { token_address = p.token_address ; token_id = d.token_id ; } in
+                    let payload: emit_retire = {
+                        retiring_party = (Tezos.get_source ()) ;
+                        retiring_party_kyc = d.retiring_party_kyc ;
+                        token = token ;
+                        amount = d.amount ;
+                        retiring_data = d.retiring_data ;
+                    } in
+                    Tezos.emit "%retire" payload))
+                p.txs
         )
         param in
    concat (ops_retire_tokens, ops_emit_retirement) , storage

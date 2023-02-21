@@ -283,5 +283,5 @@ $ docker-compose --profile setup up
 Once they are up, you can run the tests with:
 
 ```
-$ docker-compose --profile setup --profile test run test
+$ docker-compose --profile setup --profile test build test && docker-compose --profile setup --profile test run test
 ```

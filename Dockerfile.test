@@ -34,7 +34,5 @@ COPY . .
 
 RUN chmod 755 /app/backend/integration_tests.sh
 
-WORKDIR /app
-
 # build the contracts
 RUN make build

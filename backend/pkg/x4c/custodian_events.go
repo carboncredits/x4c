@@ -2,7 +2,6 @@ package x4c
 
 import (
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
@@ -12,7 +11,27 @@ import (
 
 type CustodianRetireEvent struct {
 	tzkt.Event
-	Reason string
+	RetiringParty       string      `json:"retiring_party"`
+	RawRetiringPartyKyc string      `json:"retiring_party_kyc"`
+	Token               TokenID     `json:"token"`
+	Amount              json.Number `json:"amount"`
+	RawReason           string      `json:"retiring_data"`
+}
+
+func (e CustodianRetireEvent) RetiringPartyKyc() string {
+	res, err := tzclient.MichelsonToString(e.RawRetiringPartyKyc)
+	if err != nil {
+		return e.RawRetiringPartyKyc
+	}
+	return res
+}
+
+func (e CustodianRetireEvent) Reason() string {
+	res, err := tzclient.MichelsonToString(e.RawReason)
+	if err != nil {
+		return e.RawReason
+	}
+	return res
 }
 
 type InternalMintEvent struct {
@@ -24,8 +43,8 @@ type InternalMintEvent struct {
 
 type InternalTransferEvent struct {
 	tzkt.Event
-	RawTo   string      `json:"to"`
-	RawFrom string      `json:"from"`
+	RawTo   string      `json:"source"`
+	RawFrom string      `json:"destination"`
 	Token   TokenID     `json:"token"`
 	Amount  json.Number `json:"amount"`
 }
@@ -54,18 +73,17 @@ func GetCustodianRetireEvents(ctx context.Context, client tzclient.TezosClient, 
 
 	result := make([]CustodianRetireEvent, len(raw))
 	for idx, event := range raw {
-		var rawPayload string
-		err = json.Unmarshal(event.Payload, &rawPayload)
+		typedEvent := CustodianRetireEvent{
+		    event,
+		    "",
+		    "",
+		    TokenID{},
+		    "0",
+		    "",
+		}
+		err = json.Unmarshal(event.Payload, &typedEvent)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshall payload: %w", err)
-		}
-		data, err := hex.DecodeString(rawPayload)
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode payload: %w", err)
-		}
-		typedEvent := CustodianRetireEvent{
-			event,
-			string(data),
 		}
 		result[idx] = typedEvent
 	}

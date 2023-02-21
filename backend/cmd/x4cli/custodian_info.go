@@ -215,7 +215,7 @@ func displayCustodianAsText(client tzclient.Client, info CustodianSnapshot) erro
 		t := tabby.New()
 		t.AddHeader("ID", "Time", "Token Address", "Token ID", "From", "To", "Amount")
 		for _, event := range info.InternalTransferEvents {
-			t.AddLine(event.Identifier, event.Timestamp, event.Token.Address, event.Token.TokenID, event.From(), event.To())
+			t.AddLine(event.Identifier, event.Timestamp, event.Token.Address, event.Token.TokenID, event.From(), event.To(), event.Amount)
 		}
 		t.Print()
 	}
@@ -223,9 +223,9 @@ func displayCustodianAsText(client tzclient.Client, info CustodianSnapshot) erro
 	fmt.Printf("\nRetirements:\n")
 	{
 		t := tabby.New()
-		t.AddHeader("ID", "Time", "Reason")
+		t.AddHeader("ID", "Time", "Token Address", "Token ID", "By", "KYC", "Amount", "Reason")
 		for _, event := range info.RetireEvents {
-			t.AddLine(event.Identifier, event.Timestamp, event.Reason)
+			t.AddLine(event.Identifier, event.Timestamp, event.Token.Address, event.Token.TokenID, event.RetiringParty, event.RetiringPartyKyc(), event.Amount, event.Reason())
 		}
 		t.Print()
 	}
