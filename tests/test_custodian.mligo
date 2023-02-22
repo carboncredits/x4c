@@ -4,14 +4,24 @@
 #include "../src/fa2.mligo"
 type storage_fa2 = storage
 type entrypoint_fa2 = entrypoint
-type retire_tokens_event_fa2 = bytes
+type retire_tokens_event_fa2 = {
+   retiring_party: address;
+   token_id: nat;
+   amount: nat;
+   retiring_data: bytes;
+}
 
 #include "../src/custodian.mligo"
 type result_custodian = result
 type owner_custodian = owner
 type operator_custodian = operator
-type retire_tokens_event_custodian = bytes
-
+type retire_tokens_event_custodian = {
+    retiring_party: address;
+    retiring_party_kyc: bytes;
+    token: token;
+    amount: nat;
+    retiring_data: bytes;
+}
 
 let test_internal_mint_with_tokens =
 	let test_fa2 = Common.fa2_bootstrap(3n) in
@@ -297,7 +307,6 @@ let test_others_cannot_add_operator =
 	let final_state = Test.get_storage test_custodian.contract in
 	let _ : unit = assert (Set.cardinal final_state.operators = 0n) in ()
 
-
 let test_retire =
 	let test_fa2 = Common.fa2_bootstrap(3n) in
 	let test_custodian = Common.custodian_bootstrap() in
@@ -344,21 +353,33 @@ let test_retire =
 
 	// There should be events both on the custodian contract and the fa2 contract
 	let _test_custodian_events =
+        let retire_custodian_event = {
+            retiring_party = test_custodian.owner ;
+            retiring_party_kyc = retire_data.retiring_party_kyc ;
+            token = { token_address = test_fa2.contract_address ; token_id = retire_data.token_id ;  } ;
+            amount = retire_data.amount ;
+            retiring_data = retiring_data ;
+        } in
 		let events: retire_tokens_event_custodian list = Test.get_last_events_from test_custodian.contract "retire" in
 			match events with
-			| [ val ] -> assert (val = retiring_data)
+			| [ val ] -> assert (val = retire_custodian_event)
 			| [] -> Test.failwith "no data found"
 			| _ -> Test.failwith "got wrong data"
 		in
 
 	let _test_fa2_events =
+         let retire_fa2_event = {
+            retiring_party = test_custodian.contract_address ;
+            token_id = retire_data.token_id ;
+            amount = retire_data.amount ;
+            retiring_data = retiring_data ;
+        } in
 		let events: retire_tokens_event_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
 			match events with
-			| [ val ] -> assert (val = retiring_data)
+			| [ val ] -> assert (val = retire_fa2_event)
 			| [] -> Test.failwith "no data found"
 			| _ -> Test.failwith "got wrong data"
 		in ()
-
 
 let test_others_cannot_retire =
 	let test_fa2 = Common.fa2_bootstrap(3n) in
@@ -439,7 +460,7 @@ let test_operator_can_retire =
 		amount = 350n ;
 		retiring_data = retiring_data ;
 	} in
-	let operator_actor: Common.test_custodian = {owner = test_fa2.owner; contract = test_custodian.contract; contract_address = test_custodian.contract_address; } in
+	let operator_actor: Common.test_custodian = {owner = test_custodian.owner; contract = test_custodian.contract; contract_address = test_custodian.contract_address; } in
 	let res = Common.custodian_retire operator_actor test_fa2 retire_data in
 	let _ : unit = Assert.tx_success(res) in
 
@@ -469,17 +490,30 @@ let test_operator_can_retire =
 		in
 
 	let _test_custodian_events =
+        let retire_custodian_event = {
+            retiring_party = operator_actor.owner ;
+            retiring_party_kyc = retire_data.retiring_party_kyc ;
+            token = { token_address = test_fa2.contract_address ; token_id = retire_data.token_id ;  } ;
+            amount = retire_data.amount ;
+            retiring_data = retiring_data ;
+        } in
 		let events: retire_tokens_event_custodian list = Test.get_last_events_from test_custodian.contract "retire" in
 			match events with
-			| [ val ] -> assert (val = retiring_data)
-			| [] -> Test.failwith "no data found"
+			| [ val ] -> assert (val = retire_custodian_event)
+            | [] -> Test.failwith "no data found"
 			| _ -> Test.failwith "got wrong data"
 		in
 
 	let _test_fa2_events =
+        let retire_fa2_event = {
+            retiring_party = test_custodian.contract_address ;
+            token_id = retire_data.token_id ;
+            amount = retire_data.amount ;
+            retiring_data = retiring_data ;
+        } in
 		let events: retire_tokens_event_fa2 list = Test.get_last_events_from test_fa2.contract "retire" in
 			match events with
-			| [ val ] -> assert (val = retiring_data)
+			| [ val ] -> assert (val = retire_fa2_event)
 			| [] -> Test.failwith "no data found"
 			| _ -> Test.failwith "got wrong data"
 		in ()

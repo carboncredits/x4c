@@ -117,7 +117,7 @@ do
   sleep 1;
 done
 x4cli custodian info CustodianContract
-x4cli custodian info -json CustodianContract | jq ".retire_events[0].Reason" | grep -q "retire1"
+x4cli custodian info -json CustodianContract | jq ".retire_events[0].retiring_data" | grep -q "retire1"
 
 c=0
 until x4cli fa2 info -json 4CTokenContract | jq ".retire_events | length" | grep -q "1";
@@ -127,7 +127,7 @@ do
 done
 x4cli fa2 info 4CTokenContract
 x4cli fa2 info -json 4CTokenContract | jq ".ledger_bigmap[0].value" | grep -q "9980"
-x4cli fa2 info -json 4CTokenContract | jq ".retire_events[0].Reason" | grep -q "retire1"
+x4cli fa2 info -json 4CTokenContract | jq ".retire_events[0].retiring_data" | grep -q "retire1"
 
 
 # Whilst we have the custodian set up, let's try to retire something via the X4C server
@@ -151,7 +151,7 @@ do
 done
 x4cli fa2 info 4CTokenContract
 x4cli fa2 info -json 4CTokenContract | jq ".ledger_bigmap[0].value" | grep -q "9970"
-x4cli fa2 info -json 4CTokenContract | jq ".retire_events[1].Reason" | grep -q "retire3"
+x4cli fa2 info -json 4CTokenContract | jq ".retire_events[1].retiring_data" | grep -q "retire3"
 
 # Check that if we revoke the operator they can't still retire credits
 x4cli custodian remove_operator CustodianContract OffChainCustodian CustodianOperator 123 compsci
@@ -170,4 +170,4 @@ do
 done
 x4cli fa2 info 4CTokenContract
 x4cli fa2 info -json 4CTokenContract | jq ".ledger_bigmap[0].value" | grep -q "9965"
-x4cli fa2 info -json 4CTokenContract | jq ".retire_events[2].Reason" | grep -q "retire2"
+x4cli fa2 info -json 4CTokenContract | jq ".retire_events[2].retiring_data" | grep -q "retire2"

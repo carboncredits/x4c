@@ -2,7 +2,6 @@ package x4c
 
 import (
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
@@ -12,7 +11,11 @@ import (
 
 type CustodianRetireEvent struct {
 	tzkt.Event
-	Reason string
+	RetiringParty       string      `json:"retiring_party"`
+	RetiringPartyKyc string      `json:"retiring_party_kyc"`
+	Token               TokenID     `json:"token"`
+	Amount              json.Number `json:"amount"`
+	Reason           string      `json:"retiring_data"`
 }
 
 type InternalMintEvent struct {
@@ -24,8 +27,8 @@ type InternalMintEvent struct {
 
 type InternalTransferEvent struct {
 	tzkt.Event
-	RawTo   string      `json:"to"`
-	RawFrom string      `json:"from"`
+	RawTo   string      `json:"source"`
+	RawFrom string      `json:"destination"`
 	Token   TokenID     `json:"token"`
 	Amount  json.Number `json:"amount"`
 }
@@ -54,19 +57,29 @@ func GetCustodianRetireEvents(ctx context.Context, client tzclient.TezosClient, 
 
 	result := make([]CustodianRetireEvent, len(raw))
 	for idx, event := range raw {
-		var rawPayload string
-		err = json.Unmarshal(event.Payload, &rawPayload)
+		typedEvent := CustodianRetireEvent{
+		    event,
+		    "",
+		    "",
+		    TokenID{},
+		    "0",
+		    "",
+		}
+		err = json.Unmarshal(event.Payload, &typedEvent)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshall payload: %w", err)
 		}
-		data, err := hex.DecodeString(rawPayload)
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode payload: %w", err)
-		}
-		typedEvent := CustodianRetireEvent{
-			event,
-			string(data),
-		}
+        retiring_party_kyc, err := tzclient.MichelsonToString(typedEvent.RetiringPartyKyc)
+        if err != nil {
+            return nil, fmt.Errorf("failed to unmarshall event retiring_party_kyc: %w", err)
+        }
+        typedEvent.RetiringPartyKyc = retiring_party_kyc
+        reason, err := tzclient.MichelsonToString(typedEvent.Reason)
+        if err != nil {
+            return nil, fmt.Errorf("failed to unmarshall event reason: %w", err)
+        }
+        typedEvent.Reason = reason
+
 		result[idx] = typedEvent
 	}
 	return result, nil
@@ -75,7 +88,7 @@ func GetCustodianRetireEvents(ctx context.Context, client tzclient.TezosClient, 
 func GetInternalTransferEvents(ctx context.Context, client tzclient.TezosClient, contract tzclient.Contract) ([]InternalTransferEvent, error) {
 	raw, err := client.GetContractEvents(ctx, contract.Address.String(), "internal_transfer")
 	if err != nil {
-		return nil, fmt.Errorf("failed to find retire events: %w", err)
+		return nil, fmt.Errorf("failed to find internal_transfer events: %w", err)
 	}
 
 	result := make([]InternalTransferEvent, len(raw))
@@ -99,7 +112,7 @@ func GetInternalTransferEvents(ctx context.Context, client tzclient.TezosClient,
 func GetInternalMintEvents(ctx context.Context, client tzclient.TezosClient, contract tzclient.Contract) ([]InternalMintEvent, error) {
 	raw, err := client.GetContractEvents(ctx, contract.Address.String(), "internal_mint")
 	if err != nil {
-		return nil, fmt.Errorf("failed to find retire events: %w", err)
+		return nil, fmt.Errorf("failed to find internal_mint events: %w", err)
 	}
 
 	result := make([]InternalMintEvent, len(raw))
