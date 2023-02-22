@@ -604,3 +604,41 @@ let test_cannot_retire_too_much =
 			| [] -> ()
 			| _ -> Test.failwith "got unexpected data"
 		in ()
+
+let test_update_custodian =
+	let _test_fa2 = Common.fa2_bootstrap(3n) in
+	let test_custodian = Common.custodian_bootstrap() in
+    let other_wallet = Test.nth_bootstrap_account 2 in
+	let _ : unit = Test.set_source test_custodian.owner in
+
+	let current_state = Test.get_storage test_custodian.contract in
+		let _ : unit = assert (current_state.custodian = test_custodian.owner) in
+
+	let _update_operator =
+		let txndata : update_custodian = { new_custodian = other_wallet; } in
+		let entrypoint : update_custodian contract =
+			Test.to_entrypoint "update_custodian" test_custodian.contract in
+		let res = Test.transfer_to_contract entrypoint txndata 0tez in
+
+		Assert.tx_success(res) in
+
+	let updated_state = Test.get_storage test_custodian.contract in
+		let _ : unit = assert (updated_state.custodian = other_wallet) in ()
+
+
+let test_non_custodian_update_custodian_fails =
+	let _test_fa2 = Common.fa2_bootstrap(3n) in
+	let test_custodian = Common.custodian_bootstrap() in
+    let other_wallet = Test.nth_bootstrap_account 2 in
+	let _ : unit = Test.set_source other_wallet in
+
+	let _update_operator =
+		let txndata : update_custodian = { new_custodian = other_wallet; } in
+		let entrypoint : update_custodian contract =
+			Test.to_entrypoint "update_custodian" test_custodian.contract in
+		let res = Test.transfer_to_contract entrypoint txndata 0tez in
+
+		Assert.failure_code res error_PERMISSIONS_DENIED in
+
+	let updated_state = Test.get_storage test_custodian.contract in
+		let _ : unit = assert (updated_state.custodian = test_custodian.owner) in ()

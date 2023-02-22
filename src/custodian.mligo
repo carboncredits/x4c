@@ -89,12 +89,17 @@ type external_retire = {
     retiring_data : bytes ;
 }
 
+type update_custodian = {
+    new_custodian : address ;
+}
+
 type entrypoint =
 | Internal_transfer of internal_transfer list
 | Internal_mint of internal_mint list
 | External_transfer of external_transfer list
 | Update_internal_operators of update_internal_operators // change operators for some address
 | Retire of internal_retire list
+| Update_custodian of update_custodian
 
 
 (* =============================================================================
@@ -339,6 +344,12 @@ let retire (param : internal_retire list) (storage : storage) : result =
         param in
    concat (ops_retire_tokens, ops_emit_retirement) , storage
 
+// entrypoint for the oracle to be updated
+let update_custodian (param : update_custodian) (storage : storage) : result =
+    if (Tezos.get_sender ()) <> storage.custodian then (failwith error_PERMISSIONS_DENIED : result) else
+    ([] : operation list),
+    { storage with custodian = param.new_custodian ; }
+
 (* =============================================================================
  * Contract Views
  * ============================================================================= *)
@@ -365,5 +376,7 @@ let main (param, storage : entrypoint * storage) : result =
         update_internal_operators p storage
     | Retire p ->
         retire p storage
+    | Update_custodian p ->
+        update_custodian p storage
 
 
