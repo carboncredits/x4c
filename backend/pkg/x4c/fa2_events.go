@@ -14,15 +14,7 @@ type FA2RetireEvent struct {
 	RetiringParty       string      `json:"retiring_party"`
 	TokenID             json.Number `json:"tokenId"`
 	Amount              json.Number `json:"amount"`
-	RawReason           string      `json:"retiring_data"`
-}
-
-func (e FA2RetireEvent) Reason() string {
-	res, err := tzclient.MichelsonToString(e.RawReason)
-	if err != nil {
-		return e.RawReason
-	}
-	return res
+	Reason              string      `json:"retiring_data"`
 }
 
 func GetFA2RetireEvents(ctx context.Context, client tzclient.TezosClient, contract tzclient.Contract) ([]FA2RetireEvent, error) {
@@ -44,6 +36,11 @@ func GetFA2RetireEvents(ctx context.Context, client tzclient.TezosClient, contra
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshall payload: %w", err)
 		}
+		reason, err := tzclient.MichelsonToString(typedEvent.Reason)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshall event reason: %w", err)
+		}
+		typedEvent.Reason = reason
 		result[idx] = typedEvent
 	}
 	return result, nil
