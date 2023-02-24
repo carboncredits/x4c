@@ -188,6 +188,10 @@ Here are a list of the major tasks within the X4C system, which translate to end
 * Initiated by: Custodian owner
 * Description: Is used to assign tokens to some other entity, removing them from the custodian contract, without retiring them. Not currently used in the X4C system.
 
+### Update Custodian
+
+* Initiated by: Custodian owner
+* Description: Lets the current Custodian nominate a new entity to be the custodian of the custodian contract. Not used in X4C workflow.
 
 
 # X4C Initial Production Configuration
